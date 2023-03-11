@@ -1,5 +1,6 @@
 import 'package:dashmark_pure/world.dart';
 import 'package:flutter/widgets.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 class MyGame extends CustomPainter {
   final World world;
@@ -14,6 +15,7 @@ class MyGame extends CustomPainter {
     world.input(x, y);
     world.update(t);
     world.render(t, canvas);
+    world.size = Vector2(size.width, size.height);
   }
 
   @override

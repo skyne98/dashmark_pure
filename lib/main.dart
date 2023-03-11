@@ -19,13 +19,14 @@ class MyApp extends StatelessWidget {
 }
 
 class MyPage extends StatefulWidget {
+  @override
   _MyPageState createState() => _MyPageState();
 }
 
 class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  World world = World(0.0, 0.0);
+  World world = World();
   final DateTime _initialTime = DateTime.now();
   double previous = 0.0;
   double pointerX = 0.0;
@@ -64,10 +65,10 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     previous = currentTime;
-    _controller = new AnimationController(
-        vsync: this, duration: const Duration(seconds: 1))
-      ..repeat();
-    _animation = new Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1))
+          ..repeat();
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
   }
 
   void pointerUpdate(details) {
