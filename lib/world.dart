@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:vector_math/vector_math_64.dart' show Matrix4, Vector2;
+import 'package:vector_math/vector_math.dart' show Matrix4, Vector2;
 
 class World {
   Vector2 size = Vector2(0.0, 0.0);
@@ -25,6 +25,8 @@ class World {
   final List<Matrix4> _transforms = [];
   final List<Vector2> _position = [];
   final List<Vector2> _velocity = [];
+  Float32List _vertexCoordsCache = Float32List(0);
+  Float32List _textureCoordsCache = Float32List(0);
 
   // FPS
   final _lastFrameTimes = <double>[];
@@ -80,6 +82,30 @@ class World {
         final vy = 4 * sin(i * 2 * pi / amount);
         addDash(_spawnPosition.x, _spawnPosition.y, vx, vy);
       }
+
+      // Update the vertex and texture coords cache
+      final length = _transforms.length;
+      _vertexCoordsCache = Float32List(length * 12);
+      _textureCoordsCache = Float32List(length * 12);
+
+      // Update the texture coords cache
+      final dashWidth = dashImage!.width;
+      final dashHeight = dashImage!.height;
+      for (var i = 0; i < length; ++i) {
+        final offset = i * 12;
+        _textureCoordsCache[offset + 0] = 0.0;
+        _textureCoordsCache[offset + 1] = 0.0;
+        _textureCoordsCache[offset + 2] = dashWidth.toDouble();
+        _textureCoordsCache[offset + 3] = 0.0;
+        _textureCoordsCache[offset + 4] = dashWidth.toDouble();
+        _textureCoordsCache[offset + 5] = dashHeight.toDouble();
+        _textureCoordsCache[offset + 6] = 0.0;
+        _textureCoordsCache[offset + 7] = 0.0;
+        _textureCoordsCache[offset + 8] = dashWidth.toDouble();
+        _textureCoordsCache[offset + 9] = dashHeight.toDouble();
+        _textureCoordsCache[offset + 10] = 0.0;
+        _textureCoordsCache[offset + 11] = dashHeight.toDouble();
+      }
     }
   }
 
@@ -90,11 +116,6 @@ class World {
       for (var i = 0; i < length; ++i) {
         final velocity = _velocity[i];
         final position = _position[i];
-
-        final index0 = i * 4;
-        final index1 = index0 + 1;
-        final index2 = index0 + 2;
-        final index3 = index0 + 3;
 
         // Move the dash
         position.x += velocity.x;
@@ -137,6 +158,22 @@ class World {
     }
   }
 
+  void transformVertsInCache(int index, Matrix4 matrix) {
+    final indexX = index;
+    final indexY = index + 1;
+
+    final x = _vertexCoordsCache[indexX];
+    final y = _vertexCoordsCache[indexY];
+
+    _vertexCoordsCache[indexX] = (x * matrix[0]) + (y * matrix[4]) + matrix[12];
+    _vertexCoordsCache[indexY] = (x * matrix[1]) + (y * matrix[5]) + matrix[13];
+  }
+
+  void setVertInCache(int index, double x, double y) {
+    _vertexCoordsCache[index] = x;
+    _vertexCoordsCache[index + 1] = y;
+  }
+
   void render(double t, Canvas canvas) {
     if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
@@ -148,35 +185,23 @@ class World {
       final vertexTopRight = Vector2(1.0, 0.0);
 
       final length = _transforms.length;
-      final List<Offset> verticesCoords = [];
-      final List<Offset> texCoords = [];
       for (var i = 0; i < length; ++i) {
         final transform = _transforms[i];
+        final index = i * 12;
 
-        final transformedTopLeft = transform2(vertexTopLeft, transform);
-        final transformedBottomLeft = transform2(vertexBottomLeft, transform);
-        final transformedBottomRight = transform2(vertexBottomRight, transform);
-        final transformedTopRight = transform2(vertexTopRight, transform);
+        setVertInCache(index, vertexTopLeft.x, vertexTopLeft.y);
+        setVertInCache(index + 2, vertexBottomLeft.x, vertexBottomLeft.y);
+        setVertInCache(index + 4, vertexBottomRight.x, vertexBottomRight.y);
+        setVertInCache(index + 6, vertexTopRight.x, vertexTopRight.y);
+        setVertInCache(index + 8, vertexTopLeft.x, vertexTopLeft.y);
+        setVertInCache(index + 10, vertexBottomRight.x, vertexBottomRight.y);
 
-        verticesCoords.add(Offset(transformedTopLeft.x, transformedTopLeft.y));
-        verticesCoords
-            .add(Offset(transformedBottomLeft.x, transformedBottomLeft.y));
-        verticesCoords
-            .add(Offset(transformedBottomRight.x, transformedBottomRight.y));
-        verticesCoords
-            .add(Offset(transformedTopRight.x, transformedTopRight.y));
-        verticesCoords.add(Offset(transformedTopLeft.x, transformedTopLeft.y));
-        verticesCoords
-            .add(Offset(transformedBottomRight.x, transformedBottomRight.y));
-
-        texCoords.add(Offset(0.0, 0.0));
-        texCoords.add(Offset(0.0, dashImage!.height.toDouble()));
-        texCoords.add(
-            Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()));
-        texCoords.add(Offset(dashImage!.width.toDouble(), 0.0));
-        texCoords.add(Offset(0.0, 0.0));
-        texCoords.add(
-            Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()));
+        transformVertsInCache(index, transform);
+        transformVertsInCache(index + 2, transform);
+        transformVertsInCache(index + 4, transform);
+        transformVertsInCache(index + 6, transform);
+        transformVertsInCache(index + 8, transform);
+        transformVertsInCache(index + 10, transform);
       }
 
       // Prepare the shader
@@ -186,8 +211,8 @@ class World {
       final paint = Paint();
       paint.shader = fragmentShader;
 
-      final vertices = Vertices(VertexMode.triangles, verticesCoords,
-          textureCoordinates: texCoords);
+      final vertices = Vertices.raw(VertexMode.triangles, _vertexCoordsCache,
+          textureCoordinates: _textureCoordsCache);
 
       // Draw the sprite
       canvas.drawVertices(vertices, BlendMode.srcOver, paint);
