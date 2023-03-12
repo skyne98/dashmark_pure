@@ -93,18 +93,23 @@ class World {
       final dashHeight = dashImage!.height;
       for (var i = 0; i < length; ++i) {
         final offset = i * 12;
-        _textureCoordsCache[offset + 0] = 0.0;
-        _textureCoordsCache[offset + 1] = 0.0;
-        _textureCoordsCache[offset + 2] = dashWidth.toDouble();
-        _textureCoordsCache[offset + 3] = 0.0;
-        _textureCoordsCache[offset + 4] = dashWidth.toDouble();
-        _textureCoordsCache[offset + 5] = dashHeight.toDouble();
-        _textureCoordsCache[offset + 6] = 0.0;
-        _textureCoordsCache[offset + 7] = 0.0;
-        _textureCoordsCache[offset + 8] = dashWidth.toDouble();
-        _textureCoordsCache[offset + 9] = dashHeight.toDouble();
-        _textureCoordsCache[offset + 10] = 0.0;
-        _textureCoordsCache[offset + 11] = dashHeight.toDouble();
+        _textureCoordsCache[offset + 0] = 0.0; // top left x
+        _textureCoordsCache[offset + 1] = 0.0; // top left y
+        _textureCoordsCache[offset + 2] = 0.0; // bottom left x
+        _textureCoordsCache[offset + 3] =
+            dashHeight.toDouble(); // bottom left y
+        _textureCoordsCache[offset + 4] =
+            dashWidth.toDouble(); // bottom right x
+        _textureCoordsCache[offset + 5] =
+            dashHeight.toDouble(); // bottom right y
+        _textureCoordsCache[offset + 6] = dashWidth.toDouble(); // top right x
+        _textureCoordsCache[offset + 7] = 0.0; // top right y
+        _textureCoordsCache[offset + 8] = 0.0; // top left x
+        _textureCoordsCache[offset + 9] = 0.0; // top left y
+        _textureCoordsCache[offset + 10] =
+            dashWidth.toDouble(); // bottom right x
+        _textureCoordsCache[offset + 11] =
+            dashHeight.toDouble(); // bottom right y
       }
     }
   }
@@ -189,19 +194,26 @@ class World {
         final transform = _transforms[i];
         final index = i * 12;
 
-        setVertInCache(index, vertexTopLeft.x, vertexTopLeft.y);
-        setVertInCache(index + 2, vertexBottomLeft.x, vertexBottomLeft.y);
-        setVertInCache(index + 4, vertexBottomRight.x, vertexBottomRight.y);
-        setVertInCache(index + 6, vertexTopRight.x, vertexTopRight.y);
-        setVertInCache(index + 8, vertexTopLeft.x, vertexTopLeft.y);
-        setVertInCache(index + 10, vertexBottomRight.x, vertexBottomRight.y);
+        final index0 = index;
+        final index1 = index + 2;
+        final index2 = index + 4;
+        final index3 = index + 6;
+        final index4 = index + 8;
+        final index5 = index + 10;
 
-        transformVertsInCache(index, transform);
-        transformVertsInCache(index + 2, transform);
-        transformVertsInCache(index + 4, transform);
-        transformVertsInCache(index + 6, transform);
-        transformVertsInCache(index + 8, transform);
-        transformVertsInCache(index + 10, transform);
+        setVertInCache(index0, vertexTopLeft.x, vertexTopLeft.y);
+        setVertInCache(index1, vertexBottomLeft.x, vertexBottomLeft.y);
+        setVertInCache(index2, vertexBottomRight.x, vertexBottomRight.y);
+        setVertInCache(index3, vertexTopRight.x, vertexTopRight.y);
+        setVertInCache(index4, vertexTopLeft.x, vertexTopLeft.y);
+        setVertInCache(index5, vertexBottomRight.x, vertexBottomRight.y);
+
+        transformVertsInCache(index0, transform);
+        transformVertsInCache(index1, transform);
+        transformVertsInCache(index2, transform);
+        transformVertsInCache(index3, transform);
+        transformVertsInCache(index4, transform);
+        transformVertsInCache(index5, transform);
       }
 
       // Prepare the shader
