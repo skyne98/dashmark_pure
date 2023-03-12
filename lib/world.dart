@@ -22,8 +22,7 @@ class World {
   int _currentId = 0;
 
   // Matrices
-  Float32List _transforms = Float32List(0);
-  Float32List _rects = Float32List(0);
+  final List<Matrix4> _transforms = [];
   final List<Vector2> _position = [];
   final List<Vector2> _velocity = [];
 
@@ -60,29 +59,11 @@ class World {
 
   void addDash(double x, double y, double vx, double vy) {
     final id = _currentId++;
-    final index0 = id * 4;
-    final index1 = index0 + 1;
-    final index2 = index0 + 2;
-    final index3 = index0 + 3;
 
-    // Add a new transform by copying the existing ones
-    final anchorX = dashImage!.width / 2;
-    final anchorY = dashImage!.height / 2;
-    final double scos = cos(0.0) * scaleToSize;
-    final double ssin = sin(0.0) * scaleToSize;
-    final double tx = x + -scos * anchorX + ssin * anchorY;
-    final double ty = y + -ssin * anchorX - scos * anchorY;
-    _transforms[index0] = scos;
-    _transforms[index1] = ssin;
-    _transforms[index2] = tx;
-    _transforms[index3] = ty;
-
-    // Add a new rect by copying the existing ones
-    _rects[index0] = 0.0;
-    _rects[index1] = 0.0;
-    _rects[index2] = dashImage!.width.toDouble();
-    _rects[index3] = dashImage!.height.toDouble();
-
+    final matrix = Matrix4.identity();
+    matrix.translate(x, y);
+    matrix.scale(100.0, 100.0);
+    _transforms.add(matrix);
     _position.add(Vector2(x, y));
     _velocity.add(Vector2(vx, vy));
   }
@@ -92,15 +73,6 @@ class World {
     if (dashImage != null && fragmentShader != null) {
       const amountPerSecond = 10000;
       final amount = (amountPerSecond * lastDt).toInt();
-
-      // Create the buffers of new size
-      final length = _velocity.length;
-      final newTransforms = Float32List((length + amount) * 4);
-      newTransforms.setAll(0, _transforms);
-      _transforms = newTransforms;
-      final newRects = Float32List((length + amount) * 4);
-      newRects.setAll(0, _rects);
-      _rects = newRects;
 
       for (var i = 0; i < amount; i++) {
         // Create a dash at 0,0 every frame
@@ -147,16 +119,7 @@ class World {
 
         // Add gravity
         velocity.y += 0.3;
-        final anchorX = dashImage!.width / 2;
-        final anchorY = dashImage!.height / 2;
-        final double scos = _transforms[index0];
-        final double ssin = _transforms[index1];
-        final double tx = position.x + -scos * anchorX + ssin * anchorY;
-        final double ty = position.y + -ssin * anchorX - scos * anchorY;
-        _transforms[index0] = scos;
-        _transforms[index1] = ssin;
-        _transforms[index2] = tx;
-        _transforms[index3] = ty;
+        _transforms[i].setTranslationRaw(position.x, position.y, 0.0);
       }
       lastDt = t;
 
@@ -177,10 +140,57 @@ class World {
   void render(double t, Canvas canvas) {
     if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
-      // Draw the dashes using Cavnas.drawAtlas
-      const color = Color(0xFFFFFFFF);
-      canvas.drawRawAtlas(dashImage!, _transforms, _rects, null, null, null,
-          Paint()..color = color);
+
+      // Draw the dashes
+      final vertexTopLeft = Vector2(0.0, 0.0);
+      final vertexBottomLeft = Vector2(0.0, 1.0);
+      final vertexBottomRight = Vector2(1.0, 1.0);
+      final vertexTopRight = Vector2(1.0, 0.0);
+
+      final length = _transforms.length;
+      final List<Offset> verticesCoords = [];
+      final List<Offset> texCoords = [];
+      for (var i = 0; i < length; ++i) {
+        final transform = _transforms[i];
+
+        final transformedTopLeft = transform2(vertexTopLeft, transform);
+        final transformedBottomLeft = transform2(vertexBottomLeft, transform);
+        final transformedBottomRight = transform2(vertexBottomRight, transform);
+        final transformedTopRight = transform2(vertexTopRight, transform);
+
+        verticesCoords.add(Offset(transformedTopLeft.x, transformedTopLeft.y));
+        verticesCoords
+            .add(Offset(transformedBottomLeft.x, transformedBottomLeft.y));
+        verticesCoords
+            .add(Offset(transformedBottomRight.x, transformedBottomRight.y));
+        verticesCoords
+            .add(Offset(transformedTopRight.x, transformedTopRight.y));
+        verticesCoords.add(Offset(transformedTopLeft.x, transformedTopLeft.y));
+        verticesCoords
+            .add(Offset(transformedBottomRight.x, transformedBottomRight.y));
+
+        texCoords.add(Offset(0.0, 0.0));
+        texCoords.add(Offset(0.0, dashImage!.height.toDouble()));
+        texCoords.add(
+            Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()));
+        texCoords.add(Offset(dashImage!.width.toDouble(), 0.0));
+        texCoords.add(Offset(0.0, 0.0));
+        texCoords.add(
+            Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()));
+      }
+
+      // Prepare the shader
+      fragmentShader!.setImageSampler(0, dashImage!);
+      fragmentShader!.setFloat(0, dashImage!.width.toDouble());
+      fragmentShader!.setFloat(1, dashImage!.height.toDouble());
+      final paint = Paint();
+      paint.shader = fragmentShader;
+
+      final vertices = Vertices(VertexMode.triangles, verticesCoords,
+          textureCoordinates: texCoords);
+
+      // Draw the sprite
+      canvas.drawVertices(vertices, BlendMode.srcOver, paint);
 
       // Draw status in the middle
       final text = TextSpan(
@@ -203,78 +213,6 @@ class World {
           (size.y - textPainter.height) / 2,
         ),
       );
-
-      // Draw a vertex based sprite
-      Matrix4 transform = Matrix4.identity();
-      transform.scale(100.0, 100.0);
-      Matrix4 transformSecond = Matrix4.identity();
-      transformSecond.translate(100.0, 100.0);
-      transformSecond.scale(100.0, 100.0);
-      transformSecond.rotateZ(pi / 4);
-
-      final vertexTopLeft = Vector2(0.0, 0.0);
-      final vertexBottomLeft = Vector2(0.0, 1.0);
-      final vertexBottomRight = Vector2(1.0, 1.0);
-      final vertexTopRight = Vector2(1.0, 0.0);
-
-      // Transform them
-      final transformedTopLeft = transform2(vertexTopLeft, transform);
-      final transformedTopRight = transform2(vertexTopRight, transform);
-      final transformedBottomRight = transform2(vertexBottomRight, transform);
-      final transformedBottomLeft = transform2(vertexBottomLeft, transform);
-
-      // Transform for second
-      final transformedTopLeftSecond =
-          transform2(vertexTopLeft, transformSecond);
-      final transformedTopRightSecond =
-          transform2(vertexTopRight, transformSecond);
-      final transformedBottomRightSecond =
-          transform2(vertexBottomRight, transformSecond);
-      final transformedBottomLeftSecond =
-          transform2(vertexBottomLeft, transformSecond);
-
-      final vertices = Vertices(VertexMode.triangles, [
-        toOffset(transformedTopLeft),
-        toOffset(transformedTopRight),
-        toOffset(transformedBottomLeft),
-        toOffset(transformedBottomRight),
-        toOffset(transformedTopRight),
-        toOffset(transformedBottomLeft),
-
-        // second
-        toOffset(transformedTopLeftSecond),
-        toOffset(transformedTopRightSecond),
-        toOffset(transformedBottomLeftSecond),
-        toOffset(transformedBottomRightSecond),
-        toOffset(transformedTopRightSecond),
-        toOffset(transformedBottomLeftSecond),
-      ], textureCoordinates: [
-        const Offset(0, 0),
-        Offset(dashImage!.width.toDouble(), 0),
-        Offset(0, dashImage!.height.toDouble()),
-        Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()),
-        Offset(dashImage!.width.toDouble(), 0),
-        Offset(0, dashImage!.height.toDouble()),
-
-        // second
-        const Offset(0, 0),
-        Offset(dashImage!.width.toDouble(), 0),
-        Offset(0, dashImage!.height.toDouble()),
-        Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()),
-        Offset(dashImage!.width.toDouble(), 0),
-        Offset(0, dashImage!.height.toDouble()),
-      ]);
-
-      // Prepare the shader
-      fragmentShader!.setImageSampler(0, dashImage!);
-      fragmentShader!.setFloat(0, dashImage!.width.toDouble());
-      fragmentShader!.setFloat(1, dashImage!.height.toDouble());
-      final paint = Paint();
-      paint.shader = fragmentShader;
-
-      // Draw the sprite
-      canvas.drawVertices(vertices, BlendMode.srcOver, paint);
-      // canvas.drawPaint(paint);
     }
   }
 }
