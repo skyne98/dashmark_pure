@@ -20,8 +20,9 @@ class World {
   int _currentId = 0;
 
   // Matrices
-  final List<RSTransform> _transforms = [];
-  final List<Vector2> _positions = [];
+  Float32List _transforms = Float32List(0);
+  Float32List _rects = Float32List(0);
+  final List<Vector2> _position = [];
   final List<Vector2> _velocity = [];
 
   // FPS
@@ -47,16 +48,30 @@ class World {
 
   void addDash(double x, double y, double vx, double vy) {
     final id = _currentId++;
-    final transform = RSTransform.fromComponents(
-      rotation: 0.0,
-      scale: scaleToSize,
-      anchorX: 0.0,
-      anchorY: 0.0,
-      translateX: x,
-      translateY: y,
-    );
-    _transforms.add(transform);
-    _positions.add(Vector2(x, y));
+    final index0 = id * 4;
+    final index1 = index0 + 1;
+    final index2 = index0 + 2;
+    final index3 = index0 + 3;
+
+    // Add a new transform by copying the existing ones
+    final anchorX = dashImage!.width / 2;
+    final anchorY = dashImage!.height / 2;
+    final double scos = cos(0.0) * scaleToSize;
+    final double ssin = sin(0.0) * scaleToSize;
+    final double tx = x + -scos * anchorX + ssin * anchorY;
+    final double ty = y + -ssin * anchorX - scos * anchorY;
+    _transforms[index0] = scos;
+    _transforms[index1] = ssin;
+    _transforms[index2] = tx;
+    _transforms[index3] = ty;
+
+    // Add a new rect by copying the existing ones
+    _rects[index0] = 0.0;
+    _rects[index1] = 0.0;
+    _rects[index2] = dashImage!.width.toDouble();
+    _rects[index3] = dashImage!.height.toDouble();
+
+    _position.add(Vector2(x, y));
     _velocity.add(Vector2(vx, vy));
   }
 
@@ -65,6 +80,16 @@ class World {
     if (dashImage != null) {
       const amountPerSecond = 1000;
       final amount = (amountPerSecond * lastDt).toInt();
+
+      // Create the buffers of new size
+      final length = _velocity.length;
+      final newTransforms = Float32List((length + amount) * 4);
+      newTransforms.setAll(0, _transforms);
+      _transforms = newTransforms;
+      final newRects = Float32List((length + amount) * 4);
+      newRects.setAll(0, _rects);
+      _rects = newRects;
+
       for (var i = 0; i < amount; i++) {
         // Create a dash at 0,0 every frame
         final vx = 4 * cos(i * 2 * pi / amount);
@@ -77,11 +102,15 @@ class World {
   void update(double t) {
     if (dashImage != null) {
       // Jump around the dashes
-      final length = _transforms.length;
+      final length = _velocity.length;
       for (var i = 0; i < length; i++) {
         final velocity = _velocity[i];
-        final position = _positions[i];
-        final transform = _transforms[i];
+        final position = _position[i];
+
+        final index0 = i * 4;
+        final index1 = index0 + 1;
+        final index2 = index0 + 2;
+        final index3 = index0 + 3;
 
         // Move the dash
         position.x += velocity.x;
@@ -106,14 +135,16 @@ class World {
 
         // Add gravity
         velocity.y += 0.3;
-        _transforms[i] = RSTransform.fromComponents(
-          rotation: 0.0,
-          scale: scaleToSize,
-          anchorX: 0.0,
-          anchorY: 0.0,
-          translateX: position.x,
-          translateY: position.y,
-        );
+        final anchorX = dashImage!.width / 2;
+        final anchorY = dashImage!.height / 2;
+        final double scos = cos(0.0) * scaleToSize;
+        final double ssin = sin(0.0) * scaleToSize;
+        final double tx = position.x + -scos * anchorX + ssin * anchorY;
+        final double ty = position.y + -ssin * anchorX - scos * anchorY;
+        _transforms[index0] = scos;
+        _transforms[index1] = ssin;
+        _transforms[index2] = tx;
+        _transforms[index3] = ty;
       }
       lastDt = t;
 
@@ -126,8 +157,7 @@ class World {
       final fps = 1 /
           (_lastFrameTimes.fold(0.0, (a, b) => a + b) / _lastFrameTimes.length);
       final fpsRounded = fps.round();
-      final title =
-          'Dashmark - $fpsRounded FPS - ${_transforms.length} entities';
+      final title = 'Dashmark - $fpsRounded FPS - ${_velocity.length} entities';
       status = title;
     }
   }
@@ -136,18 +166,8 @@ class World {
     if (dashImage != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
       // Draw the dashes using Cavnas.drawAtlas
-      final length = _transforms.length;
-      final rect = Rect.fromLTWH(
-        0,
-        0,
-        dashImage!.width.toDouble(),
-        dashImage!.height.toDouble(),
-      );
-      final rects = List<Rect>.filled(length, rect);
-      final transforms = _transforms;
       const color = Color(0xFFFFFFFF);
-      final colors = List<Color>.filled(length, color);
-      canvas.drawAtlas(dashImage!, transforms, rects, colors,
+      canvas.drawRawAtlas(dashImage!, _transforms, _rects, null,
           BlendMode.modulate, null, Paint()..color = color);
 
       // Draw status in the middle
