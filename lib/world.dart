@@ -74,7 +74,10 @@ class World {
     _spawnPosition = Vector2(x, y);
     if (dashImage != null && fragmentShader != null) {
       const amountPerSecond = 10000;
-      final amount = (amountPerSecond * lastDt).toInt();
+      var amount = (amountPerSecond * lastDt).toInt();
+      if (amount > amountPerSecond) {
+        amount = amountPerSecond;
+      }
 
       for (var i = 0; i < amount; i++) {
         // Create a dash at 0,0 every frame
