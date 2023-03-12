@@ -1,10 +1,11 @@
-import 'dart:html';
+// import 'dart:html';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Colors;
+import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:vector_math/vector_math_64.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector2;
 
 class World {
   Vector2 size = Vector2(0.0, 0.0);
@@ -14,23 +15,33 @@ class World {
   double desiredSize = 100.0;
   double scaleToSize = 0.0;
 
+  Vector2 _spawnPosition = Vector2(0.0, 0.0);
+
   int _currentId = 0;
+
   // Matrices
-  List<RSTransform> _transforms = [];
-  List<Vector2> _positions = [];
-  List<Vector2> _velocity = [];
+  final List<RSTransform> _transforms = [];
+  final List<Vector2> _positions = [];
+  final List<Vector2> _velocity = [];
 
   // FPS
   final _lastFrameTimes = <double>[];
 
+  // Status
+  String status = 'Status';
+
   World() {
+    debugPrint('World created');
     rootBundle.load('assets/images/dash.png').then((data) {
-      final asUInt8List = data.buffer.asUint8List();
-      decodeImageFromList(asUInt8List, (result) {
+      final asUInt8List = Uint8List.view(data.buffer);
+      decodeImageFromList(asUInt8List).then((result) {
         dashImage = result;
         scaleToSize = desiredSize / dashImage!.width;
         debugPrint('Loaded image ${dashImage!.width}x${dashImage!.height}');
+        status = 'Loaded image ${dashImage!.width}x${dashImage!.height}';
       });
+    }).catchError((error, stackTrace) {
+      status = 'Error loading image: $error';
     });
   }
 
@@ -50,6 +61,7 @@ class World {
   }
 
   void input(double x, double y) {
+    _spawnPosition = Vector2(x, y);
     if (dashImage != null) {
       const amountPerSecond = 1000;
       final amount = (amountPerSecond * lastDt).toInt();
@@ -57,67 +69,66 @@ class World {
         // Create a dash at 0,0 every frame
         final vx = 4 * cos(i * 2 * pi / amount);
         final vy = 4 * sin(i * 2 * pi / amount);
-        addDash(x, y, vx, vy);
+        addDash(_spawnPosition.x, _spawnPosition.y, vx, vy);
       }
     }
   }
 
   void update(double t) {
-    // Jump around the dashes
-    final length = _transforms.length;
-    for (var i = 0; i < length; i++) {
-      final velocity = _velocity[i];
-      final position = _positions[i];
+    if (dashImage != null) {
+      // Jump around the dashes
+      final length = _transforms.length;
+      for (var i = 0; i < length; i++) {
+        final velocity = _velocity[i];
+        final position = _positions[i];
+        final transform = _transforms[i];
 
-      // Move the dash
-      position.x += velocity.x;
-      position.y += velocity.y;
+        // Move the dash
+        position.x += velocity.x;
+        position.y += velocity.y;
 
-      // Bounce off walls
-      if (position.x < 0) {
-        position.x = 0;
-        velocity.x = -velocity.x;
-      } else if (position.x > size.x) {
-        position.x = size.x;
-        velocity.x = -velocity.x;
+        // Bounce off walls
+        if (position.x < 0) {
+          position.x = 0;
+          velocity.x = -velocity.x;
+        } else if (position.x > size.x) {
+          position.x = size.x;
+          velocity.x = -velocity.x;
+        }
+
+        if (position.y < 0) {
+          position.y = 0;
+          velocity.y = -velocity.y;
+        } else if (position.y > size.y) {
+          position.y = size.y;
+          velocity.y = -velocity.y;
+        }
+
+        // Add gravity
+        velocity.y += 0.3;
+        _transforms[i] = RSTransform.fromComponents(
+          rotation: 0.0,
+          scale: scaleToSize,
+          anchorX: 0.0,
+          anchorY: 0.0,
+          translateX: position.x,
+          translateY: position.y,
+        );
       }
+      lastDt = t;
 
-      if (position.y < 0) {
-        position.y = 0;
-        velocity.y = -velocity.y;
-      } else if (position.y > size.y) {
-        position.y = size.y;
-        velocity.y = -velocity.y;
+      // FPS
+      _lastFrameTimes.add(t);
+      // keep the list max length
+      if (_lastFrameTimes.length > 10) {
+        _lastFrameTimes.removeAt(0);
       }
-
-      // Add gravity
-      velocity.y += 0.3;
-      _transforms[i] = RSTransform.fromComponents(
-        rotation: 0.0,
-        scale: scaleToSize,
-        anchorX: 0.0,
-        anchorY: 0.0,
-        translateX: position.x,
-        translateY: position.y,
-      );
-    }
-    lastDt = t;
-
-    // FPS
-    _lastFrameTimes.add(t);
-    // keep the list max length
-    if (_lastFrameTimes.length > 10) {
-      _lastFrameTimes.removeAt(0);
-    }
-    final fps = 1 /
-        (_lastFrameTimes.fold(0.0, (a, b) => a + b) / _lastFrameTimes.length);
-    final fpsRounded = fps.round();
-    final title = 'Dashmark - $fpsRounded FPS - ${_transforms.length} entities';
-    if (kIsWeb) {
-      document.title = title;
-    } else {
-      windowManager.ensureInitialized();
-      windowManager.setTitle(title);
+      final fps = 1 /
+          (_lastFrameTimes.fold(0.0, (a, b) => a + b) / _lastFrameTimes.length);
+      final fpsRounded = fps.round();
+      final title =
+          'Dashmark - $fpsRounded FPS - ${_transforms.length} entities';
+      status = title;
     }
   }
 
@@ -138,6 +149,28 @@ class World {
       final colors = List<Color>.filled(length, color);
       canvas.drawAtlas(dashImage!, transforms, rects, colors,
           BlendMode.modulate, null, Paint()..color = color);
+
+      // Draw status in the middle
+      final text = TextSpan(
+        text: status,
+        style: const TextStyle(
+          color: Colors.red,
+          fontSize: 15.0,
+        ),
+      );
+      final textPainter = TextPainter(
+        text: text,
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(
+          (size.x - textPainter.width) / 2,
+          (size.y - textPainter.height) / 2,
+        ),
+      );
     }
   }
 }

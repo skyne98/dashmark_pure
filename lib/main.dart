@@ -26,13 +26,17 @@ class MyPage extends StatefulWidget {
 class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  World world = World();
+  late World world;
   final DateTime _initialTime = DateTime.now();
   double previous = 0.0;
   double pointerX = 0.0;
   double pointerY = 0.0;
   double get currentTime =>
       DateTime.now().difference(_initialTime).inMilliseconds / 1000.0;
+
+  _MyPageState() {
+    world = World();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +56,6 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
             return CustomPaint(
               size: MediaQuery.of(context).size,
               painter: MyGame(world, pointerX, pointerY, dt),
-              child: const Center(
-                child: Text('This is your UI'),
-              ),
             );
           },
         ),
@@ -74,5 +75,6 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
   void pointerUpdate(details) {
     pointerX = details.globalPosition.dx;
     pointerY = details.globalPosition.dy;
+    world.input(pointerX, pointerY);
   }
 }

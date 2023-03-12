@@ -12,7 +12,6 @@ class MyGame extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    world.input(x, y);
     world.update(t);
     world.render(t, canvas);
     world.size = Vector2(size.width, size.height);
