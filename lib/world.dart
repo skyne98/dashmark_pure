@@ -1,6 +1,7 @@
 // import 'dart:html';
 import 'dart:math';
 import 'dart:ui';
+import 'package:dashmark_pure/aabb.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
@@ -28,6 +29,11 @@ class World {
   final List<Vector2> _velocity = [];
   Float32List _vertexCoordsCache = Float32List(0);
   Float32List _textureCoordsCache = Float32List(0);
+
+  // Rendering optimization
+  final List<AABB> _aabbCache = [];
+  final List<bool> _aabbVisibleCache = [];
+  BVH _bvh = BVH([]);
 
   // FPS
   final _lastFrameTimes = <double>[];
@@ -69,20 +75,23 @@ class World {
     _transforms.add(matrix);
     _position.add(Vector2(x, y));
     _velocity.add(Vector2(vx, vy));
+    _aabbCache.add(AABB(x, y, 100.0, 100.0)..data = id);
+    _aabbVisibleCache.add(true);
   }
 
   void input(double x, double y) {
     _spawnPosition = Vector2(x, y);
     if (dashImage != null && fragmentShader != null) {
-      const amountPerSecond = 10000;
-      var amount = (amountPerSecond * lastDt).toInt();
-      if (amount > amountPerSecond) {
-        amount = amountPerSecond;
-      }
-      if (_spawnedThisFrame > amountPerSecond / 60) {
-        return;
-      }
-      _spawnedThisFrame += amount;
+      // const amountPerSecond = 10000;
+      // var amount = (amountPerSecond * lastDt).toInt();
+      // if (amount > amountPerSecond) {
+      //   amount = amountPerSecond;
+      // }
+      // if (_spawnedThisFrame > amountPerSecond / 60) {
+      //   return;
+      // }
+      // _spawnedThisFrame += amount;
+      var amount = 1;
 
       for (var i = 0; i < amount; i++) {
         // Create a dash at 0,0 every frame
@@ -154,8 +163,37 @@ class World {
 
         // Add gravity
         velocity.y += 0.3;
+
+        // Update the transform
         _transforms[i].setTranslationRaw(position.x, position.y, 0.0);
+
+        // Update the AABB
+        final aabb = _aabbCache[i];
+        aabb.setPositionFrom(position);
       }
+
+      // Rebuild the BVH
+      _bvh = BVH(_aabbCache);
+
+      // Update the visibility cache using the BVH
+      for (var i = 0; i < length; ++i) {
+        _aabbVisibleCache[i] = true;
+        final aabb = _aabbCache[i];
+        final id = aabb.data as int;
+        final containers = _bvh.queryContainsThis(aabb);
+        // Look if any of the containers have a higher id than this one
+        // If so, this one is not visible
+        for (var j = 0; j < containers.length; ++j) {
+          final container = containers[j];
+          final containerId = container.data as int;
+          if (containerId > id) {
+            _aabbVisibleCache[i] = false;
+            // debugPrint('Not visible: $id');
+            break;
+          }
+        }
+      }
+
       lastDt = t;
 
       // FPS
@@ -192,6 +230,8 @@ class World {
     if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
 
+      // _bvh.draw(canvas);
+
       // Draw the dashes
       final vertexTopLeft = Vector2(0.0, 0.0);
       final vertexBottomLeft = Vector2(0.0, 1.0);
@@ -200,7 +240,6 @@ class World {
 
       final length = _transforms.length;
       for (var i = 0; i < length; ++i) {
-        final transform = _transforms[i];
         final index = i * 12;
 
         final index0 = index;
@@ -210,19 +249,32 @@ class World {
         final index4 = index + 8;
         final index5 = index + 10;
 
-        setVertInCache(index0, vertexTopLeft.x, vertexTopLeft.y);
-        setVertInCache(index1, vertexBottomLeft.x, vertexBottomLeft.y);
-        setVertInCache(index2, vertexBottomRight.x, vertexBottomRight.y);
-        setVertInCache(index3, vertexTopRight.x, vertexTopRight.y);
-        setVertInCache(index4, vertexTopLeft.x, vertexTopLeft.y);
-        setVertInCache(index5, vertexBottomRight.x, vertexBottomRight.y);
+        final visible = _aabbVisibleCache[i];
+        if (visible) {
+          final transform = _transforms[i];
 
-        transformVertsInCache(index0, transform);
-        transformVertsInCache(index1, transform);
-        transformVertsInCache(index2, transform);
-        transformVertsInCache(index3, transform);
-        transformVertsInCache(index4, transform);
-        transformVertsInCache(index5, transform);
+          setVertInCache(index0, vertexTopLeft.x, vertexTopLeft.y);
+          setVertInCache(index1, vertexBottomLeft.x, vertexBottomLeft.y);
+          setVertInCache(index2, vertexBottomRight.x, vertexBottomRight.y);
+          setVertInCache(index3, vertexTopRight.x, vertexTopRight.y);
+          setVertInCache(index4, vertexTopLeft.x, vertexTopLeft.y);
+          setVertInCache(index5, vertexBottomRight.x, vertexBottomRight.y);
+
+          transformVertsInCache(index0, transform);
+          transformVertsInCache(index1, transform);
+          transformVertsInCache(index2, transform);
+          transformVertsInCache(index3, transform);
+          transformVertsInCache(index4, transform);
+          transformVertsInCache(index5, transform);
+        } else {
+          // Set all verts to 0
+          setVertInCache(index0, 0.0, 0.0);
+          setVertInCache(index1, 0.0, 0.0);
+          setVertInCache(index2, 0.0, 0.0);
+          setVertInCache(index3, 0.0, 0.0);
+          setVertInCache(index4, 0.0, 0.0);
+          setVertInCache(index5, 0.0, 0.0);
+        }
       }
 
       // Prepare the shader
