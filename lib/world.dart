@@ -1,5 +1,6 @@
 // import 'dart:html';
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
@@ -28,6 +29,7 @@ class World {
   final List<Vector2> _velocity = [];
   Float32List _vertexCoordsCache = Float32List(0);
   Float32List _textureCoordsCache = Float32List(0);
+  Uint16List _indicesCache = Uint16List(0);
 
   // FPS
   final _lastFrameTimes = <double>[];
@@ -93,31 +95,41 @@ class World {
 
       // Update the vertex and texture coords cache
       final length = _transforms.length;
-      _vertexCoordsCache = Float32List(length * 12);
-      _textureCoordsCache = Float32List(length * 12);
+      _vertexCoordsCache = Float32List(length * 8);
+      _textureCoordsCache = Float32List(length * 8);
+      _indicesCache = Uint16List(length * 6);
 
-      // Update the texture coords cache
+      // Update the texture coords cache & indices cache
       final dashWidth = dashImage!.width;
       final dashHeight = dashImage!.height;
       for (var i = 0; i < length; ++i) {
-        final offset = i * 12;
-        _textureCoordsCache[offset + 0] = 0.0; // top left x
-        _textureCoordsCache[offset + 1] = 0.0; // top left y
-        _textureCoordsCache[offset + 2] = 0.0; // bottom left x
-        _textureCoordsCache[offset + 3] =
-            dashHeight.toDouble(); // bottom left y
-        _textureCoordsCache[offset + 4] =
-            dashWidth.toDouble(); // bottom right x
-        _textureCoordsCache[offset + 5] =
-            dashHeight.toDouble(); // bottom right y
-        _textureCoordsCache[offset + 6] = dashWidth.toDouble(); // top right x
-        _textureCoordsCache[offset + 7] = 0.0; // top right y
-        _textureCoordsCache[offset + 8] = 0.0; // top left x
-        _textureCoordsCache[offset + 9] = 0.0; // top left y
-        _textureCoordsCache[offset + 10] =
-            dashWidth.toDouble(); // bottom right x
-        _textureCoordsCache[offset + 11] =
-            dashHeight.toDouble(); // bottom right y
+        final offset = i * 8;
+        final index0 = offset + 0;
+        final index1 = offset + 1;
+        final index2 = offset + 2;
+        final index3 = offset + 3;
+        final index4 = offset + 4;
+        final index5 = offset + 5;
+        final index6 = offset + 6;
+        final index7 = offset + 7;
+
+        _textureCoordsCache[index0] = 0.0; // top left x
+        _textureCoordsCache[index1] = 0.0; // top left y
+        _textureCoordsCache[index2] = dashWidth.toDouble(); // top right x
+        _textureCoordsCache[index3] = 0.0; // top right y
+        _textureCoordsCache[index4] = dashWidth.toDouble(); // bottom right x
+        _textureCoordsCache[index5] = dashHeight.toDouble(); // bottom right y
+        _textureCoordsCache[index6] = 0.0; // bottom left x
+        _textureCoordsCache[index7] = dashHeight.toDouble(); // bottom left y
+
+        final indexOffset = i * 6;
+        final vertexOffset = i * 4;
+        _indicesCache[indexOffset + 0] = vertexOffset + 0;
+        _indicesCache[indexOffset + 1] = vertexOffset + 1;
+        _indicesCache[indexOffset + 2] = vertexOffset + 2;
+        _indicesCache[indexOffset + 3] = vertexOffset + 0;
+        _indicesCache[indexOffset + 4] = vertexOffset + 2;
+        _indicesCache[indexOffset + 5] = vertexOffset + 3;
       }
     }
   }
@@ -201,28 +213,22 @@ class World {
       final length = _transforms.length;
       for (var i = 0; i < length; ++i) {
         final transform = _transforms[i];
-        final index = i * 12;
+        final index = i * 8;
 
         final index0 = index;
         final index1 = index + 2;
         final index2 = index + 4;
         final index3 = index + 6;
-        final index4 = index + 8;
-        final index5 = index + 10;
 
         setVertInCache(index0, vertexTopLeft.x, vertexTopLeft.y);
-        setVertInCache(index1, vertexBottomLeft.x, vertexBottomLeft.y);
+        setVertInCache(index1, vertexTopRight.x, vertexTopRight.y);
         setVertInCache(index2, vertexBottomRight.x, vertexBottomRight.y);
-        setVertInCache(index3, vertexTopRight.x, vertexTopRight.y);
-        setVertInCache(index4, vertexTopLeft.x, vertexTopLeft.y);
-        setVertInCache(index5, vertexBottomRight.x, vertexBottomRight.y);
+        setVertInCache(index3, vertexBottomLeft.x, vertexBottomLeft.y);
 
         transformVertsInCache(index0, transform);
         transformVertsInCache(index1, transform);
         transformVertsInCache(index2, transform);
         transformVertsInCache(index3, transform);
-        transformVertsInCache(index4, transform);
-        transformVertsInCache(index5, transform);
       }
 
       // Prepare the shader
@@ -233,7 +239,7 @@ class World {
       paint.shader = fragmentShader;
 
       final vertices = Vertices.raw(VertexMode.triangles, _vertexCoordsCache,
-          textureCoordinates: _textureCoordsCache);
+          textureCoordinates: _textureCoordsCache, indices: _indicesCache);
 
       // Draw the sprite
       canvas.drawVertices(vertices, BlendMode.srcOver, paint);
