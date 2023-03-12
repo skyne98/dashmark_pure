@@ -78,7 +78,7 @@ class World {
   void input(double x, double y) {
     _spawnPosition = Vector2(x, y);
     if (dashImage != null) {
-      const amountPerSecond = 1000;
+      const amountPerSecond = 10000;
       final amount = (amountPerSecond * lastDt).toInt();
 
       // Create the buffers of new size
@@ -103,7 +103,7 @@ class World {
     if (dashImage != null) {
       // Jump around the dashes
       final length = _velocity.length;
-      for (var i = 0; i < length; i++) {
+      for (var i = 0; i < length; ++i) {
         final velocity = _velocity[i];
         final position = _position[i];
 
@@ -137,8 +137,8 @@ class World {
         velocity.y += 0.3;
         final anchorX = dashImage!.width / 2;
         final anchorY = dashImage!.height / 2;
-        final double scos = cos(0.0) * scaleToSize;
-        final double ssin = sin(0.0) * scaleToSize;
+        final double scos = _transforms[index0];
+        final double ssin = _transforms[index1];
         final double tx = position.x + -scos * anchorX + ssin * anchorY;
         final double ty = position.y + -ssin * anchorX - scos * anchorY;
         _transforms[index0] = scos;
@@ -167,8 +167,8 @@ class World {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
       // Draw the dashes using Cavnas.drawAtlas
       const color = Color(0xFFFFFFFF);
-      canvas.drawRawAtlas(dashImage!, _transforms, _rects, null,
-          BlendMode.modulate, null, Paint()..color = color);
+      canvas.drawRawAtlas(dashImage!, _transforms, _rects, null, null, null,
+          Paint()..color = color);
 
       // Draw status in the middle
       final text = TextSpan(
