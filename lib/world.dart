@@ -24,13 +24,12 @@ class World {
   int _currentId = 0;
 
   // Matrices
-  final int _batchSize = 16384;
   final List<Matrix4> _transforms = [];
   final List<Vector2> _position = [];
   final List<Vector2> _velocity = [];
-  List<Float32List> _vertexCoordsCache = [];
-  List<Float32List> _textureCoordsCache = [];
-  List<Uint16List> _indicesCache = [];
+  Float32List _vertexCoordsCache = Float32List(0);
+  Float32List _textureCoordsCache = Float32List(0);
+  Uint16List _indicesCache = Uint16List(0);
 
   // FPS
   final _lastFrameTimes = <double>[];
@@ -61,15 +60,6 @@ class World {
       debugPrint('Error loading fragment shader: $error');
       status = 'Error loading fragment shader: $error';
     });
-  }
-
-  // Utils for batches
-  int getBatchSize(int batchIndex) {
-    // Last batch might be smaller
-    if (batchIndex == _transforms.length ~/ _batchSize) {
-      return _transforms.length % _batchSize;
-    }
-    return _batchSize;
   }
 
   void addDash(double x, double y, double vx, double vy) {
@@ -103,63 +93,43 @@ class World {
         addDash(_spawnPosition.x, _spawnPosition.y, vx, vy);
       }
 
-      // Find out which buffers have been affected
-      final start = _transforms.length - amount;
-      final end = _transforms.length;
-      final startBatch = start ~/ _batchSize;
-      final endBatch = end ~/ _batchSize;
+      // Update the vertex and texture coords cache
+      final length = _transforms.length;
+      _vertexCoordsCache = Float32List(length * 8);
+      _textureCoordsCache = Float32List(length * 8);
+      _indicesCache = Uint16List(length * 6);
 
-      // Update batches one by one
-      for (var batchIndex = startBatch; batchIndex <= endBatch; ++batchIndex) {
-        final batchSize = getBatchSize(batchIndex);
+      // Update the texture coords cache & indices cache
+      final dashWidth = dashImage!.width;
+      final dashHeight = dashImage!.height;
+      for (var i = 0; i < length; ++i) {
+        final offset = i * 8;
+        final index0 = offset + 0;
+        final index1 = offset + 1;
+        final index2 = offset + 2;
+        final index3 = offset + 3;
+        final index4 = offset + 4;
+        final index5 = offset + 5;
+        final index6 = offset + 6;
+        final index7 = offset + 7;
 
-        final newVertexCoords = Float32List(batchSize * 8);
-        final newTextureCoords = Float32List(batchSize * 8);
-        final newIndices = Uint16List(batchSize * 6);
-        bool batchExists = batchIndex < _vertexCoordsCache.length;
-        if (batchExists) {
-          // Update the vertex and texture coords cache
-          _vertexCoordsCache[batchIndex] = newVertexCoords;
-          _textureCoordsCache[batchIndex] = newTextureCoords;
-          _indicesCache[batchIndex] = newIndices;
-        } else {
-          // Create new vertex and texture coords cache
-          _vertexCoordsCache.add(newVertexCoords);
-          _textureCoordsCache.add(newTextureCoords);
-          _indicesCache.add(newIndices);
-        }
+        _textureCoordsCache[index0] = 0.0; // top left x
+        _textureCoordsCache[index1] = 0.0; // top left y
+        _textureCoordsCache[index2] = dashWidth.toDouble(); // top right x
+        _textureCoordsCache[index3] = 0.0; // top right y
+        _textureCoordsCache[index4] = dashWidth.toDouble(); // bottom right x
+        _textureCoordsCache[index5] = dashHeight.toDouble(); // bottom right y
+        _textureCoordsCache[index6] = 0.0; // bottom left x
+        _textureCoordsCache[index7] = dashHeight.toDouble(); // bottom left y
 
-        // Update the texture coords cache & indices cache
-        final dashWidth = dashImage!.width;
-        final dashHeight = dashImage!.height;
-        for (var i = 0; i < batchSize; ++i) {
-          final offset = i * 8;
-          final index0 = offset + 0;
-          final index1 = offset + 1;
-          final index2 = offset + 2;
-          final index3 = offset + 3;
-          final index4 = offset + 4;
-          final index5 = offset + 5;
-          final index6 = offset + 6;
-          final index7 = offset + 7;
-
-          newTextureCoords[index0] = 0.0; // top left x
-          newTextureCoords[index1] = 0.0; // top left y
-          newTextureCoords[index2] = dashWidth.toDouble(); // top right x
-          newTextureCoords[index3] = 0.0; // top right y
-          newTextureCoords[index4] = dashWidth.toDouble(); // bottom right x
-          newTextureCoords[index5] = dashHeight.toDouble(); // bottom right y
-          newTextureCoords[index6] = 0.0; // bottom left x
-          newTextureCoords[index7] = dashHeight.toDouble(); // bottom left y
-
-          final indexOffset = i * 6;
-          newIndices[indexOffset + 0] = indexOffset + 0;
-          newIndices[indexOffset + 1] = indexOffset + 1;
-          newIndices[indexOffset + 2] = indexOffset + 2;
-          newIndices[indexOffset + 3] = indexOffset + 0;
-          newIndices[indexOffset + 4] = indexOffset + 2;
-          newIndices[indexOffset + 5] = indexOffset + 3;
-        }
+        final indexOffset = i * 6;
+        final vertexOffset = i * 4;
+        _indicesCache[indexOffset + 0] = vertexOffset + 0;
+        _indicesCache[indexOffset + 1] = vertexOffset + 1;
+        _indicesCache[indexOffset + 2] = vertexOffset + 2;
+        _indicesCache[indexOffset + 3] = vertexOffset + 0;
+        _indicesCache[indexOffset + 4] = vertexOffset + 2;
+        _indicesCache[indexOffset + 5] = vertexOffset + 3;
       }
     }
   }
@@ -214,30 +184,52 @@ class World {
     }
   }
 
-  void transformVertsInCache(int batchIndex, int indexInBatch, Matrix4 matrix) {
-    final indexX = indexInBatch;
-    final indexY = indexInBatch + 1;
+  void transformVertsInCache(int index, Matrix4 matrix) {
+    final indexX = index;
+    final indexY = index + 1;
 
-    final cache = _vertexCoordsCache[batchIndex];
-    final x = cache[indexX];
-    final y = cache[indexY];
+    final x = _vertexCoordsCache[indexX];
+    final y = _vertexCoordsCache[indexY];
 
-    cache[indexX] = (x * matrix[0]) + (y * matrix[4]) + matrix[12];
-    cache[indexY] = (x * matrix[1]) + (y * matrix[5]) + matrix[13];
+    _vertexCoordsCache[indexX] = (x * matrix[0]) + (y * matrix[4]) + matrix[12];
+    _vertexCoordsCache[indexY] = (x * matrix[1]) + (y * matrix[5]) + matrix[13];
   }
 
-  void setVertInCache(int batchIndex, int indexInBatch, double x, double y) {
-    final indexX = indexInBatch;
-    final indexY = indexInBatch + 1;
-
-    final cache = _vertexCoordsCache[batchIndex];
-    cache[indexX] = x;
-    cache[indexY] = y;
+  void setVertInCache(int index, double x, double y) {
+    _vertexCoordsCache[index] = x;
+    _vertexCoordsCache[index + 1] = y;
   }
 
   void render(double t, Canvas canvas) {
     if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
+
+      // Draw the dashes
+      final vertexTopLeft = Vector2(0.0, 0.0);
+      final vertexBottomLeft = Vector2(0.0, 1.0);
+      final vertexBottomRight = Vector2(1.0, 1.0);
+      final vertexTopRight = Vector2(1.0, 0.0);
+
+      final length = _transforms.length;
+      for (var i = 0; i < length; ++i) {
+        final transform = _transforms[i];
+        final index = i * 8;
+
+        final index0 = index;
+        final index1 = index + 2;
+        final index2 = index + 4;
+        final index3 = index + 6;
+
+        setVertInCache(index0, vertexTopLeft.x, vertexTopLeft.y);
+        setVertInCache(index1, vertexTopRight.x, vertexTopRight.y);
+        setVertInCache(index2, vertexBottomRight.x, vertexBottomRight.y);
+        setVertInCache(index3, vertexBottomLeft.x, vertexBottomLeft.y);
+
+        transformVertsInCache(index0, transform);
+        transformVertsInCache(index1, transform);
+        transformVertsInCache(index2, transform);
+        transformVertsInCache(index3, transform);
+      }
 
       // Prepare the shader
       fragmentShader!.setImageSampler(0, dashImage!);
@@ -246,47 +238,11 @@ class World {
       final paint = Paint();
       paint.shader = fragmentShader;
 
-      // Draw the dashes
-      final vertexTopLeft = Vector2(0.0, 0.0);
-      final vertexBottomLeft = Vector2(0.0, 1.0);
-      final vertexBottomRight = Vector2(1.0, 1.0);
-      final vertexTopRight = Vector2(1.0, 0.0);
+      final vertices = Vertices.raw(VertexMode.triangles, _vertexCoordsCache,
+          textureCoordinates: _textureCoordsCache, indices: _indicesCache);
 
-      final batches = _vertexCoordsCache.length;
-      for (var batchIndex = 0; batchIndex < batches; ++batchIndex) {
-        final length = _vertexCoordsCache[batchIndex].length ~/ 8;
-        for (var i = 0; i < length; ++i) {
-          final globalIndex = batchIndex * _batchSize + i;
-          final transform = _transforms[globalIndex];
-          final localIndex = i * 8;
-
-          final index0 = localIndex;
-          final index1 = localIndex + 2;
-          final index2 = localIndex + 4;
-          final index3 = localIndex + 6;
-
-          setVertInCache(batchIndex, index0, vertexTopLeft.x, vertexTopLeft.y);
-          setVertInCache(
-              batchIndex, index1, vertexTopRight.x, vertexTopRight.y);
-          setVertInCache(
-              batchIndex, index2, vertexBottomRight.x, vertexBottomRight.y);
-          setVertInCache(
-              batchIndex, index3, vertexBottomLeft.x, vertexBottomLeft.y);
-
-          transformVertsInCache(batchIndex, index0, transform);
-          transformVertsInCache(batchIndex, index1, transform);
-          transformVertsInCache(batchIndex, index2, transform);
-          transformVertsInCache(batchIndex, index3, transform);
-        }
-
-        final vertices = Vertices.raw(
-            VertexMode.triangles, _vertexCoordsCache[batchIndex],
-            textureCoordinates: _textureCoordsCache[batchIndex],
-            indices: _indicesCache[batchIndex]);
-
-        // Draw the sprite
-        canvas.drawVertices(vertices, BlendMode.srcOver, paint);
-      }
+      // Draw the sprite
+      canvas.drawVertices(vertices, BlendMode.srcOver, paint);
 
       // Draw status in the middle
       final text = TextSpan(
