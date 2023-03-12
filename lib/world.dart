@@ -5,13 +5,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:vector_math/vector_math_64.dart' show Vector2;
+import 'package:vector_math/vector_math_64.dart' show Matrix4, Vector2;
 
 class World {
   Vector2 size = Vector2(0.0, 0.0);
   double lastDt = 0.0;
 
   Image? dashImage;
+  FragmentProgram? fragmentProgram;
+  FragmentShader? fragmentShader;
   double desiredSize = 100.0;
   double scaleToSize = 0.0;
 
@@ -42,7 +44,17 @@ class World {
         status = 'Loaded image ${dashImage!.width}x${dashImage!.height}';
       });
     }).catchError((error, stackTrace) {
+      debugPrint('Error loading image: $error');
       status = 'Error loading image: $error';
+    });
+    FragmentProgram.fromAsset('shaders/sprite.glsl').then((result) {
+      fragmentProgram = result;
+      fragmentShader = fragmentProgram!.fragmentShader();
+      debugPrint('Loaded fragment shader');
+      status = 'Loaded fragment shader';
+    }).catchError((error, stackTrace) {
+      debugPrint('Error loading fragment shader: $error');
+      status = 'Error loading fragment shader: $error';
     });
   }
 
@@ -77,7 +89,7 @@ class World {
 
   void input(double x, double y) {
     _spawnPosition = Vector2(x, y);
-    if (dashImage != null) {
+    if (dashImage != null && fragmentShader != null) {
       const amountPerSecond = 10000;
       final amount = (amountPerSecond * lastDt).toInt();
 
@@ -100,7 +112,7 @@ class World {
   }
 
   void update(double t) {
-    if (dashImage != null) {
+    if (dashImage != null && fragmentShader != null) {
       // Jump around the dashes
       final length = _velocity.length;
       for (var i = 0; i < length; ++i) {
@@ -163,7 +175,7 @@ class World {
   }
 
   void render(double t, Canvas canvas) {
-    if (dashImage != null) {
+    if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
       // Draw the dashes using Cavnas.drawAtlas
       const color = Color(0xFFFFFFFF);
@@ -191,6 +203,54 @@ class World {
           (size.y - textPainter.height) / 2,
         ),
       );
+
+      // Draw a vertex based sprite
+      Matrix4 transform = Matrix4.identity();
+      transform.scale(100.0, 100.0);
+      final vertexTopLeft = Vector2(0.0, 0.0);
+      final vertexBottomLeft = Vector2(0.0, 1.0);
+      final vertexBottomRight = Vector2(1.0, 1.0);
+      final vertexTopRight = Vector2(1.0, 0.0);
+
+      // Transform them
+      final transformedTopLeft = transform2(vertexTopLeft, transform);
+      final transformedTopRight = transform2(vertexTopRight, transform);
+      final transformedBottomRight = transform2(vertexBottomRight, transform);
+      final transformedBottomLeft = transform2(vertexBottomLeft, transform);
+
+      final vertices = Vertices(VertexMode.triangleStrip, [
+        toOffset(transformedTopLeft),
+        toOffset(transformedTopRight),
+        toOffset(transformedBottomLeft),
+        toOffset(transformedBottomRight),
+      ], textureCoordinates: [
+        const Offset(0, 0),
+        Offset(dashImage!.width.toDouble(), 0),
+        Offset(0, dashImage!.height.toDouble()),
+        Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()),
+      ]);
+
+      // Prepare the shader
+      fragmentShader!.setImageSampler(0, dashImage!);
+      fragmentShader!.setFloat(0, dashImage!.width.toDouble());
+      fragmentShader!.setFloat(1, dashImage!.height.toDouble());
+      final paint = Paint();
+      paint.shader = fragmentShader;
+
+      // Draw the sprite
+      canvas.drawVertices(vertices, BlendMode.srcOver, paint);
+      // canvas.drawPaint(paint);
     }
   }
+}
+
+Vector2 transform2(Vector2 position, Matrix4 matrix) {
+  return Vector2(
+    (position.x * matrix[0]) + (position.y * matrix[4]) + matrix[12],
+    (position.x * matrix[1]) + (position.y * matrix[5]) + matrix[13],
+  );
+}
+
+Offset toOffset(Vector2 vector) {
+  return Offset(vector.x, vector.y);
 }
