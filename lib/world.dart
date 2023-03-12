@@ -18,6 +18,7 @@ class World {
   double scaleToSize = 0.0;
 
   Vector2 _spawnPosition = Vector2(0.0, 0.0);
+  int _spawnedThisFrame = 0;
 
   int _currentId = 0;
 
@@ -78,6 +79,10 @@ class World {
       if (amount > amountPerSecond) {
         amount = amountPerSecond;
       }
+      if (_spawnedThisFrame > amountPerSecond / 60) {
+        return;
+      }
+      _spawnedThisFrame += amount;
 
       for (var i = 0; i < amount; i++) {
         // Create a dash at 0,0 every frame
@@ -118,6 +123,7 @@ class World {
   }
 
   void update(double t) {
+    _spawnedThisFrame = 0;
     if (dashImage != null && fragmentShader != null) {
       // Jump around the dashes
       final length = _velocity.length;
