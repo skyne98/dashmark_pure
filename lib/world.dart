@@ -207,6 +207,11 @@ class World {
       // Draw a vertex based sprite
       Matrix4 transform = Matrix4.identity();
       transform.scale(100.0, 100.0);
+      Matrix4 transformSecond = Matrix4.identity();
+      transformSecond.translate(100.0, 100.0);
+      transformSecond.scale(100.0, 100.0);
+      transformSecond.rotateZ(pi / 4);
+
       final vertexTopLeft = Vector2(0.0, 0.0);
       final vertexBottomLeft = Vector2(0.0, 1.0);
       final vertexBottomRight = Vector2(1.0, 1.0);
@@ -218,16 +223,46 @@ class World {
       final transformedBottomRight = transform2(vertexBottomRight, transform);
       final transformedBottomLeft = transform2(vertexBottomLeft, transform);
 
-      final vertices = Vertices(VertexMode.triangleStrip, [
+      // Transform for second
+      final transformedTopLeftSecond =
+          transform2(vertexTopLeft, transformSecond);
+      final transformedTopRightSecond =
+          transform2(vertexTopRight, transformSecond);
+      final transformedBottomRightSecond =
+          transform2(vertexBottomRight, transformSecond);
+      final transformedBottomLeftSecond =
+          transform2(vertexBottomLeft, transformSecond);
+
+      final vertices = Vertices(VertexMode.triangles, [
         toOffset(transformedTopLeft),
         toOffset(transformedTopRight),
         toOffset(transformedBottomLeft),
         toOffset(transformedBottomRight),
+        toOffset(transformedTopRight),
+        toOffset(transformedBottomLeft),
+
+        // second
+        toOffset(transformedTopLeftSecond),
+        toOffset(transformedTopRightSecond),
+        toOffset(transformedBottomLeftSecond),
+        toOffset(transformedBottomRightSecond),
+        toOffset(transformedTopRightSecond),
+        toOffset(transformedBottomLeftSecond),
       ], textureCoordinates: [
         const Offset(0, 0),
         Offset(dashImage!.width.toDouble(), 0),
         Offset(0, dashImage!.height.toDouble()),
         Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()),
+        Offset(dashImage!.width.toDouble(), 0),
+        Offset(0, dashImage!.height.toDouble()),
+
+        // second
+        const Offset(0, 0),
+        Offset(dashImage!.width.toDouble(), 0),
+        Offset(0, dashImage!.height.toDouble()),
+        Offset(dashImage!.width.toDouble(), dashImage!.height.toDouble()),
+        Offset(dashImage!.width.toDouble(), 0),
+        Offset(0, dashImage!.height.toDouble()),
       ]);
 
       // Prepare the shader
