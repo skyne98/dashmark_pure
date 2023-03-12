@@ -1,9 +1,7 @@
-import 'dart:math' as math;
-import 'dart:ui';
-
 import 'package:dashmark_pure/painter.dart';
 import 'package:dashmark_pure/world.dart';
 import 'package:flutter/material.dart';
+import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 main() {
   runApp(MyApp());
@@ -36,6 +34,12 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
 
   _MyPageState() {
     world = World();
+
+    // Test out the Rust API
+    api.sayHello();
+    api.getMessage().then((value) {
+      debugPrint('From Rust: $value');
+    });
   }
 
   @override
