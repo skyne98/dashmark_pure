@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
-import 'package:dashmark_pure/renderer.dart';
+import 'package:dashmark_pure/batch.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
@@ -11,13 +11,14 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:vector_math/vector_math.dart' show Matrix4, Vector2;
 
 class World {
+  static const double desiredSize = 64.0;
+
   Vector2 size = Vector2(0.0, 0.0);
   double lastDt = 0.0;
 
   Image? dashImage;
   FragmentProgram? fragmentProgram;
   FragmentShader? fragmentShader;
-  double desiredSize = 100.0;
   double scaleToSize = 0.0;
 
   Vector2 _spawnPosition = Vector2(0.0, 0.0);
@@ -27,7 +28,7 @@ class World {
   List<Vector2> _position = [];
 
   // Batches
-  List<Renderer> _batches = [];
+  List<Batch> _batches = [];
 
   // FPS
   final _lastFrameTimes = <double>[];
@@ -37,7 +38,7 @@ class World {
 
   World() {
     debugPrint('World created');
-    rootBundle.load('assets/images/dash.png').then((data) {
+    rootBundle.load('assets/images/dash_128.png').then((data) {
       final asUInt8List = Uint8List.view(data.buffer);
       decodeImageFromList(asUInt8List).then((result) {
         dashImage = result;
@@ -73,18 +74,18 @@ class World {
       }
       _spawnedThisFrame += amount;
 
-      HashSet<Renderer> toExpand = HashSet();
+      HashSet<Batch> toExpand = HashSet();
       for (var i = 0; i < amount; i++) {
         // Find a batch where it fits or create a new one
-        Renderer? batch;
+        Batch? batch;
         for (final b in _batches) {
-          if (b.length < Renderer.batchSize) {
+          if (b.length < Batch.batchSize) {
             batch = b;
             break;
           }
         }
         if (batch == null) {
-          batch = Renderer();
+          batch = Batch();
           _batches.add(batch);
           debugPrint('Created new batch (#${_batches.length})');
         }
@@ -113,8 +114,8 @@ class World {
       // Jump around the dashes
       final length = _velocity.length;
       for (var i = 0; i < length; ++i) {
-        final batch = _batches[i ~/ Renderer.batchSize];
-        final indexInBatch = i % Renderer.batchSize;
+        final batch = _batches[i ~/ Batch.batchSize];
+        final indexInBatch = i % Batch.batchSize;
         final velocity = _velocity[i];
         final position = _position[i];
 

@@ -1,9 +1,10 @@
 import 'dart:typed_data';
 import 'dart:ui';
 
+import 'package:dashmark_pure/world.dart';
 import 'package:vector_math/vector_math.dart';
 
-class Renderer {
+class Batch {
   static const int batchSize = 16384;
 
   int _currentId = 0;
@@ -27,7 +28,7 @@ class Renderer {
     final id = _currentId++;
     final matrix = Matrix4.identity();
     matrix.translate(x, y);
-    matrix.scale(100.0, 100.0);
+    matrix.scale(World.desiredSize, World.desiredSize);
     _transforms.add(matrix);
     _position.add(Vector2(x, y));
     _size.add(Vector2(width, height));
