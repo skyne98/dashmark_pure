@@ -17,6 +17,11 @@ class Batch {
   Float32List _textureCoordsCache = Float32List(0);
   Uint16List _indicesCache = Uint16List(0);
 
+  // Cache flags
+  bool cachesNeedExpanding = false;
+  int? populateTextureAndIndexCacheFrom;
+  int? populateTextureAndIndexCacheTo;
+
   int get length => _transforms.length;
 
   Vector2 getPosition(int id) => _position[id];
@@ -24,7 +29,7 @@ class Batch {
     _position[id] = position;
   }
 
-  void add(double x, double y, double width, double height) {
+  int add(double x, double y, double width, double height) {
     final id = _currentId++;
     final matrix = Matrix4.identity();
     matrix.translate(x, y);
@@ -32,18 +37,11 @@ class Batch {
     _transforms.add(matrix);
     _position.add(Vector2(x, y));
     _size.add(Vector2(width, height));
+    return id;
   }
 
-  void resizeBuffers() {
-    final count = _transforms.length;
-    final currentSize = _vertexCoordsCache.length ~/ 8;
-    if (count > currentSize) {
-      expandCaches(count);
-      populateTextureAndIndexCache(currentSize, count);
-    }
-  }
-
-  void expandCaches(int count) {
+  void expandCaches({int? count}) {
+    count ??= _transforms.length;
     final newVertexCoordsCache = Float32List(count * 8);
     final newTextureCoordsCache = Float32List(count * 8);
     final newIndicesCache = Uint16List(count * 6);
@@ -72,6 +70,7 @@ class Batch {
     _vertexCoordsCache = newVertexCoordsCache;
     _textureCoordsCache = newTextureCoordsCache;
     _indicesCache = newIndicesCache;
+    cachesNeedExpanding = false;
   }
 
   void populateTextureAndIndexCache(int from, int to) {
@@ -113,19 +112,34 @@ class Batch {
   }
 
   void transformVertsInCache(int index, Matrix4 matrix) {
+    final matrixStorage = matrix.storage;
     final indexX = index;
     final indexY = index + 1;
 
     final x = _vertexCoordsCache[indexX];
     final y = _vertexCoordsCache[indexY];
 
-    _vertexCoordsCache[indexX] = (x * matrix[0]) + (y * matrix[4]) + matrix[12];
-    _vertexCoordsCache[indexY] = (x * matrix[1]) + (y * matrix[5]) + matrix[13];
+    _vertexCoordsCache[indexX] =
+        (x * matrixStorage[0]) + (y * matrixStorage[4]) + matrixStorage[12];
+    _vertexCoordsCache[indexY] =
+        (x * matrixStorage[1]) + (y * matrixStorage[5]) + matrixStorage[13];
   }
 
   void setVertInCache(int index, double x, double y) {
     _vertexCoordsCache[index] = x;
     _vertexCoordsCache[index + 1] = y;
+  }
+
+  void transformVertsInCacheFrom(
+      int index, Matrix4 matrix, double x, double y) {
+    final matrixStorage = matrix.storage;
+    final indexX = index;
+    final indexY = index + 1;
+
+    _vertexCoordsCache[indexX] =
+        (x * matrixStorage[0]) + (y * matrixStorage[4]) + matrixStorage[12];
+    _vertexCoordsCache[indexY] =
+        (x * matrixStorage[1]) + (y * matrixStorage[5]) + matrixStorage[13];
   }
 
   void draw(Canvas canvas, Paint paint) {
@@ -135,6 +149,20 @@ class Batch {
     final vertexBottomRight = Vector2(1.0, 1.0);
     final vertexTopRight = Vector2(1.0, 0.0);
 
+    // Check if expansion is needed
+    if (cachesNeedExpanding) {
+      expandCaches();
+    }
+    if (populateTextureAndIndexCacheFrom != null ||
+        populateTextureAndIndexCacheTo != null) {
+      populateTextureAndIndexCacheFrom ??= 0;
+      populateTextureAndIndexCacheTo ??= _transforms.length;
+      populateTextureAndIndexCache(
+          populateTextureAndIndexCacheFrom!, populateTextureAndIndexCacheTo!);
+      populateTextureAndIndexCacheFrom = null;
+      populateTextureAndIndexCacheTo = null;
+    }
+
     final length = _transforms.length;
     for (var i = 0; i < length; ++i) {
       // Update the matrix
@@ -142,21 +170,20 @@ class Batch {
       transform.setTranslationRaw(_position[i].x, _position[i].y, 0.0);
 
       final index = i * 8;
-
       final index0 = index;
       final index1 = index + 2;
       final index2 = index + 4;
       final index3 = index + 6;
 
-      setVertInCache(index0, vertexTopLeft.x, vertexTopLeft.y);
-      setVertInCache(index1, vertexTopRight.x, vertexTopRight.y);
-      setVertInCache(index2, vertexBottomRight.x, vertexBottomRight.y);
-      setVertInCache(index3, vertexBottomLeft.x, vertexBottomLeft.y);
-
-      transformVertsInCache(index0, transform);
-      transformVertsInCache(index1, transform);
-      transformVertsInCache(index2, transform);
-      transformVertsInCache(index3, transform);
+      // Calculating the transform
+      transformVertsInCacheFrom(
+          index0, transform, vertexTopLeft.x, vertexTopLeft.y);
+      transformVertsInCacheFrom(
+          index1, transform, vertexTopRight.x, vertexTopRight.y);
+      transformVertsInCacheFrom(
+          index2, transform, vertexBottomRight.x, vertexBottomRight.y);
+      transformVertsInCacheFrom(
+          index3, transform, vertexBottomLeft.x, vertexBottomLeft.y);
     }
 
     final vertices = Vertices.raw(VertexMode.triangles, _vertexCoordsCache,

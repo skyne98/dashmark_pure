@@ -74,7 +74,7 @@ class World {
       }
       _spawnedThisFrame += amount;
 
-      HashSet<Batch> toExpand = HashSet();
+      HashSet<Batch> touchedBatches = HashSet();
       for (var i = 0; i < amount; i++) {
         // Find a batch where it fits or create a new one
         Batch? batch;
@@ -92,18 +92,22 @@ class World {
 
         final vx = 4 * cos(i * 2 * pi / amount);
         final vy = 4 * sin(i * 2 * pi / amount);
-        batch.add(_spawnPosition.x, _spawnPosition.y,
+        final indexInBatch = batch.add(_spawnPosition.x, _spawnPosition.y,
             dashImage!.width.toDouble(), dashImage!.height.toDouble());
         _position.add(Vector2(_spawnPosition.x, _spawnPosition.y));
         _velocity.add(Vector2(vx, vy));
 
         // Record for later expansion
-        toExpand.add(batch);
+        touchedBatches.add(batch);
+        if (indexInBatch <
+            (batch.populateTextureAndIndexCacheFrom ?? batch.length)) {
+          batch.populateTextureAndIndexCacheFrom = indexInBatch;
+        }
       }
 
       // Expand the batches
-      for (final entry in toExpand) {
-        entry.resizeBuffers();
+      for (final entry in touchedBatches) {
+        entry.cachesNeedExpanding = true;
       }
     }
   }
