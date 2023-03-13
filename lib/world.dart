@@ -1,7 +1,6 @@
 // import 'dart:html';
 import 'dart:collection';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui';
 import 'package:dashmark_pure/batch.dart';
 import 'package:flutter/foundation.dart';

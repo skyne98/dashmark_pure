@@ -15,7 +15,6 @@ class Batch {
   final List<Vector2> _size = [];
   Float32List _vertexCoordsCache = Float32List(0);
   Float32List _textureCoordsCache = Float32List(0);
-  Uint16List _indicesCache = Uint16List(0);
 
   int get length => _transforms.length;
 
@@ -36,7 +35,7 @@ class Batch {
 
   void resizeBuffers() {
     final count = _transforms.length;
-    final currentSize = _vertexCoordsCache.length ~/ 8;
+    final currentSize = _vertexCoordsCache.length ~/ 12;
     if (count > currentSize) {
       expandCaches(count);
       populateTextureAndIndexCache(currentSize, count);
@@ -44,13 +43,12 @@ class Batch {
   }
 
   void expandCaches(int count) {
-    final newVertexCoordsCache = Float32List(count * 8);
-    final newTextureCoordsCache = Float32List(count * 8);
-    final newIndicesCache = Uint16List(count * 6);
-    final oldCount = _vertexCoordsCache.length ~/ 8;
+    final newVertexCoordsCache = Float32List(count * 12);
+    final newTextureCoordsCache = Float32List(count * 12);
+    final oldCount = _vertexCoordsCache.length ~/ 12;
     // Copy old data
     for (var i = 0; i < oldCount; i++) {
-      final index = i * 8;
+      final index = i * 12;
       newTextureCoordsCache[index] = _textureCoordsCache[index];
       newTextureCoordsCache[index + 1] = _textureCoordsCache[index + 1];
       newTextureCoordsCache[index + 2] = _textureCoordsCache[index + 2];
@@ -59,19 +57,13 @@ class Batch {
       newTextureCoordsCache[index + 5] = _textureCoordsCache[index + 5];
       newTextureCoordsCache[index + 6] = _textureCoordsCache[index + 6];
       newTextureCoordsCache[index + 7] = _textureCoordsCache[index + 7];
-
-      final indexOffset = i * 6;
-      final vertexOffset = i * 4;
-      newIndicesCache[indexOffset + 0] = vertexOffset + 0;
-      newIndicesCache[indexOffset + 1] = vertexOffset + 1;
-      newIndicesCache[indexOffset + 2] = vertexOffset + 2;
-      newIndicesCache[indexOffset + 3] = vertexOffset + 0;
-      newIndicesCache[indexOffset + 4] = vertexOffset + 2;
-      newIndicesCache[indexOffset + 5] = vertexOffset + 3;
+      newTextureCoordsCache[index + 8] = _textureCoordsCache[index + 8];
+      newTextureCoordsCache[index + 9] = _textureCoordsCache[index + 9];
+      newTextureCoordsCache[index + 10] = _textureCoordsCache[index + 10];
+      newTextureCoordsCache[index + 11] = _textureCoordsCache[index + 11];
     }
     _vertexCoordsCache = newVertexCoordsCache;
     _textureCoordsCache = newTextureCoordsCache;
-    _indicesCache = newIndicesCache;
   }
 
   void populateTextureAndIndexCache(int from, int to) {
@@ -80,12 +72,14 @@ class Batch {
       final sizeX = size.x;
       final sizeY = size.y;
 
-      final index = i * 8;
+      final index = i * 12;
 
       final index0 = index;
       final index1 = index + 2;
       final index2 = index + 4;
       final index3 = index + 6;
+      final index4 = index + 8;
+      final index5 = index + 10;
 
       // 0 - top left - 0, 0
       // 1 - top right - 1, 0
@@ -98,17 +92,12 @@ class Batch {
       _textureCoordsCache[index1 + 1] = 0.0; // top right y
       _textureCoordsCache[index2] = sizeX; // bottom right x
       _textureCoordsCache[index2 + 1] = sizeY; // bottom right y
-      _textureCoordsCache[index3] = 0.0; // bottom left x
-      _textureCoordsCache[index3 + 1] = sizeY; // bottom left y
-
-      final indexOffset = i * 6;
-      final vertexOffset = i * 4;
-      _indicesCache[indexOffset + 0] = vertexOffset + 0;
-      _indicesCache[indexOffset + 1] = vertexOffset + 1;
-      _indicesCache[indexOffset + 2] = vertexOffset + 2;
-      _indicesCache[indexOffset + 3] = vertexOffset + 0;
-      _indicesCache[indexOffset + 4] = vertexOffset + 2;
-      _indicesCache[indexOffset + 5] = vertexOffset + 3;
+      _textureCoordsCache[index3] = 0.0; // top left x
+      _textureCoordsCache[index3 + 1] = 0.0; // top left y
+      _textureCoordsCache[index4] = sizeX; // bottom right x
+      _textureCoordsCache[index4 + 1] = sizeY; // bottom right y
+      _textureCoordsCache[index5] = 0.0; // bottom left x
+      _textureCoordsCache[index5 + 1] = sizeY; // bottom left y
     }
   }
 
@@ -141,26 +130,32 @@ class Batch {
       final transform = _transforms[i];
       transform.setTranslationRaw(_position[i].x, _position[i].y, 0.0);
 
-      final index = i * 8;
+      final index = i * 12;
 
       final index0 = index;
       final index1 = index + 2;
       final index2 = index + 4;
       final index3 = index + 6;
+      final index4 = index + 8;
+      final index5 = index + 10;
 
       setVertInCache(index0, vertexTopLeft.x, vertexTopLeft.y);
       setVertInCache(index1, vertexTopRight.x, vertexTopRight.y);
       setVertInCache(index2, vertexBottomRight.x, vertexBottomRight.y);
-      setVertInCache(index3, vertexBottomLeft.x, vertexBottomLeft.y);
+      setVertInCache(index3, vertexTopLeft.x, vertexTopLeft.y);
+      setVertInCache(index4, vertexBottomRight.x, vertexBottomRight.y);
+      setVertInCache(index5, vertexBottomLeft.x, vertexBottomLeft.y);
 
       transformVertsInCache(index0, transform);
       transformVertsInCache(index1, transform);
       transformVertsInCache(index2, transform);
       transformVertsInCache(index3, transform);
+      transformVertsInCache(index4, transform);
+      transformVertsInCache(index5, transform);
     }
 
     final vertices = Vertices.raw(VertexMode.triangles, _vertexCoordsCache,
-        textureCoordinates: _textureCoordsCache, indices: _indicesCache);
+        textureCoordinates: _textureCoordsCache);
 
     // Draw the sprite
     canvas.drawVertices(vertices, BlendMode.srcOver, paint);
