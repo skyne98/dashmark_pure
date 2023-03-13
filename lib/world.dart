@@ -15,7 +15,7 @@ class World {
   Image? dashImage;
   FragmentProgram? fragmentProgram;
   FragmentShader? fragmentShader;
-  double desiredSize = 100.0;
+  double desiredSize = 64.0;
   double scaleToSize = 0.0;
 
   Vector2 _spawnPosition = Vector2(0.0, 0.0);
@@ -39,7 +39,7 @@ class World {
 
   World() {
     debugPrint('World created');
-    rootBundle.load('assets/images/dash.png').then((data) {
+    rootBundle.load('assets/images/dash_128.png').then((data) {
       final asUInt8List = Uint8List.view(data.buffer);
       decodeImageFromList(asUInt8List).then((result) {
         dashImage = result;
