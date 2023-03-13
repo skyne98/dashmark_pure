@@ -65,7 +65,7 @@ class World {
 
     final matrix = Matrix4.identity();
     matrix.translate(x, y);
-    matrix.scale(100.0, 100.0);
+    matrix.scale(desiredSize, desiredSize);
     _transforms.add(matrix);
     _position.add(Vector2(x, y));
     _velocity.add(Vector2(vx, vy));
