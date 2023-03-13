@@ -20,4 +20,4 @@ flutter:
   assets:
    - assets/images/
   shaders:
-   - shaders/sprite.glsl
+   - shaders/sprite.frag
