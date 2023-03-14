@@ -18,6 +18,10 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
 
 // Section: api2wire
 
+  @protected
+  Float64List api2wire_float_64_list(Float64List raw) {
+    return raw;
+  }
 // Section: finalizer
 }
 
@@ -31,9 +35,19 @@ external NativeWasmModule get wasmModule;
 class NativeWasmModule implements WasmModule {
   external Object /* Promise */ call([String? moduleName]);
   external NativeWasmModule bind(dynamic thisArg, String moduleName);
-  external dynamic /* void */ wire_say_hello(NativePortType port_);
+  external dynamic /* void */ wire_say_hello_async(NativePortType port_);
 
-  external dynamic /* void */ wire_get_message(NativePortType port_);
+  external dynamic /* void */ wire_morton_codes_async(
+      NativePortType port_, Float64List xs, Float64List ys);
+
+  external dynamic /* Object /* BigInt64Array */ */ wire_morton_codes(
+      Float64List xs, Float64List ys);
+
+  external dynamic /* void */ wire_morton_codes_lut_async(
+      NativePortType port_, Float64List xs, Float64List ys);
+
+  external dynamic /* Object /* BigInt64Array */ */ wire_morton_codes_lut(
+      Float64List xs, Float64List ys);
 }
 
 // Section: WASM wire connector
@@ -42,8 +56,22 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   NativeWire(FutureOr<WasmModule> module)
       : super(WasmModule.cast<NativeWasmModule>(module));
 
-  void wire_say_hello(NativePortType port_) => wasmModule.wire_say_hello(port_);
+  void wire_say_hello_async(NativePortType port_) =>
+      wasmModule.wire_say_hello_async(port_);
 
-  void wire_get_message(NativePortType port_) =>
-      wasmModule.wire_get_message(port_);
+  void wire_morton_codes_async(
+          NativePortType port_, Float64List xs, Float64List ys) =>
+      wasmModule.wire_morton_codes_async(port_, xs, ys);
+
+  dynamic /* Object /* BigInt64Array */ */ wire_morton_codes(
+          Float64List xs, Float64List ys) =>
+      wasmModule.wire_morton_codes(xs, ys);
+
+  void wire_morton_codes_lut_async(
+          NativePortType port_, Float64List xs, Float64List ys) =>
+      wasmModule.wire_morton_codes_lut_async(port_, xs, ys);
+
+  dynamic /* Object /* BigInt64Array */ */ wire_morton_codes_lut(
+          Float64List xs, Float64List ys) =>
+      wasmModule.wire_morton_codes_lut(xs, ys);
 }

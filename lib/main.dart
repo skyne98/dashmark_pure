@@ -1,10 +1,15 @@
+import 'dart:math';
+import 'dart:typed_data';
+
 import 'package:dashmark_pure/painter.dart';
 import 'package:dashmark_pure/world.dart';
 import 'package:flutter/material.dart';
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 main() {
-  runApp(MyApp());
+  api.sayHelloAsync().then((_) {
+    runApp(MyApp());
+  });
 }
 
 class MyApp extends StatelessWidget {
@@ -34,12 +39,6 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
 
   _MyPageState() {
     world = World();
-
-    // Test out the Rust API
-    api.sayHello();
-    api.getMessage().then((value) {
-      debugPrint('From Rust: $value');
-    });
   }
 
   @override
@@ -74,6 +73,52 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
         AnimationController(vsync: this, duration: const Duration(seconds: 1))
           ..repeat();
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+
+    // Test out the speed of generating morton codes
+    const gridSize = 1000000;
+    final gridSide = sqrt(gridSize);
+    final valuesX = <double>[];
+    for (var i = 0; i < gridSide; i++) {
+      for (var j = 0; j < gridSide; j++) {
+        valuesX.add(i.toDouble());
+      }
+    }
+    final valuesXFloat64List = Float64List.fromList(valuesX);
+    final valuesY = <double>[];
+    for (var i = 0; i < gridSide; i++) {
+      for (var j = 0; j < gridSide; j++) {
+        valuesY.add(j.toDouble());
+      }
+    }
+    final valuesYFloat64List = Float64List.fromList(valuesY);
+    final stopwatch = Stopwatch()..start();
+    final result =
+        api.mortonCodes(xs: valuesXFloat64List, ys: valuesYFloat64List);
+    stopwatch.stop();
+    final elapsed = stopwatch.elapsedMilliseconds;
+    debugPrint('Generated $gridSize morton codes in $elapsed ms');
+    final average = elapsed / gridSize;
+    debugPrint('Average: $average ms');
+
+    // Test out the speed of the LUT method
+    final stopwatch2 = Stopwatch()..start();
+    final result2 =
+        api.mortonCodesLut(xs: valuesXFloat64List, ys: valuesYFloat64List);
+    stopwatch2.stop();
+    final elapsed2 = stopwatch2.elapsedMilliseconds;
+    debugPrint('Generated $gridSize morton codes in $elapsed2 ms');
+    final average2 = elapsed2 / gridSize;
+    debugPrint('Average: $average2 ms');
+
+    // Check if the results are the same
+    for (var i = 0; i < result.length; i++) {
+      if (result[i] != result2[i]) {
+        final x = valuesX[i];
+        final y = valuesY[i];
+        debugPrint('Mismatch at index $i and coordinates ($x, $y) with values '
+            '${result[i]} != ${result2[i]}');
+      }
+    }
   }
 
   void pointerUpdate(details) {

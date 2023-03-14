@@ -15,13 +15,29 @@ import 'bridge_generated.io.dart'
     if (dart.library.html) 'bridge_generated.web.dart';
 
 abstract class Native {
-  Future<void> sayHello({dynamic hint});
+  Future<String> sayHelloAsync({dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kSayHelloConstMeta;
+  FlutterRustBridgeTaskConstMeta get kSayHelloAsyncConstMeta;
 
-  Future<String> getMessage({dynamic hint});
+  Future<Uint64List> mortonCodesAsync(
+      {required Float64List xs, required Float64List ys, dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kGetMessageConstMeta;
+  FlutterRustBridgeTaskConstMeta get kMortonCodesAsyncConstMeta;
+
+  Uint64List mortonCodes(
+      {required Float64List xs, required Float64List ys, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kMortonCodesConstMeta;
+
+  Future<Uint64List> mortonCodesLutAsync(
+      {required Float64List xs, required Float64List ys, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kMortonCodesLutAsyncConstMeta;
+
+  Uint64List mortonCodesLut(
+      {required Float64List xs, required Float64List ys, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kMortonCodesLutConstMeta;
 }
 
 class NativeImpl implements Native {
@@ -33,36 +49,98 @@ class NativeImpl implements Native {
   factory NativeImpl.wasm(FutureOr<WasmModule> module) =>
       NativeImpl(module as ExternalLibrary);
   NativeImpl.raw(this._platform);
-  Future<void> sayHello({dynamic hint}) {
+  Future<String> sayHelloAsync({dynamic hint}) {
     return _platform.executeNormal(FlutterRustBridgeTask(
-      callFfi: (port_) => _platform.inner.wire_say_hello(port_),
-      parseSuccessData: _wire2api_unit,
-      constMeta: kSayHelloConstMeta,
+      callFfi: (port_) => _platform.inner.wire_say_hello_async(port_),
+      parseSuccessData: _wire2api_String,
+      constMeta: kSayHelloAsyncConstMeta,
       argValues: [],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kSayHelloConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kSayHelloAsyncConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "say_hello",
+        debugName: "say_hello_async",
         argNames: [],
       );
 
-  Future<String> getMessage({dynamic hint}) {
+  Future<Uint64List> mortonCodesAsync(
+      {required Float64List xs, required Float64List ys, dynamic hint}) {
+    var arg0 = _platform.api2wire_float_64_list(xs);
+    var arg1 = _platform.api2wire_float_64_list(ys);
     return _platform.executeNormal(FlutterRustBridgeTask(
-      callFfi: (port_) => _platform.inner.wire_get_message(port_),
-      parseSuccessData: _wire2api_String,
-      constMeta: kGetMessageConstMeta,
-      argValues: [],
+      callFfi: (port_) =>
+          _platform.inner.wire_morton_codes_async(port_, arg0, arg1),
+      parseSuccessData: _wire2api_uint_64_list,
+      constMeta: kMortonCodesAsyncConstMeta,
+      argValues: [xs, ys],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kGetMessageConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kMortonCodesAsyncConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "get_message",
-        argNames: [],
+        debugName: "morton_codes_async",
+        argNames: ["xs", "ys"],
+      );
+
+  Uint64List mortonCodes(
+      {required Float64List xs, required Float64List ys, dynamic hint}) {
+    var arg0 = _platform.api2wire_float_64_list(xs);
+    var arg1 = _platform.api2wire_float_64_list(ys);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_morton_codes(arg0, arg1),
+      parseSuccessData: _wire2api_uint_64_list,
+      constMeta: kMortonCodesConstMeta,
+      argValues: [xs, ys],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kMortonCodesConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "morton_codes",
+        argNames: ["xs", "ys"],
+      );
+
+  Future<Uint64List> mortonCodesLutAsync(
+      {required Float64List xs, required Float64List ys, dynamic hint}) {
+    var arg0 = _platform.api2wire_float_64_list(xs);
+    var arg1 = _platform.api2wire_float_64_list(ys);
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) =>
+          _platform.inner.wire_morton_codes_lut_async(port_, arg0, arg1),
+      parseSuccessData: _wire2api_uint_64_list,
+      constMeta: kMortonCodesLutAsyncConstMeta,
+      argValues: [xs, ys],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kMortonCodesLutAsyncConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "morton_codes_lut_async",
+        argNames: ["xs", "ys"],
+      );
+
+  Uint64List mortonCodesLut(
+      {required Float64List xs, required Float64List ys, dynamic hint}) {
+    var arg0 = _platform.api2wire_float_64_list(xs);
+    var arg1 = _platform.api2wire_float_64_list(ys);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_morton_codes_lut(arg0, arg1),
+      parseSuccessData: _wire2api_uint_64_list,
+      constMeta: kMortonCodesLutConstMeta,
+      argValues: [xs, ys],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kMortonCodesLutConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "morton_codes_lut",
+        argNames: ["xs", "ys"],
       );
 
   void dispose() {
@@ -74,19 +152,28 @@ class NativeImpl implements Native {
     return raw as String;
   }
 
+  int _wire2api_u64(dynamic raw) {
+    return castInt(raw);
+  }
+
   int _wire2api_u8(dynamic raw) {
     return raw as int;
+  }
+
+  Uint64List _wire2api_uint_64_list(dynamic raw) {
+    return Uint64List.from(raw);
   }
 
   Uint8List _wire2api_uint_8_list(dynamic raw) {
     return raw as Uint8List;
   }
-
-  void _wire2api_unit(dynamic raw) {
-    return;
-  }
 }
 
 // Section: api2wire
+
+@protected
+double api2wire_f64(double raw) {
+  return raw;
+}
 
 // Section: finalizer
