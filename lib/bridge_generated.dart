@@ -28,6 +28,125 @@ abstract class Native {
       {required Float64List xs, required Float64List ys, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kMortonCodesConstMeta;
+
+  RwLockAabb aabbNew(
+      {required double minX,
+      required double minY,
+      required double maxX,
+      required double maxY,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbNewConstMeta;
+
+  List<RwLockAabb> aabbNewBulk(
+      {required Float64List minXs,
+      required Float64List minYs,
+      required Float64List maxXs,
+      required Float64List maxYs,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbNewBulkConstMeta;
+
+  int aabbNewBulkBenchmark(
+      {required Float64List minXs,
+      required Float64List minYs,
+      required Float64List maxXs,
+      required Float64List maxYs,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbNewBulkBenchmarkConstMeta;
+
+  Float64List aabbMin({required RwLockAabb aabb, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbMinConstMeta;
+
+  Float64List aabbMax({required RwLockAabb aabb, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbMaxConstMeta;
+
+  Float64List aabbSize({required RwLockAabb aabb, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbSizeConstMeta;
+
+  Float64List aabbCenter({required RwLockAabb aabb, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbCenterConstMeta;
+
+  bool aabbIntersects(
+      {required RwLockAabb aabbLeft,
+      required RwLockAabb aabbRight,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbIntersectsConstMeta;
+
+  bool aabbContains(
+      {required RwLockAabb aabb, required Float64List point, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbContainsConstMeta;
+
+  bool aabbContainsAabb(
+      {required RwLockAabb aabbLeft,
+      required RwLockAabb aabbRight,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbContainsAabbConstMeta;
+
+  RwLockAabb aabbMerge(
+      {required RwLockAabb aabbLeft,
+      required RwLockAabb aabbRight,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbMergeConstMeta;
+
+  RwLockAabb aabbMergeWith(
+      {required RwLockAabb aabb, required RwLockAabb other, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kAabbMergeWithConstMeta;
+
+  RwLockBvh bvhNew({required List<RwLockAabb> aabbs, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhNewConstMeta;
+
+  Future<RwLockBvh> bvhNewAsync(
+      {required List<RwLockAabb> aabbs, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhNewAsyncConstMeta;
+
+  DropFnType get dropOpaqueRwLockAabb;
+  ShareFnType get shareOpaqueRwLockAabb;
+  OpaqueTypeFinalizer get RwLockAabbFinalizer;
+
+  DropFnType get dropOpaqueRwLockBvh;
+  ShareFnType get shareOpaqueRwLockBvh;
+  OpaqueTypeFinalizer get RwLockBvhFinalizer;
+}
+
+@sealed
+class RwLockAabb extends FrbOpaque {
+  final Native bridge;
+  RwLockAabb.fromRaw(int ptr, int size, this.bridge) : super.unsafe(ptr, size);
+  @override
+  DropFnType get dropFn => bridge.dropOpaqueRwLockAabb;
+
+  @override
+  ShareFnType get shareFn => bridge.shareOpaqueRwLockAabb;
+
+  @override
+  OpaqueTypeFinalizer get staticFinalizer => bridge.RwLockAabbFinalizer;
+}
+
+@sealed
+class RwLockBvh extends FrbOpaque {
+  final Native bridge;
+  RwLockBvh.fromRaw(int ptr, int size, this.bridge) : super.unsafe(ptr, size);
+  @override
+  DropFnType get dropFn => bridge.dropOpaqueRwLockBvh;
+
+  @override
+  ShareFnType get shareFn => bridge.shareOpaqueRwLockBvh;
+
+  @override
+  OpaqueTypeFinalizer get staticFinalizer => bridge.RwLockBvhFinalizer;
 }
 
 class NativeImpl implements Native {
@@ -94,13 +213,327 @@ class NativeImpl implements Native {
         argNames: ["xs", "ys"],
       );
 
+  RwLockAabb aabbNew(
+      {required double minX,
+      required double minY,
+      required double maxX,
+      required double maxY,
+      dynamic hint}) {
+    var arg0 = api2wire_f64(minX);
+    var arg1 = api2wire_f64(minY);
+    var arg2 = api2wire_f64(maxX);
+    var arg3 = api2wire_f64(maxY);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_new(arg0, arg1, arg2, arg3),
+      parseSuccessData: _wire2api_RwLockAabb,
+      constMeta: kAabbNewConstMeta,
+      argValues: [minX, minY, maxX, maxY],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbNewConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_new",
+        argNames: ["minX", "minY", "maxX", "maxY"],
+      );
+
+  List<RwLockAabb> aabbNewBulk(
+      {required Float64List minXs,
+      required Float64List minYs,
+      required Float64List maxXs,
+      required Float64List maxYs,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_float_64_list(minXs);
+    var arg1 = _platform.api2wire_float_64_list(minYs);
+    var arg2 = _platform.api2wire_float_64_list(maxXs);
+    var arg3 = _platform.api2wire_float_64_list(maxYs);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_new_bulk(arg0, arg1, arg2, arg3),
+      parseSuccessData: _wire2api_list_RwLockAabb,
+      constMeta: kAabbNewBulkConstMeta,
+      argValues: [minXs, minYs, maxXs, maxYs],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbNewBulkConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_new_bulk",
+        argNames: ["minXs", "minYs", "maxXs", "maxYs"],
+      );
+
+  int aabbNewBulkBenchmark(
+      {required Float64List minXs,
+      required Float64List minYs,
+      required Float64List maxXs,
+      required Float64List maxYs,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_float_64_list(minXs);
+    var arg1 = _platform.api2wire_float_64_list(minYs);
+    var arg2 = _platform.api2wire_float_64_list(maxXs);
+    var arg3 = _platform.api2wire_float_64_list(maxYs);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () =>
+          _platform.inner.wire_aabb_new_bulk_benchmark(arg0, arg1, arg2, arg3),
+      parseSuccessData: _wire2api_u64,
+      constMeta: kAabbNewBulkBenchmarkConstMeta,
+      argValues: [minXs, minYs, maxXs, maxYs],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbNewBulkBenchmarkConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_new_bulk_benchmark",
+        argNames: ["minXs", "minYs", "maxXs", "maxYs"],
+      );
+
+  Float64List aabbMin({required RwLockAabb aabb, dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_min(arg0),
+      parseSuccessData: _wire2api_float_64_list,
+      constMeta: kAabbMinConstMeta,
+      argValues: [aabb],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbMinConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_min",
+        argNames: ["aabb"],
+      );
+
+  Float64List aabbMax({required RwLockAabb aabb, dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_max(arg0),
+      parseSuccessData: _wire2api_float_64_list,
+      constMeta: kAabbMaxConstMeta,
+      argValues: [aabb],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbMaxConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_max",
+        argNames: ["aabb"],
+      );
+
+  Float64List aabbSize({required RwLockAabb aabb, dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_size(arg0),
+      parseSuccessData: _wire2api_float_64_list,
+      constMeta: kAabbSizeConstMeta,
+      argValues: [aabb],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbSizeConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_size",
+        argNames: ["aabb"],
+      );
+
+  Float64List aabbCenter({required RwLockAabb aabb, dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_center(arg0),
+      parseSuccessData: _wire2api_float_64_list,
+      constMeta: kAabbCenterConstMeta,
+      argValues: [aabb],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbCenterConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_center",
+        argNames: ["aabb"],
+      );
+
+  bool aabbIntersects(
+      {required RwLockAabb aabbLeft,
+      required RwLockAabb aabbRight,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabbLeft);
+    var arg1 = _platform.api2wire_RwLockAabb(aabbRight);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_intersects(arg0, arg1),
+      parseSuccessData: _wire2api_bool,
+      constMeta: kAabbIntersectsConstMeta,
+      argValues: [aabbLeft, aabbRight],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbIntersectsConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_intersects",
+        argNames: ["aabbLeft", "aabbRight"],
+      );
+
+  bool aabbContains(
+      {required RwLockAabb aabb, required Float64List point, dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+    var arg1 = _platform.api2wire_float_64_list(point);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_contains(arg0, arg1),
+      parseSuccessData: _wire2api_bool,
+      constMeta: kAabbContainsConstMeta,
+      argValues: [aabb, point],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbContainsConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_contains",
+        argNames: ["aabb", "point"],
+      );
+
+  bool aabbContainsAabb(
+      {required RwLockAabb aabbLeft,
+      required RwLockAabb aabbRight,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabbLeft);
+    var arg1 = _platform.api2wire_RwLockAabb(aabbRight);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_contains_aabb(arg0, arg1),
+      parseSuccessData: _wire2api_bool,
+      constMeta: kAabbContainsAabbConstMeta,
+      argValues: [aabbLeft, aabbRight],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbContainsAabbConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_contains_aabb",
+        argNames: ["aabbLeft", "aabbRight"],
+      );
+
+  RwLockAabb aabbMerge(
+      {required RwLockAabb aabbLeft,
+      required RwLockAabb aabbRight,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabbLeft);
+    var arg1 = _platform.api2wire_RwLockAabb(aabbRight);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_merge(arg0, arg1),
+      parseSuccessData: _wire2api_RwLockAabb,
+      constMeta: kAabbMergeConstMeta,
+      argValues: [aabbLeft, aabbRight],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbMergeConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_merge",
+        argNames: ["aabbLeft", "aabbRight"],
+      );
+
+  RwLockAabb aabbMergeWith(
+      {required RwLockAabb aabb, required RwLockAabb other, dynamic hint}) {
+    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+    var arg1 = _platform.api2wire_RwLockAabb(other);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_aabb_merge_with(arg0, arg1),
+      parseSuccessData: _wire2api_RwLockAabb,
+      constMeta: kAabbMergeWithConstMeta,
+      argValues: [aabb, other],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kAabbMergeWithConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "aabb_merge_with",
+        argNames: ["aabb", "other"],
+      );
+
+  RwLockBvh bvhNew({required List<RwLockAabb> aabbs, dynamic hint}) {
+    var arg0 = _platform.api2wire_list_RwLockAabb(aabbs);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_bvh_new(arg0),
+      parseSuccessData: _wire2api_RwLockBvh,
+      constMeta: kBvhNewConstMeta,
+      argValues: [aabbs],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhNewConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_new",
+        argNames: ["aabbs"],
+      );
+
+  Future<RwLockBvh> bvhNewAsync(
+      {required List<RwLockAabb> aabbs, dynamic hint}) {
+    var arg0 = _platform.api2wire_list_RwLockAabb(aabbs);
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) => _platform.inner.wire_bvh_new_async(port_, arg0),
+      parseSuccessData: _wire2api_RwLockBvh,
+      constMeta: kBvhNewAsyncConstMeta,
+      argValues: [aabbs],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhNewAsyncConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_new_async",
+        argNames: ["aabbs"],
+      );
+
+  DropFnType get dropOpaqueRwLockAabb => _platform.inner.drop_opaque_RwLockAabb;
+  ShareFnType get shareOpaqueRwLockAabb =>
+      _platform.inner.share_opaque_RwLockAabb;
+  OpaqueTypeFinalizer get RwLockAabbFinalizer => _platform.RwLockAabbFinalizer;
+
+  DropFnType get dropOpaqueRwLockBvh => _platform.inner.drop_opaque_RwLockBvh;
+  ShareFnType get shareOpaqueRwLockBvh =>
+      _platform.inner.share_opaque_RwLockBvh;
+  OpaqueTypeFinalizer get RwLockBvhFinalizer => _platform.RwLockBvhFinalizer;
+
   void dispose() {
     _platform.dispose();
   }
 // Section: wire2api
 
+  RwLockAabb _wire2api_RwLockAabb(dynamic raw) {
+    return RwLockAabb.fromRaw(raw[0], raw[1], this);
+  }
+
+  RwLockBvh _wire2api_RwLockBvh(dynamic raw) {
+    return RwLockBvh.fromRaw(raw[0], raw[1], this);
+  }
+
   String _wire2api_String(dynamic raw) {
     return raw as String;
+  }
+
+  bool _wire2api_bool(dynamic raw) {
+    return raw as bool;
+  }
+
+  double _wire2api_f64(dynamic raw) {
+    return raw as double;
+  }
+
+  Float64List _wire2api_float_64_list(dynamic raw) {
+    return raw as Float64List;
+  }
+
+  List<RwLockAabb> _wire2api_list_RwLockAabb(dynamic raw) {
+    return (raw as List<dynamic>).map(_wire2api_RwLockAabb).toList();
   }
 
   int _wire2api_u64(dynamic raw) {

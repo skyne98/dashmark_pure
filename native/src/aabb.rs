@@ -43,6 +43,13 @@ impl AABB {
         Self::new((min_x, min_y), (max_x, max_y))
     }
 
+    pub fn merge_with(&mut self, other: &Self) {
+        self.min.0 = self.min.0.min(other.min.0);
+        self.min.1 = self.min.1.min(other.min.1);
+        self.max.0 = self.max.0.max(other.max.0);
+        self.max.1 = self.max.1.max(other.max.1);
+    }
+
     pub fn contains_aabb(&self, other: &Self) -> bool {
         other.min.0 >= self.min.0
             && other.min.1 >= self.min.1

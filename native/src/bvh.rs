@@ -6,17 +6,18 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub enum BVHNode<'a> {
-    Leaf(&'a AABB),
-    Node(Box<BVHNode<'a>>, Box<BVHNode<'a>>, AABB),
+pub enum BVHNode {
+    Leaf(AABB),
+    Node(Box<BVHNode>, Box<BVHNode>, AABB),
 }
 
-pub struct BVH<'a> {
-    root: Option<Box<BVHNode<'a>>>,
+pub struct BVH {
+    root: Option<Box<BVHNode>>,
 }
 
-impl<'a> BVH<'a> {
-    pub fn new(aabbs: &'a [AABB]) -> Self {
+impl BVH {
+    pub fn new(aabbs: &[AABB]) -> Self {
+        let cloned_aabbs = aabbs.iter().cloned().collect::<Vec<_>>();
         if aabbs.is_empty() {
             return BVH { root: None };
         }
@@ -30,9 +31,11 @@ impl<'a> BVH<'a> {
 
         indices.sort_unstable_by(|&a, &b| morton_codes[a].cmp(&morton_codes[b]));
 
-        let mut nodes: Vec<BVHNode<'a>> = Vec::new();
-        let mut leaves: Vec<BVHNode<'a>> =
-            indices.iter().map(|&i| BVHNode::Leaf(&aabbs[i])).collect();
+        let mut nodes: Vec<BVHNode> = Vec::new();
+        let mut leaves: Vec<BVHNode> = indices
+            .iter()
+            .map(|&i| BVHNode::Leaf(cloned_aabbs[i]))
+            .collect();
 
         while leaves.len() + nodes.len() > 1 {
             let mut new_nodes = Vec::new();
