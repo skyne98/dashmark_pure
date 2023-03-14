@@ -23,23 +23,6 @@ pub extern "C" fn wire_morton_codes(
     wire_morton_codes_impl(xs, ys)
 }
 
-#[no_mangle]
-pub extern "C" fn wire_morton_codes_lut_async(
-    port_: i64,
-    xs: *mut wire_float_64_list,
-    ys: *mut wire_float_64_list,
-) {
-    wire_morton_codes_lut_async_impl(port_, xs, ys)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_morton_codes_lut(
-    xs: *mut wire_float_64_list,
-    ys: *mut wire_float_64_list,
-) -> support::WireSyncReturn {
-    wire_morton_codes_lut_impl(xs, ys)
-}
-
 // Section: allocate functions
 
 #[no_mangle]

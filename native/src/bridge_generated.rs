@@ -66,41 +66,6 @@ fn wire_morton_codes_impl(
         },
     )
 }
-fn wire_morton_codes_lut_async_impl(
-    port_: MessagePort,
-    xs: impl Wire2Api<Vec<f64>> + UnwindSafe,
-    ys: impl Wire2Api<Vec<f64>> + UnwindSafe,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-        WrapInfo {
-            debug_name: "morton_codes_lut_async",
-            port: Some(port_),
-            mode: FfiCallMode::Normal,
-        },
-        move || {
-            let api_xs = xs.wire2api();
-            let api_ys = ys.wire2api();
-            move |task_callback| Ok(morton_codes_lut_async(api_xs, api_ys))
-        },
-    )
-}
-fn wire_morton_codes_lut_impl(
-    xs: impl Wire2Api<Vec<f64>> + UnwindSafe,
-    ys: impl Wire2Api<Vec<f64>> + UnwindSafe,
-) -> support::WireSyncReturn {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
-        WrapInfo {
-            debug_name: "morton_codes_lut",
-            port: None,
-            mode: FfiCallMode::Sync,
-        },
-        move || {
-            let api_xs = xs.wire2api();
-            let api_ys = ys.wire2api();
-            Ok(morton_codes_lut(api_xs, api_ys))
-        },
-    )
-}
 // Section: wrapper structs
 
 // Section: static checks

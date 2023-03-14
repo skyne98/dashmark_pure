@@ -42,12 +42,6 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* Object /* BigInt64Array */ */ wire_morton_codes(
       Float64List xs, Float64List ys);
-
-  external dynamic /* void */ wire_morton_codes_lut_async(
-      NativePortType port_, Float64List xs, Float64List ys);
-
-  external dynamic /* Object /* BigInt64Array */ */ wire_morton_codes_lut(
-      Float64List xs, Float64List ys);
 }
 
 // Section: WASM wire connector
@@ -66,12 +60,4 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   dynamic /* Object /* BigInt64Array */ */ wire_morton_codes(
           Float64List xs, Float64List ys) =>
       wasmModule.wire_morton_codes(xs, ys);
-
-  void wire_morton_codes_lut_async(
-          NativePortType port_, Float64List xs, Float64List ys) =>
-      wasmModule.wire_morton_codes_lut_async(port_, xs, ys);
-
-  dynamic /* Object /* BigInt64Array */ */ wire_morton_codes_lut(
-          Float64List xs, Float64List ys) =>
-      wasmModule.wire_morton_codes_lut(xs, ys);
 }

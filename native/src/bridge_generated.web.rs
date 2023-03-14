@@ -16,16 +16,6 @@ pub fn wire_morton_codes(xs: Box<[f64]>, ys: Box<[f64]>) -> support::WireSyncRet
     wire_morton_codes_impl(xs, ys)
 }
 
-#[wasm_bindgen]
-pub fn wire_morton_codes_lut_async(port_: MessagePort, xs: Box<[f64]>, ys: Box<[f64]>) {
-    wire_morton_codes_lut_async_impl(port_, xs, ys)
-}
-
-#[wasm_bindgen]
-pub fn wire_morton_codes_lut(xs: Box<[f64]>, ys: Box<[f64]>) -> support::WireSyncReturn {
-    wire_morton_codes_lut_impl(xs, ys)
-}
-
 // Section: allocate functions
 
 // Section: related functions

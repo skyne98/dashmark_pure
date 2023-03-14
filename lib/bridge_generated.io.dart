@@ -173,45 +173,6 @@ class NativeWire implements FlutterRustBridgeWireBase {
       WireSyncReturn Function(
           ffi.Pointer<wire_float_64_list>, ffi.Pointer<wire_float_64_list>)>();
 
-  void wire_morton_codes_lut_async(
-    int port_,
-    ffi.Pointer<wire_float_64_list> xs,
-    ffi.Pointer<wire_float_64_list> ys,
-  ) {
-    return _wire_morton_codes_lut_async(
-      port_,
-      xs,
-      ys,
-    );
-  }
-
-  late final _wire_morton_codes_lut_asyncPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Void Function(ffi.Int64, ffi.Pointer<wire_float_64_list>,
-              ffi.Pointer<wire_float_64_list>)>>('wire_morton_codes_lut_async');
-  late final _wire_morton_codes_lut_async =
-      _wire_morton_codes_lut_asyncPtr.asFunction<
-          void Function(int, ffi.Pointer<wire_float_64_list>,
-              ffi.Pointer<wire_float_64_list>)>();
-
-  WireSyncReturn wire_morton_codes_lut(
-    ffi.Pointer<wire_float_64_list> xs,
-    ffi.Pointer<wire_float_64_list> ys,
-  ) {
-    return _wire_morton_codes_lut(
-      xs,
-      ys,
-    );
-  }
-
-  late final _wire_morton_codes_lutPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(ffi.Pointer<wire_float_64_list>,
-              ffi.Pointer<wire_float_64_list>)>>('wire_morton_codes_lut');
-  late final _wire_morton_codes_lut = _wire_morton_codes_lutPtr.asFunction<
-      WireSyncReturn Function(
-          ffi.Pointer<wire_float_64_list>, ffi.Pointer<wire_float_64_list>)>();
-
   ffi.Pointer<wire_float_64_list> new_float_64_list_0(
     int len,
   ) {

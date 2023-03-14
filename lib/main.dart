@@ -99,26 +99,6 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     debugPrint('Generated $gridSize morton codes in $elapsed ms');
     final average = elapsed / gridSize;
     debugPrint('Average: $average ms');
-
-    // Test out the speed of the LUT method
-    final stopwatch2 = Stopwatch()..start();
-    final result2 =
-        api.mortonCodesLut(xs: valuesXFloat64List, ys: valuesYFloat64List);
-    stopwatch2.stop();
-    final elapsed2 = stopwatch2.elapsedMilliseconds;
-    debugPrint('Generated $gridSize morton codes in $elapsed2 ms');
-    final average2 = elapsed2 / gridSize;
-    debugPrint('Average: $average2 ms');
-
-    // Check if the results are the same
-    for (var i = 0; i < result.length; i++) {
-      if (result[i] != result2[i]) {
-        final x = valuesX[i];
-        final y = valuesY[i];
-        debugPrint('Mismatch at index $i and coordinates ($x, $y) with values '
-            '${result[i]} != ${result2[i]}');
-      }
-    }
   }
 
   void pointerUpdate(details) {

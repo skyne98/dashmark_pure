@@ -28,16 +28,6 @@ abstract class Native {
       {required Float64List xs, required Float64List ys, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kMortonCodesConstMeta;
-
-  Future<Uint64List> mortonCodesLutAsync(
-      {required Float64List xs, required Float64List ys, dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kMortonCodesLutAsyncConstMeta;
-
-  Uint64List mortonCodesLut(
-      {required Float64List xs, required Float64List ys, dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kMortonCodesLutConstMeta;
 }
 
 class NativeImpl implements Native {
@@ -101,45 +91,6 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kMortonCodesConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "morton_codes",
-        argNames: ["xs", "ys"],
-      );
-
-  Future<Uint64List> mortonCodesLutAsync(
-      {required Float64List xs, required Float64List ys, dynamic hint}) {
-    var arg0 = _platform.api2wire_float_64_list(xs);
-    var arg1 = _platform.api2wire_float_64_list(ys);
-    return _platform.executeNormal(FlutterRustBridgeTask(
-      callFfi: (port_) =>
-          _platform.inner.wire_morton_codes_lut_async(port_, arg0, arg1),
-      parseSuccessData: _wire2api_uint_64_list,
-      constMeta: kMortonCodesLutAsyncConstMeta,
-      argValues: [xs, ys],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kMortonCodesLutAsyncConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "morton_codes_lut_async",
-        argNames: ["xs", "ys"],
-      );
-
-  Uint64List mortonCodesLut(
-      {required Float64List xs, required Float64List ys, dynamic hint}) {
-    var arg0 = _platform.api2wire_float_64_list(xs);
-    var arg1 = _platform.api2wire_float_64_list(ys);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_morton_codes_lut(arg0, arg1),
-      parseSuccessData: _wire2api_uint_64_list,
-      constMeta: kMortonCodesLutConstMeta,
-      argValues: [xs, ys],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kMortonCodesLutConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "morton_codes_lut",
         argNames: ["xs", "ys"],
       );
 
