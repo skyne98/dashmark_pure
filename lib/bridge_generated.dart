@@ -29,7 +29,7 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kMortonCodesConstMeta;
 
-  RwLockAabb aabbNew(
+  int aabbNew(
       {required double minX,
       required double minY,
       required double maxX,
@@ -38,7 +38,7 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbNewConstMeta;
 
-  List<RwLockAabb> aabbNewBulk(
+  Uint64List aabbNewBulk(
       {required Float64List minXs,
       required Float64List minYs,
       required Float64List maxXs,
@@ -47,78 +47,82 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbNewBulkConstMeta;
 
-  int aabbNewBulkBenchmark(
-      {required Float64List minXs,
-      required Float64List minYs,
-      required Float64List maxXs,
-      required Float64List maxYs,
-      dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kAabbNewBulkBenchmarkConstMeta;
-
-  Float64List aabbMin({required RwLockAabb aabb, dynamic hint});
+  Float64List aabbMin({required int aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbMinConstMeta;
 
-  Float64List aabbMax({required RwLockAabb aabb, dynamic hint});
+  Float64List aabbMax({required int aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbMaxConstMeta;
 
-  Float64List aabbSize({required RwLockAabb aabb, dynamic hint});
+  Float64List aabbSize({required int aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbSizeConstMeta;
 
-  Float64List aabbCenter({required RwLockAabb aabb, dynamic hint});
+  Float64List aabbCenter({required int aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbCenterConstMeta;
 
-  bool aabbIntersects(
-      {required RwLockAabb aabbLeft,
-      required RwLockAabb aabbRight,
-      dynamic hint});
+  bool aabbIntersectsPoint(
+      {required int aabbLeftId, required int aabbRightId, dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kAabbIntersectsConstMeta;
+  FlutterRustBridgeTaskConstMeta get kAabbIntersectsPointConstMeta;
 
   bool aabbContains(
-      {required RwLockAabb aabb, required Float64List point, dynamic hint});
+      {required int aabbId, required Float64List point, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbContainsConstMeta;
 
   bool aabbContainsAabb(
-      {required RwLockAabb aabbLeft,
-      required RwLockAabb aabbRight,
-      dynamic hint});
+      {required int aabbLeftId, required int aabbRightId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbContainsAabbConstMeta;
 
   RwLockAabb aabbMerge(
-      {required RwLockAabb aabbLeft,
-      required RwLockAabb aabbRight,
-      dynamic hint});
+      {required int aabbLeftId, required int aabbRightId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbMergeConstMeta;
 
-  RwLockAabb aabbMergeWith(
-      {required RwLockAabb aabb, required RwLockAabb other, dynamic hint});
+  Future<void> aabbMergeWith(
+      {required int aabbId, required int otherId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbMergeWithConstMeta;
 
-  RwLockBvh bvhNew({required List<RwLockAabb> aabbs, dynamic hint});
+  int bvhNew({required Uint64List aabbs, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhNewConstMeta;
 
-  Future<RwLockBvh> bvhNewAsync(
-      {required List<RwLockAabb> aabbs, dynamic hint});
+  Future<int> bvhNewAsync({required Uint64List aabbs, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhNewAsyncConstMeta;
+
+  FlatBVH bvhFlatten({required int bvhId, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhFlattenConstMeta;
+
+  Future<FlatBVH> bvhFlattenAsync({required int bvhId, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhFlattenAsyncConstMeta;
+
+  int bvhDepth({required int bvhId, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhDepthConstMeta;
+
+  Future<int> bvhDepthAsync({required int bvhId, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhDepthAsyncConstMeta;
+
+  String bvhPrint({required int bvhId, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhPrintConstMeta;
+
+  Future<String> bvhPrintAsync({required int bvhId, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhPrintAsyncConstMeta;
 
   DropFnType get dropOpaqueRwLockAabb;
   ShareFnType get shareOpaqueRwLockAabb;
   OpaqueTypeFinalizer get RwLockAabbFinalizer;
-
-  DropFnType get dropOpaqueRwLockBvh;
-  ShareFnType get shareOpaqueRwLockBvh;
-  OpaqueTypeFinalizer get RwLockBvhFinalizer;
 }
 
 @sealed
@@ -135,18 +139,20 @@ class RwLockAabb extends FrbOpaque {
   OpaqueTypeFinalizer get staticFinalizer => bridge.RwLockAabbFinalizer;
 }
 
-@sealed
-class RwLockBvh extends FrbOpaque {
-  final Native bridge;
-  RwLockBvh.fromRaw(int ptr, int size, this.bridge) : super.unsafe(ptr, size);
-  @override
-  DropFnType get dropFn => bridge.dropOpaqueRwLockBvh;
+class FlatBVH {
+  final Float64List minX;
+  final Float64List minY;
+  final Float64List maxX;
+  final Float64List maxY;
+  final Uint64List depth;
 
-  @override
-  ShareFnType get shareFn => bridge.shareOpaqueRwLockBvh;
-
-  @override
-  OpaqueTypeFinalizer get staticFinalizer => bridge.RwLockBvhFinalizer;
+  const FlatBVH({
+    required this.minX,
+    required this.minY,
+    required this.maxX,
+    required this.maxY,
+    required this.depth,
+  });
 }
 
 class NativeImpl implements Native {
@@ -213,7 +219,7 @@ class NativeImpl implements Native {
         argNames: ["xs", "ys"],
       );
 
-  RwLockAabb aabbNew(
+  int aabbNew(
       {required double minX,
       required double minY,
       required double maxX,
@@ -225,7 +231,7 @@ class NativeImpl implements Native {
     var arg3 = api2wire_f64(maxY);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_new(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_RwLockAabb,
+      parseSuccessData: _wire2api_u64,
       constMeta: kAabbNewConstMeta,
       argValues: [minX, minY, maxX, maxY],
       hint: hint,
@@ -238,7 +244,7 @@ class NativeImpl implements Native {
         argNames: ["minX", "minY", "maxX", "maxY"],
       );
 
-  List<RwLockAabb> aabbNewBulk(
+  Uint64List aabbNewBulk(
       {required Float64List minXs,
       required Float64List minYs,
       required Float64List maxXs,
@@ -250,7 +256,7 @@ class NativeImpl implements Native {
     var arg3 = _platform.api2wire_float_64_list(maxYs);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_new_bulk(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_list_RwLockAabb,
+      parseSuccessData: _wire2api_uint_64_list,
       constMeta: kAabbNewBulkConstMeta,
       argValues: [minXs, minYs, maxXs, maxYs],
       hint: hint,
@@ -263,39 +269,13 @@ class NativeImpl implements Native {
         argNames: ["minXs", "minYs", "maxXs", "maxYs"],
       );
 
-  int aabbNewBulkBenchmark(
-      {required Float64List minXs,
-      required Float64List minYs,
-      required Float64List maxXs,
-      required Float64List maxYs,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_float_64_list(minXs);
-    var arg1 = _platform.api2wire_float_64_list(minYs);
-    var arg2 = _platform.api2wire_float_64_list(maxXs);
-    var arg3 = _platform.api2wire_float_64_list(maxYs);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () =>
-          _platform.inner.wire_aabb_new_bulk_benchmark(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_u64,
-      constMeta: kAabbNewBulkBenchmarkConstMeta,
-      argValues: [minXs, minYs, maxXs, maxYs],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kAabbNewBulkBenchmarkConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "aabb_new_bulk_benchmark",
-        argNames: ["minXs", "minYs", "maxXs", "maxYs"],
-      );
-
-  Float64List aabbMin({required RwLockAabb aabb, dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+  Float64List aabbMin({required int aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_min(arg0),
       parseSuccessData: _wire2api_float_64_list,
       constMeta: kAabbMinConstMeta,
-      argValues: [aabb],
+      argValues: [aabbId],
       hint: hint,
     ));
   }
@@ -303,16 +283,16 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbMinConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_min",
-        argNames: ["aabb"],
+        argNames: ["aabbId"],
       );
 
-  Float64List aabbMax({required RwLockAabb aabb, dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+  Float64List aabbMax({required int aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_max(arg0),
       parseSuccessData: _wire2api_float_64_list,
       constMeta: kAabbMaxConstMeta,
-      argValues: [aabb],
+      argValues: [aabbId],
       hint: hint,
     ));
   }
@@ -320,16 +300,16 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbMaxConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_max",
-        argNames: ["aabb"],
+        argNames: ["aabbId"],
       );
 
-  Float64List aabbSize({required RwLockAabb aabb, dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+  Float64List aabbSize({required int aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_size(arg0),
       parseSuccessData: _wire2api_float_64_list,
       constMeta: kAabbSizeConstMeta,
-      argValues: [aabb],
+      argValues: [aabbId],
       hint: hint,
     ));
   }
@@ -337,16 +317,16 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbSizeConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_size",
-        argNames: ["aabb"],
+        argNames: ["aabbId"],
       );
 
-  Float64List aabbCenter({required RwLockAabb aabb, dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+  Float64List aabbCenter({required int aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_center(arg0),
       parseSuccessData: _wire2api_float_64_list,
       constMeta: kAabbCenterConstMeta,
-      argValues: [aabb],
+      argValues: [aabbId],
       hint: hint,
     ));
   }
@@ -354,39 +334,37 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbCenterConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_center",
-        argNames: ["aabb"],
+        argNames: ["aabbId"],
       );
 
-  bool aabbIntersects(
-      {required RwLockAabb aabbLeft,
-      required RwLockAabb aabbRight,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabbLeft);
-    var arg1 = _platform.api2wire_RwLockAabb(aabbRight);
+  bool aabbIntersectsPoint(
+      {required int aabbLeftId, required int aabbRightId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbLeftId);
+    var arg1 = _platform.api2wire_u64(aabbRightId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_aabb_intersects(arg0, arg1),
+      callFfi: () => _platform.inner.wire_aabb_intersects_point(arg0, arg1),
       parseSuccessData: _wire2api_bool,
-      constMeta: kAabbIntersectsConstMeta,
-      argValues: [aabbLeft, aabbRight],
+      constMeta: kAabbIntersectsPointConstMeta,
+      argValues: [aabbLeftId, aabbRightId],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kAabbIntersectsConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kAabbIntersectsPointConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "aabb_intersects",
-        argNames: ["aabbLeft", "aabbRight"],
+        debugName: "aabb_intersects_point",
+        argNames: ["aabbLeftId", "aabbRightId"],
       );
 
   bool aabbContains(
-      {required RwLockAabb aabb, required Float64List point, dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabb);
+      {required int aabbId, required Float64List point, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbId);
     var arg1 = _platform.api2wire_float_64_list(point);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_contains(arg0, arg1),
       parseSuccessData: _wire2api_bool,
       constMeta: kAabbContainsConstMeta,
-      argValues: [aabb, point],
+      argValues: [aabbId, point],
       hint: hint,
     ));
   }
@@ -394,20 +372,18 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbContainsConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_contains",
-        argNames: ["aabb", "point"],
+        argNames: ["aabbId", "point"],
       );
 
   bool aabbContainsAabb(
-      {required RwLockAabb aabbLeft,
-      required RwLockAabb aabbRight,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabbLeft);
-    var arg1 = _platform.api2wire_RwLockAabb(aabbRight);
+      {required int aabbLeftId, required int aabbRightId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbLeftId);
+    var arg1 = _platform.api2wire_u64(aabbRightId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_contains_aabb(arg0, arg1),
       parseSuccessData: _wire2api_bool,
       constMeta: kAabbContainsAabbConstMeta,
-      argValues: [aabbLeft, aabbRight],
+      argValues: [aabbLeftId, aabbRightId],
       hint: hint,
     ));
   }
@@ -415,20 +391,18 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbContainsAabbConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_contains_aabb",
-        argNames: ["aabbLeft", "aabbRight"],
+        argNames: ["aabbLeftId", "aabbRightId"],
       );
 
   RwLockAabb aabbMerge(
-      {required RwLockAabb aabbLeft,
-      required RwLockAabb aabbRight,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabbLeft);
-    var arg1 = _platform.api2wire_RwLockAabb(aabbRight);
+      {required int aabbLeftId, required int aabbRightId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbLeftId);
+    var arg1 = _platform.api2wire_u64(aabbRightId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_merge(arg0, arg1),
       parseSuccessData: _wire2api_RwLockAabb,
       constMeta: kAabbMergeConstMeta,
-      argValues: [aabbLeft, aabbRight],
+      argValues: [aabbLeftId, aabbRightId],
       hint: hint,
     ));
   }
@@ -436,18 +410,19 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbMergeConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_merge",
-        argNames: ["aabbLeft", "aabbRight"],
+        argNames: ["aabbLeftId", "aabbRightId"],
       );
 
-  RwLockAabb aabbMergeWith(
-      {required RwLockAabb aabb, required RwLockAabb other, dynamic hint}) {
-    var arg0 = _platform.api2wire_RwLockAabb(aabb);
-    var arg1 = _platform.api2wire_RwLockAabb(other);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_aabb_merge_with(arg0, arg1),
-      parseSuccessData: _wire2api_RwLockAabb,
+  Future<void> aabbMergeWith(
+      {required int aabbId, required int otherId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(aabbId);
+    var arg1 = _platform.api2wire_u64(otherId);
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) =>
+          _platform.inner.wire_aabb_merge_with(port_, arg0, arg1),
+      parseSuccessData: _wire2api_unit,
       constMeta: kAabbMergeWithConstMeta,
-      argValues: [aabb, other],
+      argValues: [aabbId, otherId],
       hint: hint,
     ));
   }
@@ -455,14 +430,14 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbMergeWithConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_merge_with",
-        argNames: ["aabb", "other"],
+        argNames: ["aabbId", "otherId"],
       );
 
-  RwLockBvh bvhNew({required List<RwLockAabb> aabbs, dynamic hint}) {
-    var arg0 = _platform.api2wire_list_RwLockAabb(aabbs);
+  int bvhNew({required Uint64List aabbs, dynamic hint}) {
+    var arg0 = _platform.api2wire_uint_64_list(aabbs);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_new(arg0),
-      parseSuccessData: _wire2api_RwLockBvh,
+      parseSuccessData: _wire2api_u64,
       constMeta: kBvhNewConstMeta,
       argValues: [aabbs],
       hint: hint,
@@ -475,12 +450,11 @@ class NativeImpl implements Native {
         argNames: ["aabbs"],
       );
 
-  Future<RwLockBvh> bvhNewAsync(
-      {required List<RwLockAabb> aabbs, dynamic hint}) {
-    var arg0 = _platform.api2wire_list_RwLockAabb(aabbs);
+  Future<int> bvhNewAsync({required Uint64List aabbs, dynamic hint}) {
+    var arg0 = _platform.api2wire_uint_64_list(aabbs);
     return _platform.executeNormal(FlutterRustBridgeTask(
       callFfi: (port_) => _platform.inner.wire_bvh_new_async(port_, arg0),
-      parseSuccessData: _wire2api_RwLockBvh,
+      parseSuccessData: _wire2api_u64,
       constMeta: kBvhNewAsyncConstMeta,
       argValues: [aabbs],
       hint: hint,
@@ -493,15 +467,112 @@ class NativeImpl implements Native {
         argNames: ["aabbs"],
       );
 
+  FlatBVH bvhFlatten({required int bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(bvhId);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_bvh_flatten(arg0),
+      parseSuccessData: _wire2api_flat_bvh,
+      constMeta: kBvhFlattenConstMeta,
+      argValues: [bvhId],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhFlattenConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_flatten",
+        argNames: ["bvhId"],
+      );
+
+  Future<FlatBVH> bvhFlattenAsync({required int bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(bvhId);
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) => _platform.inner.wire_bvh_flatten_async(port_, arg0),
+      parseSuccessData: _wire2api_flat_bvh,
+      constMeta: kBvhFlattenAsyncConstMeta,
+      argValues: [bvhId],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhFlattenAsyncConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_flatten_async",
+        argNames: ["bvhId"],
+      );
+
+  int bvhDepth({required int bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(bvhId);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_bvh_depth(arg0),
+      parseSuccessData: _wire2api_u64,
+      constMeta: kBvhDepthConstMeta,
+      argValues: [bvhId],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhDepthConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_depth",
+        argNames: ["bvhId"],
+      );
+
+  Future<int> bvhDepthAsync({required int bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(bvhId);
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) => _platform.inner.wire_bvh_depth_async(port_, arg0),
+      parseSuccessData: _wire2api_u64,
+      constMeta: kBvhDepthAsyncConstMeta,
+      argValues: [bvhId],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhDepthAsyncConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_depth_async",
+        argNames: ["bvhId"],
+      );
+
+  String bvhPrint({required int bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(bvhId);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_bvh_print(arg0),
+      parseSuccessData: _wire2api_String,
+      constMeta: kBvhPrintConstMeta,
+      argValues: [bvhId],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhPrintConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_print",
+        argNames: ["bvhId"],
+      );
+
+  Future<String> bvhPrintAsync({required int bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(bvhId);
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) => _platform.inner.wire_bvh_print_async(port_, arg0),
+      parseSuccessData: _wire2api_String,
+      constMeta: kBvhPrintAsyncConstMeta,
+      argValues: [bvhId],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhPrintAsyncConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_print_async",
+        argNames: ["bvhId"],
+      );
+
   DropFnType get dropOpaqueRwLockAabb => _platform.inner.drop_opaque_RwLockAabb;
   ShareFnType get shareOpaqueRwLockAabb =>
       _platform.inner.share_opaque_RwLockAabb;
   OpaqueTypeFinalizer get RwLockAabbFinalizer => _platform.RwLockAabbFinalizer;
-
-  DropFnType get dropOpaqueRwLockBvh => _platform.inner.drop_opaque_RwLockBvh;
-  ShareFnType get shareOpaqueRwLockBvh =>
-      _platform.inner.share_opaque_RwLockBvh;
-  OpaqueTypeFinalizer get RwLockBvhFinalizer => _platform.RwLockBvhFinalizer;
 
   void dispose() {
     _platform.dispose();
@@ -510,10 +581,6 @@ class NativeImpl implements Native {
 
   RwLockAabb _wire2api_RwLockAabb(dynamic raw) {
     return RwLockAabb.fromRaw(raw[0], raw[1], this);
-  }
-
-  RwLockBvh _wire2api_RwLockBvh(dynamic raw) {
-    return RwLockBvh.fromRaw(raw[0], raw[1], this);
   }
 
   String _wire2api_String(dynamic raw) {
@@ -528,12 +595,21 @@ class NativeImpl implements Native {
     return raw as double;
   }
 
-  Float64List _wire2api_float_64_list(dynamic raw) {
-    return raw as Float64List;
+  FlatBVH _wire2api_flat_bvh(dynamic raw) {
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return FlatBVH(
+      minX: _wire2api_float_64_list(arr[0]),
+      minY: _wire2api_float_64_list(arr[1]),
+      maxX: _wire2api_float_64_list(arr[2]),
+      maxY: _wire2api_float_64_list(arr[3]),
+      depth: _wire2api_uint_64_list(arr[4]),
+    );
   }
 
-  List<RwLockAabb> _wire2api_list_RwLockAabb(dynamic raw) {
-    return (raw as List<dynamic>).map(_wire2api_RwLockAabb).toList();
+  Float64List _wire2api_float_64_list(dynamic raw) {
+    return raw as Float64List;
   }
 
   int _wire2api_u64(dynamic raw) {
@@ -550,6 +626,10 @@ class NativeImpl implements Native {
 
   Uint8List _wire2api_uint_8_list(dynamic raw) {
     return raw as Uint8List;
+  }
+
+  void _wire2api_unit(dynamic raw) {
+    return;
   }
 }
 

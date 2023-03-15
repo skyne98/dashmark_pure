@@ -19,6 +19,8 @@ use std::sync::Arc;
 
 // Section: imports
 
+use crate::flat_bvh::FlatBVH;
+
 // Section: wire functions
 
 fn wire_say_hello_async_impl(port_: MessagePort) {
@@ -110,32 +112,7 @@ fn wire_aabb_new_bulk_impl(
         },
     )
 }
-fn wire_aabb_new_bulk_benchmark_impl(
-    min_xs: impl Wire2Api<Vec<f64>> + UnwindSafe,
-    min_ys: impl Wire2Api<Vec<f64>> + UnwindSafe,
-    max_xs: impl Wire2Api<Vec<f64>> + UnwindSafe,
-    max_ys: impl Wire2Api<Vec<f64>> + UnwindSafe,
-) -> support::WireSyncReturn {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
-        WrapInfo {
-            debug_name: "aabb_new_bulk_benchmark",
-            port: None,
-            mode: FfiCallMode::Sync,
-        },
-        move || {
-            let api_min_xs = min_xs.wire2api();
-            let api_min_ys = min_ys.wire2api();
-            let api_max_xs = max_xs.wire2api();
-            let api_max_ys = max_ys.wire2api();
-            Ok(aabb_new_bulk_benchmark(
-                api_min_xs, api_min_ys, api_max_xs, api_max_ys,
-            ))
-        },
-    )
-}
-fn wire_aabb_min_impl(
-    aabb: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-) -> support::WireSyncReturn {
+fn wire_aabb_min_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_min",
@@ -143,14 +120,12 @@ fn wire_aabb_min_impl(
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb = aabb.wire2api();
-            Ok(aabb_min(api_aabb))
+            let api_aabb_id = aabb_id.wire2api();
+            Ok(aabb_min(api_aabb_id))
         },
     )
 }
-fn wire_aabb_max_impl(
-    aabb: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-) -> support::WireSyncReturn {
+fn wire_aabb_max_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_max",
@@ -158,14 +133,12 @@ fn wire_aabb_max_impl(
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb = aabb.wire2api();
-            Ok(aabb_max(api_aabb))
+            let api_aabb_id = aabb_id.wire2api();
+            Ok(aabb_max(api_aabb_id))
         },
     )
 }
-fn wire_aabb_size_impl(
-    aabb: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-) -> support::WireSyncReturn {
+fn wire_aabb_size_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_size",
@@ -173,14 +146,12 @@ fn wire_aabb_size_impl(
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb = aabb.wire2api();
-            Ok(aabb_size(api_aabb))
+            let api_aabb_id = aabb_id.wire2api();
+            Ok(aabb_size(api_aabb_id))
         },
     )
 }
-fn wire_aabb_center_impl(
-    aabb: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-) -> support::WireSyncReturn {
+fn wire_aabb_center_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_center",
@@ -188,30 +159,30 @@ fn wire_aabb_center_impl(
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb = aabb.wire2api();
-            Ok(aabb_center(api_aabb))
+            let api_aabb_id = aabb_id.wire2api();
+            Ok(aabb_center(api_aabb_id))
         },
     )
 }
-fn wire_aabb_intersects_impl(
-    aabb_left: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-    aabb_right: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
+fn wire_aabb_intersects_point_impl(
+    aabb_left_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb_right_id: impl Wire2Api<u64> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
-            debug_name: "aabb_intersects",
+            debug_name: "aabb_intersects_point",
             port: None,
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb_left = aabb_left.wire2api();
-            let api_aabb_right = aabb_right.wire2api();
-            Ok(aabb_intersects(api_aabb_left, api_aabb_right))
+            let api_aabb_left_id = aabb_left_id.wire2api();
+            let api_aabb_right_id = aabb_right_id.wire2api();
+            Ok(aabb_intersects_point(api_aabb_left_id, api_aabb_right_id))
         },
     )
 }
 fn wire_aabb_contains_impl(
-    aabb: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
+    aabb_id: impl Wire2Api<u64> + UnwindSafe,
     point: impl Wire2Api<Vec<f64>> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
@@ -221,15 +192,15 @@ fn wire_aabb_contains_impl(
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb = aabb.wire2api();
+            let api_aabb_id = aabb_id.wire2api();
             let api_point = point.wire2api();
-            Ok(aabb_contains(api_aabb, api_point))
+            Ok(aabb_contains(api_aabb_id, api_point))
         },
     )
 }
 fn wire_aabb_contains_aabb_impl(
-    aabb_left: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-    aabb_right: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
+    aabb_left_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb_right_id: impl Wire2Api<u64> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -238,15 +209,15 @@ fn wire_aabb_contains_aabb_impl(
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb_left = aabb_left.wire2api();
-            let api_aabb_right = aabb_right.wire2api();
-            Ok(aabb_contains_aabb(api_aabb_left, api_aabb_right))
+            let api_aabb_left_id = aabb_left_id.wire2api();
+            let api_aabb_right_id = aabb_right_id.wire2api();
+            Ok(aabb_contains_aabb(api_aabb_left_id, api_aabb_right_id))
         },
     )
 }
 fn wire_aabb_merge_impl(
-    aabb_left: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-    aabb_right: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
+    aabb_left_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb_right_id: impl Wire2Api<u64> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -255,32 +226,31 @@ fn wire_aabb_merge_impl(
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb_left = aabb_left.wire2api();
-            let api_aabb_right = aabb_right.wire2api();
-            Ok(aabb_merge(api_aabb_left, api_aabb_right))
+            let api_aabb_left_id = aabb_left_id.wire2api();
+            let api_aabb_right_id = aabb_right_id.wire2api();
+            Ok(aabb_merge(api_aabb_left_id, api_aabb_right_id))
         },
     )
 }
 fn wire_aabb_merge_with_impl(
-    aabb: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-    other: impl Wire2Api<RustOpaque<RwLock<AABB>>> + UnwindSafe,
-) -> support::WireSyncReturn {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+    port_: MessagePort,
+    aabb_id: impl Wire2Api<u64> + UnwindSafe,
+    other_id: impl Wire2Api<u64> + UnwindSafe,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "aabb_merge_with",
-            port: None,
-            mode: FfiCallMode::Sync,
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
         },
         move || {
-            let api_aabb = aabb.wire2api();
-            let api_other = other.wire2api();
-            Ok(aabb_merge_with(api_aabb, api_other))
+            let api_aabb_id = aabb_id.wire2api();
+            let api_other_id = other_id.wire2api();
+            move |task_callback| Ok(aabb_merge_with(api_aabb_id, api_other_id))
         },
     )
 }
-fn wire_bvh_new_impl(
-    aabbs: impl Wire2Api<Vec<RustOpaque<RwLock<AABB>>>> + UnwindSafe,
-) -> support::WireSyncReturn {
+fn wire_bvh_new_impl(aabbs: impl Wire2Api<Vec<u64>> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "bvh_new",
@@ -293,10 +263,7 @@ fn wire_bvh_new_impl(
         },
     )
 }
-fn wire_bvh_new_async_impl(
-    port_: MessagePort,
-    aabbs: impl Wire2Api<Vec<RustOpaque<RwLock<AABB>>>> + UnwindSafe,
-) {
+fn wire_bvh_new_async_impl(port_: MessagePort, aabbs: impl Wire2Api<Vec<u64>> + UnwindSafe) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "bvh_new_async",
@@ -306,6 +273,84 @@ fn wire_bvh_new_async_impl(
         move || {
             let api_aabbs = aabbs.wire2api();
             move |task_callback| Ok(bvh_new_async(api_aabbs))
+        },
+    )
+}
+fn wire_bvh_flatten_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_flatten",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            Ok(bvh_flatten(api_bvh_id))
+        },
+    )
+}
+fn wire_bvh_flatten_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + UnwindSafe) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "bvh_flatten_async",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            move |task_callback| Ok(bvh_flatten_async(api_bvh_id))
+        },
+    )
+}
+fn wire_bvh_depth_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_depth",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            Ok(bvh_depth(api_bvh_id))
+        },
+    )
+}
+fn wire_bvh_depth_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + UnwindSafe) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "bvh_depth_async",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            move |task_callback| Ok(bvh_depth_async(api_bvh_id))
+        },
+    )
+}
+fn wire_bvh_print_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_print",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            Ok(bvh_print(api_bvh_id))
+        },
+    )
+}
+fn wire_bvh_print_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + UnwindSafe) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "bvh_print_async",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            move |task_callback| Ok(bvh_print_async(api_bvh_id))
         },
     )
 }
@@ -331,14 +376,33 @@ where
         (!self.is_null()).then(|| self.wire2api())
     }
 }
-
 impl Wire2Api<f64> for f64 {
     fn wire2api(self) -> f64 {
         self
     }
 }
 
+impl Wire2Api<u64> for u64 {
+    fn wire2api(self) -> u64 {
+        self
+    }
+}
+
 // Section: impl IntoDart
+
+impl support::IntoDart for FlatBVH {
+    fn into_dart(self) -> support::DartAbi {
+        vec![
+            self.min_x.into_dart(),
+            self.min_y.into_dart(),
+            self.max_x.into_dart(),
+            self.max_y.into_dart(),
+            self.depth.into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl support::IntoDartExceptPrimitive for FlatBVH {}
 
 // Section: executor
 

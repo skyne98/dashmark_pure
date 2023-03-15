@@ -16,13 +16,6 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
 // Section: api2wire
 
   @protected
-  wire_RwLockAabb api2wire_RwLockAabb(RwLockAabb raw) {
-    final ptr = inner.new_RwLockAabb();
-    _api_fill_to_wire_RwLockAabb(raw, ptr);
-    return ptr;
-  }
-
-  @protected
   ffi.Pointer<wire_float_64_list> api2wire_float_64_list(Float64List raw) {
     final ans = inner.new_float_64_list_0(raw.length);
     ans.ref.ptr.asTypedList(raw.length).setAll(0, raw);
@@ -30,12 +23,14 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
   }
 
   @protected
-  ffi.Pointer<wire_list_RwLockAabb> api2wire_list_RwLockAabb(
-      List<RwLockAabb> raw) {
-    final ans = inner.new_list_RwLockAabb_0(raw.length);
-    for (var i = 0; i < raw.length; ++i) {
-      _api_fill_to_wire_RwLockAabb(raw[i], ans.ref.ptr[i]);
-    }
+  int api2wire_u64(int raw) {
+    return raw;
+  }
+
+  @protected
+  ffi.Pointer<wire_uint_64_list> api2wire_uint_64_list(Uint64List raw) {
+    final ans = inner.new_uint_64_list_0(raw.length);
+    ans.ref.ptr.asTypedList(raw.length).setAll(0, raw.inner);
     return ans;
   }
 // Section: finalizer
@@ -43,15 +38,7 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
   late final OpaqueTypeFinalizer _RwLockAabbFinalizer =
       OpaqueTypeFinalizer(inner._drop_opaque_RwLockAabbPtr);
   OpaqueTypeFinalizer get RwLockAabbFinalizer => _RwLockAabbFinalizer;
-  late final OpaqueTypeFinalizer _RwLockBvhFinalizer =
-      OpaqueTypeFinalizer(inner._drop_opaque_RwLockBvhPtr);
-  OpaqueTypeFinalizer get RwLockBvhFinalizer => _RwLockBvhFinalizer;
 // Section: api_fill_to_wire
-
-  void _api_fill_to_wire_RwLockAabb(
-      RwLockAabb apiObj, wire_RwLockAabb wireObj) {
-    wireObj.ptr = apiObj.shareOrMove();
-  }
 }
 
 // ignore_for_file: camel_case_types, non_constant_identifier_names, avoid_positional_boolean_parameters, annotate_overrides, constant_identifier_names
@@ -250,180 +237,148 @@ class NativeWire implements FlutterRustBridgeWireBase {
           ffi.Pointer<wire_float_64_list>,
           ffi.Pointer<wire_float_64_list>)>();
 
-  WireSyncReturn wire_aabb_new_bulk_benchmark(
-    ffi.Pointer<wire_float_64_list> min_xs,
-    ffi.Pointer<wire_float_64_list> min_ys,
-    ffi.Pointer<wire_float_64_list> max_xs,
-    ffi.Pointer<wire_float_64_list> max_ys,
-  ) {
-    return _wire_aabb_new_bulk_benchmark(
-      min_xs,
-      min_ys,
-      max_xs,
-      max_ys,
-    );
-  }
-
-  late final _wire_aabb_new_bulk_benchmarkPtr = _lookup<
-          ffi.NativeFunction<
-              WireSyncReturn Function(
-                  ffi.Pointer<wire_float_64_list>,
-                  ffi.Pointer<wire_float_64_list>,
-                  ffi.Pointer<wire_float_64_list>,
-                  ffi.Pointer<wire_float_64_list>)>>(
-      'wire_aabb_new_bulk_benchmark');
-  late final _wire_aabb_new_bulk_benchmark =
-      _wire_aabb_new_bulk_benchmarkPtr.asFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_float_64_list>,
-              ffi.Pointer<wire_float_64_list>,
-              ffi.Pointer<wire_float_64_list>,
-              ffi.Pointer<wire_float_64_list>)>();
-
   WireSyncReturn wire_aabb_min(
-    wire_RwLockAabb aabb,
+    int aabb_id,
   ) {
     return _wire_aabb_min(
-      aabb,
+      aabb_id,
     );
   }
 
   late final _wire_aabb_minPtr =
-      _lookup<ffi.NativeFunction<WireSyncReturn Function(wire_RwLockAabb)>>(
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
           'wire_aabb_min');
   late final _wire_aabb_min =
-      _wire_aabb_minPtr.asFunction<WireSyncReturn Function(wire_RwLockAabb)>();
+      _wire_aabb_minPtr.asFunction<WireSyncReturn Function(int)>();
 
   WireSyncReturn wire_aabb_max(
-    wire_RwLockAabb aabb,
+    int aabb_id,
   ) {
     return _wire_aabb_max(
-      aabb,
+      aabb_id,
     );
   }
 
   late final _wire_aabb_maxPtr =
-      _lookup<ffi.NativeFunction<WireSyncReturn Function(wire_RwLockAabb)>>(
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
           'wire_aabb_max');
   late final _wire_aabb_max =
-      _wire_aabb_maxPtr.asFunction<WireSyncReturn Function(wire_RwLockAabb)>();
+      _wire_aabb_maxPtr.asFunction<WireSyncReturn Function(int)>();
 
   WireSyncReturn wire_aabb_size(
-    wire_RwLockAabb aabb,
+    int aabb_id,
   ) {
     return _wire_aabb_size(
-      aabb,
+      aabb_id,
     );
   }
 
   late final _wire_aabb_sizePtr =
-      _lookup<ffi.NativeFunction<WireSyncReturn Function(wire_RwLockAabb)>>(
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
           'wire_aabb_size');
   late final _wire_aabb_size =
-      _wire_aabb_sizePtr.asFunction<WireSyncReturn Function(wire_RwLockAabb)>();
+      _wire_aabb_sizePtr.asFunction<WireSyncReturn Function(int)>();
 
   WireSyncReturn wire_aabb_center(
-    wire_RwLockAabb aabb,
+    int aabb_id,
   ) {
     return _wire_aabb_center(
-      aabb,
+      aabb_id,
     );
   }
 
   late final _wire_aabb_centerPtr =
-      _lookup<ffi.NativeFunction<WireSyncReturn Function(wire_RwLockAabb)>>(
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
           'wire_aabb_center');
-  late final _wire_aabb_center = _wire_aabb_centerPtr
-      .asFunction<WireSyncReturn Function(wire_RwLockAabb)>();
+  late final _wire_aabb_center =
+      _wire_aabb_centerPtr.asFunction<WireSyncReturn Function(int)>();
 
-  WireSyncReturn wire_aabb_intersects(
-    wire_RwLockAabb aabb_left,
-    wire_RwLockAabb aabb_right,
+  WireSyncReturn wire_aabb_intersects_point(
+    int aabb_left_id,
+    int aabb_right_id,
   ) {
-    return _wire_aabb_intersects(
-      aabb_left,
-      aabb_right,
+    return _wire_aabb_intersects_point(
+      aabb_left_id,
+      aabb_right_id,
     );
   }
 
-  late final _wire_aabb_intersectsPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(
-              wire_RwLockAabb, wire_RwLockAabb)>>('wire_aabb_intersects');
-  late final _wire_aabb_intersects = _wire_aabb_intersectsPtr
-      .asFunction<WireSyncReturn Function(wire_RwLockAabb, wire_RwLockAabb)>();
+  late final _wire_aabb_intersects_pointPtr = _lookup<
+          ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64, ffi.Uint64)>>(
+      'wire_aabb_intersects_point');
+  late final _wire_aabb_intersects_point = _wire_aabb_intersects_pointPtr
+      .asFunction<WireSyncReturn Function(int, int)>();
 
   WireSyncReturn wire_aabb_contains(
-    wire_RwLockAabb aabb,
+    int aabb_id,
     ffi.Pointer<wire_float_64_list> point,
   ) {
     return _wire_aabb_contains(
-      aabb,
+      aabb_id,
       point,
     );
   }
 
   late final _wire_aabb_containsPtr = _lookup<
       ffi.NativeFunction<
-          WireSyncReturn Function(wire_RwLockAabb,
+          WireSyncReturn Function(ffi.Uint64,
               ffi.Pointer<wire_float_64_list>)>>('wire_aabb_contains');
   late final _wire_aabb_contains = _wire_aabb_containsPtr.asFunction<
-      WireSyncReturn Function(
-          wire_RwLockAabb, ffi.Pointer<wire_float_64_list>)>();
+      WireSyncReturn Function(int, ffi.Pointer<wire_float_64_list>)>();
 
   WireSyncReturn wire_aabb_contains_aabb(
-    wire_RwLockAabb aabb_left,
-    wire_RwLockAabb aabb_right,
+    int aabb_left_id,
+    int aabb_right_id,
   ) {
     return _wire_aabb_contains_aabb(
-      aabb_left,
-      aabb_right,
+      aabb_left_id,
+      aabb_right_id,
     );
   }
 
   late final _wire_aabb_contains_aabbPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(
-              wire_RwLockAabb, wire_RwLockAabb)>>('wire_aabb_contains_aabb');
+          ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64, ffi.Uint64)>>(
+      'wire_aabb_contains_aabb');
   late final _wire_aabb_contains_aabb = _wire_aabb_contains_aabbPtr
-      .asFunction<WireSyncReturn Function(wire_RwLockAabb, wire_RwLockAabb)>();
+      .asFunction<WireSyncReturn Function(int, int)>();
 
   WireSyncReturn wire_aabb_merge(
-    wire_RwLockAabb aabb_left,
-    wire_RwLockAabb aabb_right,
+    int aabb_left_id,
+    int aabb_right_id,
   ) {
     return _wire_aabb_merge(
-      aabb_left,
-      aabb_right,
+      aabb_left_id,
+      aabb_right_id,
     );
   }
 
   late final _wire_aabb_mergePtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(
-              wire_RwLockAabb, wire_RwLockAabb)>>('wire_aabb_merge');
-  late final _wire_aabb_merge = _wire_aabb_mergePtr
-      .asFunction<WireSyncReturn Function(wire_RwLockAabb, wire_RwLockAabb)>();
+          ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64, ffi.Uint64)>>(
+      'wire_aabb_merge');
+  late final _wire_aabb_merge =
+      _wire_aabb_mergePtr.asFunction<WireSyncReturn Function(int, int)>();
 
-  WireSyncReturn wire_aabb_merge_with(
-    wire_RwLockAabb aabb,
-    wire_RwLockAabb other,
+  void wire_aabb_merge_with(
+    int port_,
+    int aabb_id,
+    int other_id,
   ) {
     return _wire_aabb_merge_with(
-      aabb,
-      other,
+      port_,
+      aabb_id,
+      other_id,
     );
   }
 
   late final _wire_aabb_merge_withPtr = _lookup<
       ffi.NativeFunction<
-          WireSyncReturn Function(
-              wire_RwLockAabb, wire_RwLockAabb)>>('wire_aabb_merge_with');
-  late final _wire_aabb_merge_with = _wire_aabb_merge_withPtr
-      .asFunction<WireSyncReturn Function(wire_RwLockAabb, wire_RwLockAabb)>();
+          ffi.Void Function(
+              ffi.Int64, ffi.Uint64, ffi.Uint64)>>('wire_aabb_merge_with');
+  late final _wire_aabb_merge_with =
+      _wire_aabb_merge_withPtr.asFunction<void Function(int, int, int)>();
 
   WireSyncReturn wire_bvh_new(
-    ffi.Pointer<wire_list_RwLockAabb> aabbs,
+    ffi.Pointer<wire_uint_64_list> aabbs,
   ) {
     return _wire_bvh_new(
       aabbs,
@@ -433,13 +388,13 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_bvh_newPtr = _lookup<
       ffi.NativeFunction<
           WireSyncReturn Function(
-              ffi.Pointer<wire_list_RwLockAabb>)>>('wire_bvh_new');
+              ffi.Pointer<wire_uint_64_list>)>>('wire_bvh_new');
   late final _wire_bvh_new = _wire_bvh_newPtr
-      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_list_RwLockAabb>)>();
+      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_uint_64_list>)>();
 
   void wire_bvh_new_async(
     int port_,
-    ffi.Pointer<wire_list_RwLockAabb> aabbs,
+    ffi.Pointer<wire_uint_64_list> aabbs,
   ) {
     return _wire_bvh_new_async(
       port_,
@@ -450,18 +405,99 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_bvh_new_asyncPtr = _lookup<
       ffi.NativeFunction<
           ffi.Void Function(ffi.Int64,
-              ffi.Pointer<wire_list_RwLockAabb>)>>('wire_bvh_new_async');
+              ffi.Pointer<wire_uint_64_list>)>>('wire_bvh_new_async');
   late final _wire_bvh_new_async = _wire_bvh_new_asyncPtr
-      .asFunction<void Function(int, ffi.Pointer<wire_list_RwLockAabb>)>();
+      .asFunction<void Function(int, ffi.Pointer<wire_uint_64_list>)>();
 
-  wire_RwLockAabb new_RwLockAabb() {
-    return _new_RwLockAabb();
+  WireSyncReturn wire_bvh_flatten(
+    int bvh_id,
+  ) {
+    return _wire_bvh_flatten(
+      bvh_id,
+    );
   }
 
-  late final _new_RwLockAabbPtr =
-      _lookup<ffi.NativeFunction<wire_RwLockAabb Function()>>('new_RwLockAabb');
-  late final _new_RwLockAabb =
-      _new_RwLockAabbPtr.asFunction<wire_RwLockAabb Function()>();
+  late final _wire_bvh_flattenPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
+          'wire_bvh_flatten');
+  late final _wire_bvh_flatten =
+      _wire_bvh_flattenPtr.asFunction<WireSyncReturn Function(int)>();
+
+  void wire_bvh_flatten_async(
+    int port_,
+    int bvh_id,
+  ) {
+    return _wire_bvh_flatten_async(
+      port_,
+      bvh_id,
+    );
+  }
+
+  late final _wire_bvh_flatten_asyncPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Uint64)>>(
+          'wire_bvh_flatten_async');
+  late final _wire_bvh_flatten_async =
+      _wire_bvh_flatten_asyncPtr.asFunction<void Function(int, int)>();
+
+  WireSyncReturn wire_bvh_depth(
+    int bvh_id,
+  ) {
+    return _wire_bvh_depth(
+      bvh_id,
+    );
+  }
+
+  late final _wire_bvh_depthPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
+          'wire_bvh_depth');
+  late final _wire_bvh_depth =
+      _wire_bvh_depthPtr.asFunction<WireSyncReturn Function(int)>();
+
+  void wire_bvh_depth_async(
+    int port_,
+    int bvh_id,
+  ) {
+    return _wire_bvh_depth_async(
+      port_,
+      bvh_id,
+    );
+  }
+
+  late final _wire_bvh_depth_asyncPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Uint64)>>(
+          'wire_bvh_depth_async');
+  late final _wire_bvh_depth_async =
+      _wire_bvh_depth_asyncPtr.asFunction<void Function(int, int)>();
+
+  WireSyncReturn wire_bvh_print(
+    int bvh_id,
+  ) {
+    return _wire_bvh_print(
+      bvh_id,
+    );
+  }
+
+  late final _wire_bvh_printPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
+          'wire_bvh_print');
+  late final _wire_bvh_print =
+      _wire_bvh_printPtr.asFunction<WireSyncReturn Function(int)>();
+
+  void wire_bvh_print_async(
+    int port_,
+    int bvh_id,
+  ) {
+    return _wire_bvh_print_async(
+      port_,
+      bvh_id,
+    );
+  }
+
+  late final _wire_bvh_print_asyncPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Uint64)>>(
+          'wire_bvh_print_async');
+  late final _wire_bvh_print_async =
+      _wire_bvh_print_asyncPtr.asFunction<void Function(int, int)>();
 
   ffi.Pointer<wire_float_64_list> new_float_64_list_0(
     int len,
@@ -478,20 +514,20 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _new_float_64_list_0 = _new_float_64_list_0Ptr
       .asFunction<ffi.Pointer<wire_float_64_list> Function(int)>();
 
-  ffi.Pointer<wire_list_RwLockAabb> new_list_RwLockAabb_0(
+  ffi.Pointer<wire_uint_64_list> new_uint_64_list_0(
     int len,
   ) {
-    return _new_list_RwLockAabb_0(
+    return _new_uint_64_list_0(
       len,
     );
   }
 
-  late final _new_list_RwLockAabb_0Ptr = _lookup<
+  late final _new_uint_64_list_0Ptr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<wire_list_RwLockAabb> Function(
-              ffi.Int32)>>('new_list_RwLockAabb_0');
-  late final _new_list_RwLockAabb_0 = _new_list_RwLockAabb_0Ptr
-      .asFunction<ffi.Pointer<wire_list_RwLockAabb> Function(int)>();
+          ffi.Pointer<wire_uint_64_list> Function(
+              ffi.Int32)>>('new_uint_64_list_0');
+  late final _new_uint_64_list_0 = _new_uint_64_list_0Ptr
+      .asFunction<ffi.Pointer<wire_uint_64_list> Function(int)>();
 
   void drop_opaque_RwLockAabb(
     ffi.Pointer<ffi.Void> ptr,
@@ -522,35 +558,6 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _share_opaque_RwLockAabb = _share_opaque_RwLockAabbPtr
       .asFunction<ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.Void>)>();
 
-  void drop_opaque_RwLockBvh(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _drop_opaque_RwLockBvh(
-      ptr,
-    );
-  }
-
-  late final _drop_opaque_RwLockBvhPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-          'drop_opaque_RwLockBvh');
-  late final _drop_opaque_RwLockBvh = _drop_opaque_RwLockBvhPtr
-      .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
-
-  ffi.Pointer<ffi.Void> share_opaque_RwLockBvh(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _share_opaque_RwLockBvh(
-      ptr,
-    );
-  }
-
-  late final _share_opaque_RwLockBvhPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<ffi.Void> Function(
-              ffi.Pointer<ffi.Void>)>>('share_opaque_RwLockBvh');
-  late final _share_opaque_RwLockBvh = _share_opaque_RwLockBvhPtr
-      .asFunction<ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.Void>)>();
-
   void free_WireSyncReturn(
     WireSyncReturn ptr,
   ) {
@@ -575,12 +582,8 @@ class wire_float_64_list extends ffi.Struct {
   external int len;
 }
 
-class wire_RwLockAabb extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> ptr;
-}
-
-class wire_list_RwLockAabb extends ffi.Struct {
-  external ffi.Pointer<wire_RwLockAabb> ptr;
+class wire_uint_64_list extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint64> ptr;
 
   @ffi.Int32()
   external int len;

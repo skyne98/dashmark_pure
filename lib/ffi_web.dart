@@ -7,6 +7,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'bridge_generated.web.dart';
 
+import 'bridge_generated.dart';
+
+// Re-export the bridge so it is only necessary to import this file.
+export 'bridge_generated.dart';
+
 const root = 'pkg/native';
 
 Future<WasmModule> _initModule() {

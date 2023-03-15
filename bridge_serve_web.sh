@@ -1,1 +1,1 @@
-dart run flutter_rust_bridge:serve
+dart run flutter_rust_bridge:serve --release

@@ -19,27 +19,24 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
 // Section: api2wire
 
   @protected
-  Object api2wire_RwLockAabb(RwLockAabb raw) {
-    return raw.shareOrMove();
-  }
-
-  @protected
   Float64List api2wire_float_64_list(Float64List raw) {
     return raw;
   }
 
   @protected
-  List<dynamic> api2wire_list_RwLockAabb(List<RwLockAabb> raw) {
-    return raw.map(api2wire_RwLockAabb).toList();
+  Object api2wire_u64(int raw) {
+    return castNativeBigInt(raw);
+  }
+
+  @protected
+  Object /* BigInt64Array */ api2wire_uint_64_list(Uint64List raw) {
+    return raw.inner;
   }
 // Section: finalizer
 
   late final Finalizer<PlatformPointer> _RwLockAabbFinalizer =
       Finalizer<PlatformPointer>(inner.drop_opaque_RwLockAabb);
   Finalizer<PlatformPointer> get RwLockAabbFinalizer => _RwLockAabbFinalizer;
-  late final Finalizer<PlatformPointer> _RwLockBvhFinalizer =
-      Finalizer<PlatformPointer>(inner.drop_opaque_RwLockBvh);
-  Finalizer<PlatformPointer> get RwLockBvhFinalizer => _RwLockBvhFinalizer;
 }
 
 // Section: WASM wire module
@@ -63,46 +60,58 @@ class NativeWasmModule implements WasmModule {
   external dynamic /* Object */ wire_aabb_new(
       double min_x, double min_y, double max_x, double max_y);
 
-  external dynamic /* List<dynamic> */ wire_aabb_new_bulk(Float64List min_xs,
-      Float64List min_ys, Float64List max_xs, Float64List max_ys);
+  external dynamic /* Object /* BigInt64Array */ */ wire_aabb_new_bulk(
+      Float64List min_xs,
+      Float64List min_ys,
+      Float64List max_xs,
+      Float64List max_ys);
 
-  external dynamic /* Object */ wire_aabb_new_bulk_benchmark(Float64List min_xs,
-      Float64List min_ys, Float64List max_xs, Float64List max_ys);
+  external dynamic /* Float64List */ wire_aabb_min(Object aabb_id);
 
-  external dynamic /* Float64List */ wire_aabb_min(Object aabb);
+  external dynamic /* Float64List */ wire_aabb_max(Object aabb_id);
 
-  external dynamic /* Float64List */ wire_aabb_max(Object aabb);
+  external dynamic /* Float64List */ wire_aabb_size(Object aabb_id);
 
-  external dynamic /* Float64List */ wire_aabb_size(Object aabb);
+  external dynamic /* Float64List */ wire_aabb_center(Object aabb_id);
 
-  external dynamic /* Float64List */ wire_aabb_center(Object aabb);
-
-  external dynamic /* bool */ wire_aabb_intersects(
-      Object aabb_left, Object aabb_right);
+  external dynamic /* bool */ wire_aabb_intersects_point(
+      Object aabb_left_id, Object aabb_right_id);
 
   external dynamic /* bool */ wire_aabb_contains(
-      Object aabb, Float64List point);
+      Object aabb_id, Float64List point);
 
   external dynamic /* bool */ wire_aabb_contains_aabb(
-      Object aabb_left, Object aabb_right);
+      Object aabb_left_id, Object aabb_right_id);
 
   external dynamic /* Object */ wire_aabb_merge(
-      Object aabb_left, Object aabb_right);
+      Object aabb_left_id, Object aabb_right_id);
 
-  external dynamic /* Object */ wire_aabb_merge_with(Object aabb, Object other);
+  external dynamic /* void */ wire_aabb_merge_with(
+      NativePortType port_, Object aabb_id, Object other_id);
 
-  external dynamic /* Object */ wire_bvh_new(List<dynamic> aabbs);
+  external dynamic /* Object */ wire_bvh_new(Object /* BigInt64Array */ aabbs);
 
   external dynamic /* void */ wire_bvh_new_async(
-      NativePortType port_, List<dynamic> aabbs);
+      NativePortType port_, Object /* BigInt64Array */ aabbs);
+
+  external dynamic /* List<dynamic> */ wire_bvh_flatten(Object bvh_id);
+
+  external dynamic /* void */ wire_bvh_flatten_async(
+      NativePortType port_, Object bvh_id);
+
+  external dynamic /* Object */ wire_bvh_depth(Object bvh_id);
+
+  external dynamic /* void */ wire_bvh_depth_async(
+      NativePortType port_, Object bvh_id);
+
+  external dynamic /* String */ wire_bvh_print(Object bvh_id);
+
+  external dynamic /* void */ wire_bvh_print_async(
+      NativePortType port_, Object bvh_id);
 
   external dynamic /*  */ drop_opaque_RwLockAabb(ptr);
 
   external int /* *const c_void */ share_opaque_RwLockAabb(ptr);
-
-  external dynamic /*  */ drop_opaque_RwLockBvh(ptr);
-
-  external int /* *const c_void */ share_opaque_RwLockBvh(ptr);
 }
 
 // Section: WASM wire connector
@@ -126,58 +135,72 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
           double min_x, double min_y, double max_x, double max_y) =>
       wasmModule.wire_aabb_new(min_x, min_y, max_x, max_y);
 
-  dynamic /* List<dynamic> */ wire_aabb_new_bulk(Float64List min_xs,
-          Float64List min_ys, Float64List max_xs, Float64List max_ys) =>
+  dynamic /* Object /* BigInt64Array */ */ wire_aabb_new_bulk(
+          Float64List min_xs,
+          Float64List min_ys,
+          Float64List max_xs,
+          Float64List max_ys) =>
       wasmModule.wire_aabb_new_bulk(min_xs, min_ys, max_xs, max_ys);
 
-  dynamic /* Object */ wire_aabb_new_bulk_benchmark(Float64List min_xs,
-          Float64List min_ys, Float64List max_xs, Float64List max_ys) =>
-      wasmModule.wire_aabb_new_bulk_benchmark(min_xs, min_ys, max_xs, max_ys);
+  dynamic /* Float64List */ wire_aabb_min(Object aabb_id) =>
+      wasmModule.wire_aabb_min(aabb_id);
 
-  dynamic /* Float64List */ wire_aabb_min(Object aabb) =>
-      wasmModule.wire_aabb_min(aabb);
+  dynamic /* Float64List */ wire_aabb_max(Object aabb_id) =>
+      wasmModule.wire_aabb_max(aabb_id);
 
-  dynamic /* Float64List */ wire_aabb_max(Object aabb) =>
-      wasmModule.wire_aabb_max(aabb);
+  dynamic /* Float64List */ wire_aabb_size(Object aabb_id) =>
+      wasmModule.wire_aabb_size(aabb_id);
 
-  dynamic /* Float64List */ wire_aabb_size(Object aabb) =>
-      wasmModule.wire_aabb_size(aabb);
+  dynamic /* Float64List */ wire_aabb_center(Object aabb_id) =>
+      wasmModule.wire_aabb_center(aabb_id);
 
-  dynamic /* Float64List */ wire_aabb_center(Object aabb) =>
-      wasmModule.wire_aabb_center(aabb);
+  dynamic /* bool */ wire_aabb_intersects_point(
+          Object aabb_left_id, Object aabb_right_id) =>
+      wasmModule.wire_aabb_intersects_point(aabb_left_id, aabb_right_id);
 
-  dynamic /* bool */ wire_aabb_intersects(
-          Object aabb_left, Object aabb_right) =>
-      wasmModule.wire_aabb_intersects(aabb_left, aabb_right);
-
-  dynamic /* bool */ wire_aabb_contains(Object aabb, Float64List point) =>
-      wasmModule.wire_aabb_contains(aabb, point);
+  dynamic /* bool */ wire_aabb_contains(Object aabb_id, Float64List point) =>
+      wasmModule.wire_aabb_contains(aabb_id, point);
 
   dynamic /* bool */ wire_aabb_contains_aabb(
-          Object aabb_left, Object aabb_right) =>
-      wasmModule.wire_aabb_contains_aabb(aabb_left, aabb_right);
+          Object aabb_left_id, Object aabb_right_id) =>
+      wasmModule.wire_aabb_contains_aabb(aabb_left_id, aabb_right_id);
 
-  dynamic /* Object */ wire_aabb_merge(Object aabb_left, Object aabb_right) =>
-      wasmModule.wire_aabb_merge(aabb_left, aabb_right);
+  dynamic /* Object */ wire_aabb_merge(
+          Object aabb_left_id, Object aabb_right_id) =>
+      wasmModule.wire_aabb_merge(aabb_left_id, aabb_right_id);
 
-  dynamic /* Object */ wire_aabb_merge_with(Object aabb, Object other) =>
-      wasmModule.wire_aabb_merge_with(aabb, other);
+  void wire_aabb_merge_with(
+          NativePortType port_, Object aabb_id, Object other_id) =>
+      wasmModule.wire_aabb_merge_with(port_, aabb_id, other_id);
 
-  dynamic /* Object */ wire_bvh_new(List<dynamic> aabbs) =>
+  dynamic /* Object */ wire_bvh_new(Object /* BigInt64Array */ aabbs) =>
       wasmModule.wire_bvh_new(aabbs);
 
-  void wire_bvh_new_async(NativePortType port_, List<dynamic> aabbs) =>
+  void wire_bvh_new_async(
+          NativePortType port_, Object /* BigInt64Array */ aabbs) =>
       wasmModule.wire_bvh_new_async(port_, aabbs);
+
+  dynamic /* List<dynamic> */ wire_bvh_flatten(Object bvh_id) =>
+      wasmModule.wire_bvh_flatten(bvh_id);
+
+  void wire_bvh_flatten_async(NativePortType port_, Object bvh_id) =>
+      wasmModule.wire_bvh_flatten_async(port_, bvh_id);
+
+  dynamic /* Object */ wire_bvh_depth(Object bvh_id) =>
+      wasmModule.wire_bvh_depth(bvh_id);
+
+  void wire_bvh_depth_async(NativePortType port_, Object bvh_id) =>
+      wasmModule.wire_bvh_depth_async(port_, bvh_id);
+
+  dynamic /* String */ wire_bvh_print(Object bvh_id) =>
+      wasmModule.wire_bvh_print(bvh_id);
+
+  void wire_bvh_print_async(NativePortType port_, Object bvh_id) =>
+      wasmModule.wire_bvh_print_async(port_, bvh_id);
 
   dynamic /*  */ drop_opaque_RwLockAabb(ptr) =>
       wasmModule.drop_opaque_RwLockAabb(ptr);
 
   int /* *const c_void */ share_opaque_RwLockAabb(ptr) =>
       wasmModule.share_opaque_RwLockAabb(ptr);
-
-  dynamic /*  */ drop_opaque_RwLockBvh(ptr) =>
-      wasmModule.drop_opaque_RwLockBvh(ptr);
-
-  int /* *const c_void */ share_opaque_RwLockBvh(ptr) =>
-      wasmModule.share_opaque_RwLockBvh(ptr);
 }

@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -75,7 +76,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
 
     // Test out the speed of generating morton codes
-    const gridSize = 1000000;
+    const gridSize = 10000;
     final gridSide = sqrt(gridSize);
     final valuesX = <double>[];
     for (var i = 0; i < gridSide; i++) {
@@ -102,7 +103,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
 
     // AABB
     final testAABB = api.aabbNew(minX: 0.0, minY: 0.0, maxX: 1.0, maxY: 1.0);
-    final center = api.aabbCenter(aabb: testAABB);
+    final center = api.aabbCenter(aabbId: testAABB);
     debugPrint('AABB center: ${center[0]}, ${center[1]}');
 
     final random = Random();
@@ -124,16 +125,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     final minYSFloat64List = Float64List.fromList(minYS);
     final maxXSFloat64List = Float64List.fromList(maxXS);
     final maxYSFloat64List = Float64List.fromList(maxYS);
-    stopwatch.reset();
-    stopwatch.start();
-    final aabbs_one_by_one = <RwLockAabb>[];
-    for (var i = 0; i < gridSize; i++) {
-      aabbs_one_by_one.add(api.aabbNew(
-          minX: minXS[i], minY: minYS[i], maxX: maxXS[i], maxY: maxYS[i]));
-    }
-    stopwatch.stop();
-    debugPrint(
-        'Generated $gridSize AABBs one by one in ${stopwatch.elapsedMilliseconds} ms');
+
     stopwatch.reset();
     stopwatch.start();
     final aabbs_bulk = api.aabbNewBulk(
@@ -145,42 +137,6 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     debugPrint(
         'Generated $gridSize AABBs in bulk in ${stopwatch.elapsedMilliseconds} ms');
 
-    // Test the internal benchmark
-    final benchmarkResult = api.aabbNewBulkBenchmark(
-        minXs: minXSFloat64List,
-        minYs: minYSFloat64List,
-        maxXs: maxXSFloat64List,
-        maxYs: maxYSFloat64List);
-    debugPrint('Benchmark result: $benchmarkResult ms');
-
-    // Make sure the two methods of generating AABBs are equivalent
-    for (var i = 0; i < gridSize; i++) {
-      final aabbOneByOne = aabbs_one_by_one[i];
-      final aabbBulk = aabbs_bulk[i];
-      final aabbOneByOneMin = api.aabbMin(aabb: aabbOneByOne);
-      final aabbOneByOneMax = api.aabbMax(aabb: aabbOneByOne);
-      final aabbBulkMin = api.aabbMin(aabb: aabbBulk);
-      final aabbBulkMax = api.aabbMax(aabb: aabbBulk);
-      if (aabbOneByOneMin[0] != aabbBulkMin[0] ||
-          aabbOneByOneMin[1] != aabbBulkMin[1] ||
-          aabbOneByOneMax[0] != aabbBulkMax[0] ||
-          aabbOneByOneMax[1] != aabbBulkMax[1]) {
-        debugPrint(
-            'AABBs are not equivalent at index $i ($aabbOneByOneMin, $aabbOneByOneMax) vs ($aabbBulkMin, $aabbBulkMax)');
-        break;
-      }
-    }
-
-    // Test out the speed of AABB intersection
-    stopwatch.reset();
-    stopwatch.start();
-    for (var i = 0; i < gridSize; i++) {
-      api.aabbIntersects(aabbLeft: aabbs_bulk[i], aabbRight: testAABB);
-    }
-    stopwatch.stop();
-    debugPrint(
-        'Tested $gridSize AABB intersections in ${stopwatch.elapsedMilliseconds} ms');
-
     // Test the speed of building a BVH
     stopwatch.reset();
     stopwatch.start();
@@ -188,6 +144,20 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     stopwatch.stop();
     debugPrint(
         'Built BVH with $gridSize AABBs in ${stopwatch.elapsedMilliseconds} ms');
+
+    // Flatten the BVH
+    stopwatch.reset();
+    stopwatch.start();
+    final flattened = api.bvhFlatten(bvhId: bvh);
+    stopwatch.stop();
+    debugPrint(
+        'Flattened BVH with $gridSize AABBs in ${stopwatch.elapsedMilliseconds} ms');
+
+    final deepestPath = api.bvhDepth(bvhId: bvh);
+    debugPrint('Deepest path: $deepestPath');
+
+    final printed = api.bvhPrint(bvhId: bvh);
+    debugPrint('BVH: $printed');
   }
 
   void pointerUpdate(details) {
