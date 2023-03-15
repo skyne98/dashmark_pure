@@ -34,9 +34,7 @@ impl BVH {
 
         let (xs, ys): (Vec<f64>, Vec<f64>) = aabbs.iter().map(|aabb| aabb.center()).unzip();
 
-        let morton_time = Instant::now();
         let morton_codes = morton_codes_async(xs.clone(), ys.clone());
-        println!("Morton codes computed in {:?}", morton_time.elapsed());
 
         let mut aabb_indices: Vec<usize> = (0..n).collect();
         aabb_indices.sort_unstable_by(|&a, &b| morton_codes[a].cmp(&morton_codes[b]));
