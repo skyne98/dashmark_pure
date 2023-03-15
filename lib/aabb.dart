@@ -3,13 +3,13 @@ import 'dart:typed_data';
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class AABB {
-  static final Finalizer<AABB> _finalizer =
-      Finalizer((aabb) => api.aabbDrop(aabbId: aabb.id));
+  static final Finalizer<int> _finalizer =
+      Finalizer((aabb) => api.aabbDrop(aabbId: aabb));
 
   final int id;
 
   AABB(this.id) {
-    _finalizer.attach(this, this);
+    _finalizer.attach(this, id);
   }
 
   // Factories

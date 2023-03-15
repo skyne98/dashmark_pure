@@ -6,13 +6,14 @@ import 'aabb.dart';
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class BVH {
-  static final Finalizer<BVH> _finalizer =
-      Finalizer((bvh) => api.bvhDrop(bvhId: bvh.id));
+  static final Finalizer<int> _finalizer =
+      Finalizer((bvh) => api.bvhDrop(bvhId: bvh));
 
   final int id;
+  List<AABB>? aabbs = [];
 
-  BVH(this.id) {
-    _finalizer.attach(this, this);
+  BVH(this.id, {this.aabbs}) {
+    _finalizer.attach(this, id);
   }
 
   // Factories
@@ -20,14 +21,14 @@ class BVH {
     final aabbIds = aabbs.map((aabb) => aabb.id).toList();
     final aabbIdsUint64 = Uint64List.fromList(aabbIds);
     final id = api.bvhNew(aabbs: aabbIdsUint64);
-    return BVH(id);
+    return BVH(id, aabbs: aabbs);
   }
 
   static Future<BVH> fromAABBsAsync(List<AABB> aabbs) async {
     final aabbIds = aabbs.map((aabb) => aabb.id).toList();
     final aabbIdsUint64 = Uint64List.fromList(aabbIds);
     final id = await api.bvhNewAsync(aabbs: aabbIdsUint64);
-    return BVH(id);
+    return BVH(id, aabbs: aabbs);
   }
 
   // Properties

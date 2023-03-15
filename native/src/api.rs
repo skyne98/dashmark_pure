@@ -1,6 +1,6 @@
-use crate::flat_bvh::FlatBVH;
 pub use crate::{aabb::AABB, bvh::BVH};
-use flutter_rust_bridge::{support::lazy_static, RustOpaque, SyncReturn};
+use crate::{flat_bvh::FlatBVH, lock::wait_for_write};
+use flutter_rust_bridge::{support::lazy_static, SyncReturn};
 pub use std::{
     ops::Deref,
     sync::{Mutex, RwLock},
@@ -24,8 +24,6 @@ pub fn morton_codes_async(xs: Vec<f64>, ys: Vec<f64>) -> Vec<u64> {
         let y_double = ys[i];
         let x = (x_double * 1000000.0) as u64;
         let y = (y_double * 1000000.0) as u64;
-        let x = x_double as u64;
-        let y = y_double as u64;
 
         // Naive method
         let x = (x | (x << 32)) & 0x00000000FFFFFFFF;
@@ -96,8 +94,8 @@ pub fn aabb_new_bulk(
 }
 
 pub fn aabb_drop(aabb_id: u64) -> SyncReturn<()> {
-    let mut store = AABB_STORE.write().unwrap();
-    let mut free_list = AABB_FREE_LIST.write().unwrap();
+    let mut store = wait_for_write(&AABB_STORE);
+    let mut free_list = wait_for_write(&AABB_FREE_LIST);
     store[aabb_id as usize] = RwLock::new(None);
     free_list.push(aabb_id);
     SyncReturn(())
@@ -205,7 +203,7 @@ pub fn bvh_new(aabbs: Vec<u64>) -> SyncReturn<u64> {
                 aabb_store[*aabb_id as usize]
                     .read()
                     .unwrap()
-                    .unwrap()
+                    .expect(format!("AABB {} not found", aabb_id).as_str())
                     .clone()
             })
             .collect();
@@ -218,7 +216,7 @@ pub fn bvh_new(aabbs: Vec<u64>) -> SyncReturn<u64> {
                 aabb_store[*aabb_id as usize]
                     .read()
                     .unwrap()
-                    .unwrap()
+                    .expect(format!("AABB {} not found", aabb_id).as_str())
                     .clone()
             })
             .collect();
@@ -266,8 +264,8 @@ pub fn bvh_new_async(aabbs: Vec<u64>) -> u64 {
 }
 
 pub fn bvh_drop(bvh_id: u64) -> SyncReturn<()> {
-    let mut store = BVH_STORE.write().unwrap();
-    let mut free_list = BVH_FREE_LIST.write().unwrap();
+    let mut store = wait_for_write(&BVH_STORE);
+    let mut free_list = wait_for_write(&BVH_FREE_LIST);
     store[bvh_id as usize] = RwLock::new(None);
     free_list.push(bvh_id);
     SyncReturn(())
