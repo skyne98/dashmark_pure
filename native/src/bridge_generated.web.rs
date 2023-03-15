@@ -32,6 +32,11 @@ pub fn wire_aabb_new_bulk(
 }
 
 #[wasm_bindgen]
+pub fn wire_aabb_drop(aabb_id: u64) -> support::WireSyncReturn {
+    wire_aabb_drop_impl(aabb_id)
+}
+
+#[wasm_bindgen]
 pub fn wire_aabb_min(aabb_id: u64) -> support::WireSyncReturn {
     wire_aabb_min_impl(aabb_id)
 }
@@ -52,16 +57,13 @@ pub fn wire_aabb_center(aabb_id: u64) -> support::WireSyncReturn {
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_intersects_point(
-    aabb_left_id: u64,
-    aabb_right_id: u64,
-) -> support::WireSyncReturn {
-    wire_aabb_intersects_point_impl(aabb_left_id, aabb_right_id)
+pub fn wire_aabb_intersects_aabb(aabb_left_id: u64, aabb_right_id: u64) -> support::WireSyncReturn {
+    wire_aabb_intersects_aabb_impl(aabb_left_id, aabb_right_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_contains(aabb_id: u64, point: Box<[f64]>) -> support::WireSyncReturn {
-    wire_aabb_contains_impl(aabb_id, point)
+pub fn wire_aabb_contains_point(aabb_id: u64, point: Box<[f64]>) -> support::WireSyncReturn {
+    wire_aabb_contains_point_impl(aabb_id, point)
 }
 
 #[wasm_bindgen]
@@ -90,6 +92,11 @@ pub fn wire_bvh_new_async(port_: MessagePort, aabbs: Box<[u64]>) {
 }
 
 #[wasm_bindgen]
+pub fn wire_bvh_drop(bvh_id: u64) -> support::WireSyncReturn {
+    wire_bvh_drop_impl(bvh_id)
+}
+
+#[wasm_bindgen]
 pub fn wire_bvh_flatten(bvh_id: u64) -> support::WireSyncReturn {
     wire_bvh_flatten_impl(bvh_id)
 }
@@ -110,6 +117,16 @@ pub fn wire_bvh_depth_async(port_: MessagePort, bvh_id: u64) {
 }
 
 #[wasm_bindgen]
+pub fn wire_bvh_query_aabb_collisions(bvh_id: u64, aabb_id: u64) -> support::WireSyncReturn {
+    wire_bvh_query_aabb_collisions_impl(bvh_id, aabb_id)
+}
+
+#[wasm_bindgen]
+pub fn wire_bvh_query_point_collisions(bvh_id: u64, x: f64, y: f64) -> support::WireSyncReturn {
+    wire_bvh_query_point_collisions_impl(bvh_id, x, y)
+}
+
+#[wasm_bindgen]
 pub fn wire_bvh_print(bvh_id: u64) -> support::WireSyncReturn {
     wire_bvh_print_impl(bvh_id)
 }
@@ -122,21 +139,6 @@ pub fn wire_bvh_print_async(port_: MessagePort, bvh_id: u64) {
 // Section: allocate functions
 
 // Section: related functions
-
-#[wasm_bindgen]
-pub fn drop_opaque_RwLockAabb(ptr: *const c_void) {
-    unsafe {
-        Arc::<RwLock<AABB>>::decrement_strong_count(ptr as _);
-    }
-}
-
-#[wasm_bindgen]
-pub fn share_opaque_RwLockAabb(ptr: *const c_void) -> *const c_void {
-    unsafe {
-        Arc::<RwLock<AABB>>::increment_strong_count(ptr as _);
-        ptr
-    }
-}
 
 // Section: impl Wire2Api
 

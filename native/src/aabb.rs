@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, Copy)]
 pub struct AABB {
+    pub id: Option<u64>,
     pub min: (f64, f64),
     pub max: (f64, f64),
 }
@@ -7,20 +8,14 @@ pub struct AABB {
 impl AABB {
     pub fn empty() -> Self {
         Self {
+            id: None,
             min: (f64::INFINITY, f64::INFINITY),
             max: (f64::NEG_INFINITY, f64::NEG_INFINITY),
         }
     }
 
     pub fn new(min: (f64, f64), max: (f64, f64)) -> Self {
-        Self { min, max }
-    }
-
-    pub fn new_xywh(x: f64, y: f64, width: f64, height: f64) -> Self {
-        Self {
-            min: (x, y),
-            max: (x + width, y + height),
-        }
+        Self { id: None, min, max }
     }
 
     pub fn center(&self) -> (f64, f64) {
@@ -42,7 +37,7 @@ impl AABB {
             && point.1 <= self.max.1
     }
 
-    pub fn intersects_point(&self, other: &Self) -> bool {
+    pub fn intersects_aabb(&self, other: &Self) -> bool {
         self.max.0 >= other.min.0
             && self.min.0 <= other.max.0
             && self.max.1 >= other.min.1

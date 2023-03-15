@@ -33,10 +33,6 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
     return raw.inner;
   }
 // Section: finalizer
-
-  late final Finalizer<PlatformPointer> _RwLockAabbFinalizer =
-      Finalizer<PlatformPointer>(inner.drop_opaque_RwLockAabb);
-  Finalizer<PlatformPointer> get RwLockAabbFinalizer => _RwLockAabbFinalizer;
 }
 
 // Section: WASM wire module
@@ -66,6 +62,8 @@ class NativeWasmModule implements WasmModule {
       Float64List max_xs,
       Float64List max_ys);
 
+  external dynamic /* void */ wire_aabb_drop(Object aabb_id);
+
   external dynamic /* Float64List */ wire_aabb_min(Object aabb_id);
 
   external dynamic /* Float64List */ wire_aabb_max(Object aabb_id);
@@ -74,10 +72,10 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* Float64List */ wire_aabb_center(Object aabb_id);
 
-  external dynamic /* bool */ wire_aabb_intersects_point(
+  external dynamic /* bool */ wire_aabb_intersects_aabb(
       Object aabb_left_id, Object aabb_right_id);
 
-  external dynamic /* bool */ wire_aabb_contains(
+  external dynamic /* bool */ wire_aabb_contains_point(
       Object aabb_id, Float64List point);
 
   external dynamic /* bool */ wire_aabb_contains_aabb(
@@ -94,6 +92,8 @@ class NativeWasmModule implements WasmModule {
   external dynamic /* void */ wire_bvh_new_async(
       NativePortType port_, Object /* BigInt64Array */ aabbs);
 
+  external dynamic /* void */ wire_bvh_drop(Object bvh_id);
+
   external dynamic /* List<dynamic> */ wire_bvh_flatten(Object bvh_id);
 
   external dynamic /* void */ wire_bvh_flatten_async(
@@ -104,14 +104,16 @@ class NativeWasmModule implements WasmModule {
   external dynamic /* void */ wire_bvh_depth_async(
       NativePortType port_, Object bvh_id);
 
+  external dynamic /* Object /* BigInt64Array */ */
+      wire_bvh_query_aabb_collisions(Object bvh_id, Object aabb_id);
+
+  external dynamic /* Object /* BigInt64Array */ */
+      wire_bvh_query_point_collisions(Object bvh_id, double x, double y);
+
   external dynamic /* String */ wire_bvh_print(Object bvh_id);
 
   external dynamic /* void */ wire_bvh_print_async(
       NativePortType port_, Object bvh_id);
-
-  external dynamic /*  */ drop_opaque_RwLockAabb(ptr);
-
-  external int /* *const c_void */ share_opaque_RwLockAabb(ptr);
 }
 
 // Section: WASM wire connector
@@ -142,6 +144,9 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
           Float64List max_ys) =>
       wasmModule.wire_aabb_new_bulk(min_xs, min_ys, max_xs, max_ys);
 
+  dynamic /* void */ wire_aabb_drop(Object aabb_id) =>
+      wasmModule.wire_aabb_drop(aabb_id);
+
   dynamic /* Float64List */ wire_aabb_min(Object aabb_id) =>
       wasmModule.wire_aabb_min(aabb_id);
 
@@ -154,12 +159,13 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   dynamic /* Float64List */ wire_aabb_center(Object aabb_id) =>
       wasmModule.wire_aabb_center(aabb_id);
 
-  dynamic /* bool */ wire_aabb_intersects_point(
+  dynamic /* bool */ wire_aabb_intersects_aabb(
           Object aabb_left_id, Object aabb_right_id) =>
-      wasmModule.wire_aabb_intersects_point(aabb_left_id, aabb_right_id);
+      wasmModule.wire_aabb_intersects_aabb(aabb_left_id, aabb_right_id);
 
-  dynamic /* bool */ wire_aabb_contains(Object aabb_id, Float64List point) =>
-      wasmModule.wire_aabb_contains(aabb_id, point);
+  dynamic /* bool */ wire_aabb_contains_point(
+          Object aabb_id, Float64List point) =>
+      wasmModule.wire_aabb_contains_point(aabb_id, point);
 
   dynamic /* bool */ wire_aabb_contains_aabb(
           Object aabb_left_id, Object aabb_right_id) =>
@@ -180,6 +186,9 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
           NativePortType port_, Object /* BigInt64Array */ aabbs) =>
       wasmModule.wire_bvh_new_async(port_, aabbs);
 
+  dynamic /* void */ wire_bvh_drop(Object bvh_id) =>
+      wasmModule.wire_bvh_drop(bvh_id);
+
   dynamic /* List<dynamic> */ wire_bvh_flatten(Object bvh_id) =>
       wasmModule.wire_bvh_flatten(bvh_id);
 
@@ -192,15 +201,17 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   void wire_bvh_depth_async(NativePortType port_, Object bvh_id) =>
       wasmModule.wire_bvh_depth_async(port_, bvh_id);
 
+  dynamic /* Object /* BigInt64Array */ */ wire_bvh_query_aabb_collisions(
+          Object bvh_id, Object aabb_id) =>
+      wasmModule.wire_bvh_query_aabb_collisions(bvh_id, aabb_id);
+
+  dynamic /* Object /* BigInt64Array */ */ wire_bvh_query_point_collisions(
+          Object bvh_id, double x, double y) =>
+      wasmModule.wire_bvh_query_point_collisions(bvh_id, x, y);
+
   dynamic /* String */ wire_bvh_print(Object bvh_id) =>
       wasmModule.wire_bvh_print(bvh_id);
 
   void wire_bvh_print_async(NativePortType port_, Object bvh_id) =>
       wasmModule.wire_bvh_print_async(port_, bvh_id);
-
-  dynamic /*  */ drop_opaque_RwLockAabb(ptr) =>
-      wasmModule.drop_opaque_RwLockAabb(ptr);
-
-  int /* *const c_void */ share_opaque_RwLockAabb(ptr) =>
-      wasmModule.share_opaque_RwLockAabb(ptr);
 }

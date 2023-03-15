@@ -112,6 +112,19 @@ fn wire_aabb_new_bulk_impl(
         },
     )
 }
+fn wire_aabb_drop_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "aabb_drop",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_aabb_id = aabb_id.wire2api();
+            Ok(aabb_drop(api_aabb_id))
+        },
+    )
+}
 fn wire_aabb_min_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -164,37 +177,37 @@ fn wire_aabb_center_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::W
         },
     )
 }
-fn wire_aabb_intersects_point_impl(
+fn wire_aabb_intersects_aabb_impl(
     aabb_left_id: impl Wire2Api<u64> + UnwindSafe,
     aabb_right_id: impl Wire2Api<u64> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
-            debug_name: "aabb_intersects_point",
+            debug_name: "aabb_intersects_aabb",
             port: None,
             mode: FfiCallMode::Sync,
         },
         move || {
             let api_aabb_left_id = aabb_left_id.wire2api();
             let api_aabb_right_id = aabb_right_id.wire2api();
-            Ok(aabb_intersects_point(api_aabb_left_id, api_aabb_right_id))
+            Ok(aabb_intersects_aabb(api_aabb_left_id, api_aabb_right_id))
         },
     )
 }
-fn wire_aabb_contains_impl(
+fn wire_aabb_contains_point_impl(
     aabb_id: impl Wire2Api<u64> + UnwindSafe,
     point: impl Wire2Api<Vec<f64>> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
-            debug_name: "aabb_contains",
+            debug_name: "aabb_contains_point",
             port: None,
             mode: FfiCallMode::Sync,
         },
         move || {
             let api_aabb_id = aabb_id.wire2api();
             let api_point = point.wire2api();
-            Ok(aabb_contains(api_aabb_id, api_point))
+            Ok(aabb_contains_point(api_aabb_id, api_point))
         },
     )
 }
@@ -276,6 +289,19 @@ fn wire_bvh_new_async_impl(port_: MessagePort, aabbs: impl Wire2Api<Vec<u64>> + 
         },
     )
 }
+fn wire_bvh_drop_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_drop",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            Ok(bvh_drop(api_bvh_id))
+        },
+    )
+}
 fn wire_bvh_flatten_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -325,6 +351,42 @@ fn wire_bvh_depth_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + Un
         move || {
             let api_bvh_id = bvh_id.wire2api();
             move |task_callback| Ok(bvh_depth_async(api_bvh_id))
+        },
+    )
+}
+fn wire_bvh_query_aabb_collisions_impl(
+    bvh_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb_id: impl Wire2Api<u64> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_query_aabb_collisions",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            let api_aabb_id = aabb_id.wire2api();
+            Ok(bvh_query_aabb_collisions(api_bvh_id, api_aabb_id))
+        },
+    )
+}
+fn wire_bvh_query_point_collisions_impl(
+    bvh_id: impl Wire2Api<u64> + UnwindSafe,
+    x: impl Wire2Api<f64> + UnwindSafe,
+    y: impl Wire2Api<f64> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_query_point_collisions",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            let api_x = x.wire2api();
+            let api_y = y.wire2api();
+            Ok(bvh_query_point_collisions(api_bvh_id, api_x, api_y))
         },
     )
 }

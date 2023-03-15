@@ -83,23 +83,6 @@ impl BVH {
         current_index
     }
 
-    // Utilities
-    pub fn depth(&self) -> usize {
-        self.depth_recursive(0)
-    }
-
-    fn depth_recursive(&self, current_idx: u64) -> usize {
-        match self.nodes[current_idx as usize] {
-            BVHNode::Leaf(_) => 1,
-            BVHNode::Internal(left_idx, right_idx, _) => {
-                1 + std::cmp::max(
-                    self.depth_recursive(left_idx),
-                    self.depth_recursive(right_idx),
-                )
-            }
-        }
-    }
-
     // Flattening
     pub fn flatten(&self) -> FlatBVH {
         let mut min_x = Vec::new();
@@ -161,6 +144,79 @@ impl BVH {
         }
     }
 
+    // Querying
+    pub fn query_aabb_collisions(&self, query_aabb: &AABB) -> Vec<u64> {
+        let mut results = Vec::new();
+        self.query_aabb_collisions_recursive(0, query_aabb, &mut results);
+        results
+    }
+
+    fn query_aabb_collisions_recursive(
+        &self,
+        node_index: usize,
+        query_aabb: &AABB,
+        results: &mut Vec<u64>,
+    ) {
+        let node = &self.nodes[node_index];
+        if query_aabb.intersects_aabb(&node.get_aabb()) {
+            match node {
+                BVHNode::Leaf(aabb) => {
+                    if let Some(id) = aabb.id {
+                        results.push(id);
+                    }
+                }
+                BVHNode::Internal(left_child_index, right_child_index, _) => {
+                    self.query_aabb_collisions_recursive(
+                        *left_child_index as usize,
+                        query_aabb,
+                        results,
+                    );
+                    self.query_aabb_collisions_recursive(
+                        *right_child_index as usize,
+                        query_aabb,
+                        results,
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn query_point_collisions(&self, point: (f64, f64)) -> Vec<u64> {
+        let mut results = Vec::new();
+        self.query_point_collisions_recursive(0, point, &mut results);
+        results
+    }
+
+    fn query_point_collisions_recursive(
+        &self,
+        node_index: usize,
+        point: (f64, f64),
+        results: &mut Vec<u64>,
+    ) {
+        let node = &self.nodes[node_index];
+        if node.get_aabb().contains(point) {
+            match node {
+                BVHNode::Leaf(aabb) => {
+                    if let Some(id) = aabb.id {
+                        results.push(id);
+                    }
+                }
+                BVHNode::Internal(left_child_index, right_child_index, _) => {
+                    self.query_point_collisions_recursive(
+                        *left_child_index as usize,
+                        point,
+                        results,
+                    );
+                    self.query_point_collisions_recursive(
+                        *right_child_index as usize,
+                        point,
+                        results,
+                    );
+                }
+            }
+        }
+    }
+
     // Printing
     pub fn print_bvh(&self) -> String {
         self.print_bvh_tree(0, 0)
@@ -185,5 +241,22 @@ impl BVH {
             }
         }
         output
+    }
+
+    // Utilities
+    pub fn depth(&self) -> usize {
+        self.depth_recursive(0)
+    }
+
+    fn depth_recursive(&self, current_idx: u64) -> usize {
+        match self.nodes[current_idx as usize] {
+            BVHNode::Leaf(_) => 1,
+            BVHNode::Internal(left_idx, right_idx, _) => {
+                1 + std::cmp::max(
+                    self.depth_recursive(left_idx),
+                    self.depth_recursive(right_idx),
+                )
+            }
+        }
     }
 }

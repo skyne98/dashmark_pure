@@ -44,6 +44,11 @@ pub extern "C" fn wire_aabb_new_bulk(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_aabb_drop(aabb_id: u64) -> support::WireSyncReturn {
+    wire_aabb_drop_impl(aabb_id)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_aabb_min(aabb_id: u64) -> support::WireSyncReturn {
     wire_aabb_min_impl(aabb_id)
 }
@@ -64,19 +69,19 @@ pub extern "C" fn wire_aabb_center(aabb_id: u64) -> support::WireSyncReturn {
 }
 
 #[no_mangle]
-pub extern "C" fn wire_aabb_intersects_point(
+pub extern "C" fn wire_aabb_intersects_aabb(
     aabb_left_id: u64,
     aabb_right_id: u64,
 ) -> support::WireSyncReturn {
-    wire_aabb_intersects_point_impl(aabb_left_id, aabb_right_id)
+    wire_aabb_intersects_aabb_impl(aabb_left_id, aabb_right_id)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_aabb_contains(
+pub extern "C" fn wire_aabb_contains_point(
     aabb_id: u64,
     point: *mut wire_float_64_list,
 ) -> support::WireSyncReturn {
-    wire_aabb_contains_impl(aabb_id, point)
+    wire_aabb_contains_point_impl(aabb_id, point)
 }
 
 #[no_mangle]
@@ -111,6 +116,11 @@ pub extern "C" fn wire_bvh_new_async(port_: i64, aabbs: *mut wire_uint_64_list) 
 }
 
 #[no_mangle]
+pub extern "C" fn wire_bvh_drop(bvh_id: u64) -> support::WireSyncReturn {
+    wire_bvh_drop_impl(bvh_id)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_bvh_flatten(bvh_id: u64) -> support::WireSyncReturn {
     wire_bvh_flatten_impl(bvh_id)
 }
@@ -128,6 +138,23 @@ pub extern "C" fn wire_bvh_depth(bvh_id: u64) -> support::WireSyncReturn {
 #[no_mangle]
 pub extern "C" fn wire_bvh_depth_async(port_: i64, bvh_id: u64) {
     wire_bvh_depth_async_impl(port_, bvh_id)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_bvh_query_aabb_collisions(
+    bvh_id: u64,
+    aabb_id: u64,
+) -> support::WireSyncReturn {
+    wire_bvh_query_aabb_collisions_impl(bvh_id, aabb_id)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_bvh_query_point_collisions(
+    bvh_id: u64,
+    x: f64,
+    y: f64,
+) -> support::WireSyncReturn {
+    wire_bvh_query_point_collisions_impl(bvh_id, x, y)
 }
 
 #[no_mangle]
@@ -161,21 +188,6 @@ pub extern "C" fn new_uint_64_list_0(len: i32) -> *mut wire_uint_64_list {
 }
 
 // Section: related functions
-
-#[no_mangle]
-pub extern "C" fn drop_opaque_RwLockAabb(ptr: *const c_void) {
-    unsafe {
-        Arc::<RwLock<AABB>>::decrement_strong_count(ptr as _);
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn share_opaque_RwLockAabb(ptr: *const c_void) -> *const c_void {
-    unsafe {
-        Arc::<RwLock<AABB>>::increment_strong_count(ptr as _);
-        ptr
-    }
-}
 
 // Section: impl Wire2Api
 

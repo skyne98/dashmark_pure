@@ -35,9 +35,6 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
   }
 // Section: finalizer
 
-  late final OpaqueTypeFinalizer _RwLockAabbFinalizer =
-      OpaqueTypeFinalizer(inner._drop_opaque_RwLockAabbPtr);
-  OpaqueTypeFinalizer get RwLockAabbFinalizer => _RwLockAabbFinalizer;
 // Section: api_fill_to_wire
 }
 
@@ -237,6 +234,20 @@ class NativeWire implements FlutterRustBridgeWireBase {
           ffi.Pointer<wire_float_64_list>,
           ffi.Pointer<wire_float_64_list>)>();
 
+  WireSyncReturn wire_aabb_drop(
+    int aabb_id,
+  ) {
+    return _wire_aabb_drop(
+      aabb_id,
+    );
+  }
+
+  late final _wire_aabb_dropPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
+          'wire_aabb_drop');
+  late final _wire_aabb_drop =
+      _wire_aabb_dropPtr.asFunction<WireSyncReturn Function(int)>();
+
   WireSyncReturn wire_aabb_min(
     int aabb_id,
   ) {
@@ -293,38 +304,39 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_aabb_center =
       _wire_aabb_centerPtr.asFunction<WireSyncReturn Function(int)>();
 
-  WireSyncReturn wire_aabb_intersects_point(
+  WireSyncReturn wire_aabb_intersects_aabb(
     int aabb_left_id,
     int aabb_right_id,
   ) {
-    return _wire_aabb_intersects_point(
+    return _wire_aabb_intersects_aabb(
       aabb_left_id,
       aabb_right_id,
     );
   }
 
-  late final _wire_aabb_intersects_pointPtr = _lookup<
+  late final _wire_aabb_intersects_aabbPtr = _lookup<
           ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64, ffi.Uint64)>>(
-      'wire_aabb_intersects_point');
-  late final _wire_aabb_intersects_point = _wire_aabb_intersects_pointPtr
+      'wire_aabb_intersects_aabb');
+  late final _wire_aabb_intersects_aabb = _wire_aabb_intersects_aabbPtr
       .asFunction<WireSyncReturn Function(int, int)>();
 
-  WireSyncReturn wire_aabb_contains(
+  WireSyncReturn wire_aabb_contains_point(
     int aabb_id,
     ffi.Pointer<wire_float_64_list> point,
   ) {
-    return _wire_aabb_contains(
+    return _wire_aabb_contains_point(
       aabb_id,
       point,
     );
   }
 
-  late final _wire_aabb_containsPtr = _lookup<
+  late final _wire_aabb_contains_pointPtr = _lookup<
       ffi.NativeFunction<
           WireSyncReturn Function(ffi.Uint64,
-              ffi.Pointer<wire_float_64_list>)>>('wire_aabb_contains');
-  late final _wire_aabb_contains = _wire_aabb_containsPtr.asFunction<
-      WireSyncReturn Function(int, ffi.Pointer<wire_float_64_list>)>();
+              ffi.Pointer<wire_float_64_list>)>>('wire_aabb_contains_point');
+  late final _wire_aabb_contains_point =
+      _wire_aabb_contains_pointPtr.asFunction<
+          WireSyncReturn Function(int, ffi.Pointer<wire_float_64_list>)>();
 
   WireSyncReturn wire_aabb_contains_aabb(
     int aabb_left_id,
@@ -409,6 +421,20 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_bvh_new_async = _wire_bvh_new_asyncPtr
       .asFunction<void Function(int, ffi.Pointer<wire_uint_64_list>)>();
 
+  WireSyncReturn wire_bvh_drop(
+    int bvh_id,
+  ) {
+    return _wire_bvh_drop(
+      bvh_id,
+    );
+  }
+
+  late final _wire_bvh_dropPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
+          'wire_bvh_drop');
+  late final _wire_bvh_drop =
+      _wire_bvh_dropPtr.asFunction<WireSyncReturn Function(int)>();
+
   WireSyncReturn wire_bvh_flatten(
     int bvh_id,
   ) {
@@ -469,6 +495,43 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_bvh_depth_async =
       _wire_bvh_depth_asyncPtr.asFunction<void Function(int, int)>();
 
+  WireSyncReturn wire_bvh_query_aabb_collisions(
+    int bvh_id,
+    int aabb_id,
+  ) {
+    return _wire_bvh_query_aabb_collisions(
+      bvh_id,
+      aabb_id,
+    );
+  }
+
+  late final _wire_bvh_query_aabb_collisionsPtr = _lookup<
+          ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64, ffi.Uint64)>>(
+      'wire_bvh_query_aabb_collisions');
+  late final _wire_bvh_query_aabb_collisions =
+      _wire_bvh_query_aabb_collisionsPtr
+          .asFunction<WireSyncReturn Function(int, int)>();
+
+  WireSyncReturn wire_bvh_query_point_collisions(
+    int bvh_id,
+    double x,
+    double y,
+  ) {
+    return _wire_bvh_query_point_collisions(
+      bvh_id,
+      x,
+      y,
+    );
+  }
+
+  late final _wire_bvh_query_point_collisionsPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(ffi.Uint64, ffi.Double,
+              ffi.Double)>>('wire_bvh_query_point_collisions');
+  late final _wire_bvh_query_point_collisions =
+      _wire_bvh_query_point_collisionsPtr
+          .asFunction<WireSyncReturn Function(int, double, double)>();
+
   WireSyncReturn wire_bvh_print(
     int bvh_id,
   ) {
@@ -528,35 +591,6 @@ class NativeWire implements FlutterRustBridgeWireBase {
               ffi.Int32)>>('new_uint_64_list_0');
   late final _new_uint_64_list_0 = _new_uint_64_list_0Ptr
       .asFunction<ffi.Pointer<wire_uint_64_list> Function(int)>();
-
-  void drop_opaque_RwLockAabb(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _drop_opaque_RwLockAabb(
-      ptr,
-    );
-  }
-
-  late final _drop_opaque_RwLockAabbPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-          'drop_opaque_RwLockAabb');
-  late final _drop_opaque_RwLockAabb = _drop_opaque_RwLockAabbPtr
-      .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
-
-  ffi.Pointer<ffi.Void> share_opaque_RwLockAabb(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _share_opaque_RwLockAabb(
-      ptr,
-    );
-  }
-
-  late final _share_opaque_RwLockAabbPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<ffi.Void> Function(
-              ffi.Pointer<ffi.Void>)>>('share_opaque_RwLockAabb');
-  late final _share_opaque_RwLockAabb = _share_opaque_RwLockAabbPtr
-      .asFunction<ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.Void>)>();
 
   void free_WireSyncReturn(
     WireSyncReturn ptr,
