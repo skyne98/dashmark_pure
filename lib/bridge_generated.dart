@@ -137,6 +137,10 @@ abstract class Native {
   Future<String> bvhPrintAsync({required int bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhPrintAsyncConstMeta;
+
+  double bvhOverlapRatio({required int bvhId, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhOverlapRatioConstMeta;
 }
 
 class FlatBVH {
@@ -643,6 +647,23 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kBvhPrintAsyncConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "bvh_print_async",
+        argNames: ["bvhId"],
+      );
+
+  double bvhOverlapRatio({required int bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_u64(bvhId);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_bvh_overlap_ratio(arg0),
+      parseSuccessData: _wire2api_f64,
+      constMeta: kBvhOverlapRatioConstMeta,
+      argValues: [bvhId],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhOverlapRatioConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_overlap_ratio",
         argNames: ["bvhId"],
       );
 

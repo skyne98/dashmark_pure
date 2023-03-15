@@ -338,3 +338,11 @@ pub fn bvh_print_async(bvh_id: u64) -> String {
     let bvh = bvh.as_ref().unwrap();
     bvh.print_bvh()
 }
+
+pub fn bvh_overlap_ratio(bvh_id: u64) -> SyncReturn<f64> {
+    let store_lock = BVH_STORE.read().unwrap();
+    let bvh = store_lock[bvh_id as usize].read().unwrap();
+    let bvh = bvh.as_ref().unwrap();
+    let overlap_ratio = bvh.overlap_ratio();
+    SyncReturn(overlap_ratio)
+}

@@ -167,6 +167,11 @@ pub extern "C" fn wire_bvh_print_async(port_: i64, bvh_id: u64) {
     wire_bvh_print_async_impl(port_, bvh_id)
 }
 
+#[no_mangle]
+pub extern "C" fn wire_bvh_overlap_ratio(bvh_id: u64) -> support::WireSyncReturn {
+    wire_bvh_overlap_ratio_impl(bvh_id)
+}
+
 // Section: allocate functions
 
 #[no_mangle]

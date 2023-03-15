@@ -1,11 +1,14 @@
 // import 'dart:html';
 import 'dart:math';
 import 'dart:ui';
+import 'package:dashmark_pure/aabb.dart';
+import 'package:dashmark_pure/bvh.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:vector_math/vector_math.dart' show Matrix4, Vector2;
+import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class World {
   Vector2 size = Vector2(0.0, 0.0);
@@ -74,7 +77,7 @@ class World {
   void input(double x, double y) {
     _spawnPosition = Vector2(x, y);
     if (dashImage != null && fragmentShader != null) {
-      const amountPerSecond = 10000;
+      const amountPerSecond = 5000;
       var amount = (amountPerSecond * lastDt).toInt();
       if (amount > amountPerSecond) {
         amount = amountPerSecond;
@@ -192,6 +195,59 @@ class World {
     if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
 
+      // Draw the grid with morton codes
+      final gridSize = 50;
+      final gridColor = Color.fromARGB(255, 80, 80, 80);
+      final gridPaint = Paint()..color = gridColor;
+      final mortonColor = Color.fromARGB(255, 255, 255, 255);
+      final mortonPaint = Paint()..color = mortonColor;
+      final renderedCoordinates = <Vector2>[];
+      for (var x = 0; x < gridSize; ++x) {
+        for (var y = 0; y < gridSize; ++y) {
+          // render a circle
+          final xCoord = x * size.x / gridSize;
+          final yCoord = y * size.y / gridSize;
+          final center = Vector2(xCoord, yCoord);
+          const radius = 5.0;
+          canvas.drawCircle(Offset(center.x, center.y), radius, gridPaint);
+          renderedCoordinates.add(center);
+        }
+      }
+      final mortonCodes = api.mortonCodes(
+          xs: Float64List.fromList(
+              renderedCoordinates.map((coords) => coords.x).toList()),
+          ys: Float64List.fromList(
+              renderedCoordinates.map((coords) => coords.y).toList()));
+      // sort centers by morton code
+      final sortedCenters = <Vector2>[];
+      final sortedMortonCodes = <int>[];
+      for (var i = 0; i < mortonCodes.length; ++i) {
+        final mortonCode = mortonCodes[i].toInt();
+        final center = renderedCoordinates[i];
+        var inserted = false;
+        for (var j = 0; j < sortedMortonCodes.length; ++j) {
+          final sortedMortonCode = sortedMortonCodes[j];
+          if (mortonCode < sortedMortonCode) {
+            sortedMortonCodes.insert(j, mortonCode);
+            sortedCenters.insert(j, center);
+            inserted = true;
+            break;
+          }
+        }
+        if (!inserted) {
+          sortedMortonCodes.add(mortonCode);
+          sortedCenters.add(center);
+        }
+      }
+      // render morton codes (as lines)
+      for (var i = 0; i < sortedCenters.length; ++i) {
+        final center = sortedCenters[i];
+        final nextCenter = sortedCenters[(i + 1) % sortedCenters.length];
+
+        canvas.drawLine(Offset(center.x, center.y),
+            Offset(nextCenter.x, nextCenter.y), mortonPaint);
+      }
+
       // Draw the dashes
       final vertexTopLeft = Vector2(0.0, 0.0);
       final vertexBottomLeft = Vector2(0.0, 1.0);
@@ -259,6 +315,38 @@ class World {
           (size.y - textPainter.height) / 2,
         ),
       );
+
+      // Build AABBs for all the dashes
+      final stopwatch = Stopwatch()..start();
+      final minXs = <double>[];
+      final minYs = <double>[];
+      final maxXs = <double>[];
+      final maxYs = <double>[];
+      for (var i = 0; i < length; ++i) {
+        final position = _position[i];
+        final size = desiredSize;
+        minXs.add(position.x);
+        minYs.add(position.y);
+        maxXs.add(position.x + size);
+        maxYs.add(position.y + size);
+      }
+      final aabbs = AABB.minMaxBulk(minXs, minYs, maxXs, maxYs);
+      debugPrint(
+          'AABBs ($length) built in ${stopwatch.elapsedMilliseconds} ms');
+
+      // Build a BVH
+      stopwatch.reset();
+      final bvh = BVH.fromAABBs(aabbs);
+      debugPrint('BVH built in ${stopwatch.elapsedMilliseconds} ms');
+      // debugPrint('(overlap: ${bvh.overlapRatio}, depth: ${bvh.depth})');
+
+      // Flatten the BVH
+      stopwatch.reset();
+      final flattened = bvh.flatten();
+      debugPrint('BVH flattened in ${stopwatch.elapsedMilliseconds} ms');
+
+      // Draw the BVH
+      // drawFlatBVH(bvh, flattened, canvas);
     }
   }
 }

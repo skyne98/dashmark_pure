@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{collections::HashSet, time::Instant};
 
 use crate::{aabb::AABB, api::morton_codes_async, flat_bvh::FlatBVH};
 
@@ -89,6 +89,16 @@ impl BVH {
         let mut max_y = Vec::new();
         let mut depth = Vec::new();
 
+        if self.nodes.is_empty() {
+            return FlatBVH {
+                min_x,
+                min_y,
+                max_x,
+                max_y,
+                depth,
+            };
+        }
+
         self.flatten_recursive(
             0, 0, &mut min_x, &mut min_y, &mut max_x, &mut max_y, &mut depth,
         );
@@ -144,6 +154,9 @@ impl BVH {
 
     // Querying
     pub fn query_aabb_collisions(&self, query_aabb: &AABB) -> Vec<u64> {
+        if self.nodes.is_empty() {
+            return vec![];
+        }
         let mut results = Vec::new();
         self.query_aabb_collisions_recursive(0, query_aabb, &mut results);
         results
@@ -180,6 +193,9 @@ impl BVH {
     }
 
     pub fn query_point_collisions(&self, point: (f64, f64)) -> Vec<u64> {
+        if self.nodes.is_empty() {
+            return vec![];
+        }
         let mut results = Vec::new();
         self.query_point_collisions_recursive(0, point, &mut results);
         results
@@ -217,6 +233,9 @@ impl BVH {
 
     // Printing
     pub fn print_bvh(&self) -> String {
+        if self.nodes.is_empty() {
+            return String::from("EMPTY BVH");
+        }
         self.print_bvh_tree(0, 0)
     }
     fn print_bvh_tree(&self, node: u64, depth: usize) -> String {
@@ -243,6 +262,9 @@ impl BVH {
 
     // Utilities
     pub fn depth(&self) -> usize {
+        if self.nodes.is_empty() {
+            return 0;
+        }
         self.depth_recursive(0)
     }
 
@@ -256,5 +278,44 @@ impl BVH {
                 )
             }
         }
+    }
+
+    /// Returns the average ration of overlap between the bounding boxes of the nodes in the tree,
+    /// which reside at the same depth. Uses the [AABB] `overlap_ratio` method.
+    pub fn overlap_ratio(&self) -> f64 {
+        if self.nodes.is_empty() {
+            return 0.0;
+        }
+        let mut min_x = Vec::new();
+        let mut min_y = Vec::new();
+        let mut max_x = Vec::new();
+        let mut max_y = Vec::new();
+        let mut depth = Vec::new();
+        self.flatten_recursive(
+            0, 0, &mut min_x, &mut min_y, &mut max_x, &mut max_y, &mut depth,
+        );
+        let unique_depths: HashSet<_> = depth.iter().collect();
+        let mut overlap_sum = 0.0;
+        let mut count = 0;
+        for this_depth in unique_depths {
+            let mut aabbs = Vec::new();
+            for i in 0..min_x.len() {
+                if this_depth == &depth[i as usize] {
+                    aabbs.push(AABB::new(
+                        (min_x[i as usize], min_y[i as usize]),
+                        (max_x[i as usize], max_y[i as usize]),
+                    ));
+                }
+            }
+            for i in 0..aabbs.len() {
+                for j in 0..aabbs.len() {
+                    if i != j {
+                        overlap_sum += aabbs[i as usize].overlap_ratio(&aabbs[j as usize]);
+                        count += 1;
+                    }
+                }
+            }
+        }
+        overlap_sum / count as f64
     }
 }

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 
 import 'aabb.dart';
@@ -33,6 +35,10 @@ class BVH {
     return api.bvhDepth(bvhId: id);
   }
 
+  double get overlapRatio {
+    return api.bvhOverlapRatio(bvhId: id);
+  }
+
   // Methods
   FlatBVH flatten() {
     return api.bvhFlatten(bvhId: id);
@@ -50,5 +56,26 @@ class BVH {
   List<AABB> queryPoint(double x, double y) {
     final ids = api.bvhQueryPointCollisions(bvhId: id, x: x, y: y);
     return ids.toList().map((id) => AABB(id.toInt())).toList();
+  }
+}
+
+void drawFlatBVH(BVH bvh, FlatBVH flat, Canvas canvas) {
+  final overallDepth = bvh.depth;
+  final paint = Paint()
+    ..color = Color.fromARGB(255, 255, 0, 0)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.0;
+
+  final length = flat.minX.length;
+  for (var i = 0; i < length; i++) {
+    final minX = flat.minX[i];
+    final minY = flat.minY[i];
+    final maxX = flat.maxX[i];
+    final maxY = flat.maxY[i];
+    final depth = flat.depth[i].toInt();
+    final color =
+        Color.fromARGB(255, 255, 255 - depth * 255 ~/ overallDepth, 0);
+    paint.color = color;
+    canvas.drawRect(Rect.fromLTRB(minX, minY, maxX, maxY), paint);
   }
 }

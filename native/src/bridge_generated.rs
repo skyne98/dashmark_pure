@@ -416,6 +416,19 @@ fn wire_bvh_print_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + Un
         },
     )
 }
+fn wire_bvh_overlap_ratio_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_overlap_ratio",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            Ok(bvh_overlap_ratio(api_bvh_id))
+        },
+    )
+}
 // Section: wrapper structs
 
 // Section: static checks

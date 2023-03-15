@@ -114,6 +114,8 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* void */ wire_bvh_print_async(
       NativePortType port_, Object bvh_id);
+
+  external dynamic /* double */ wire_bvh_overlap_ratio(Object bvh_id);
 }
 
 // Section: WASM wire connector
@@ -214,4 +216,7 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
 
   void wire_bvh_print_async(NativePortType port_, Object bvh_id) =>
       wasmModule.wire_bvh_print_async(port_, bvh_id);
+
+  dynamic /* double */ wire_bvh_overlap_ratio(Object bvh_id) =>
+      wasmModule.wire_bvh_overlap_ratio(bvh_id);
 }

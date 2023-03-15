@@ -32,6 +32,56 @@ class AABB {
     return AABB.fromXYWH(xywh[0], xywh[1], xywh[2], xywh[3]);
   }
 
+  static List<AABB> minMaxBulk(List<double> minXs, List<double> minYs,
+      List<double> maxXs, List<double> maxYs) {
+    assert(minXs.length == minYs.length);
+    assert(minXs.length == maxXs.length);
+    assert(minXs.length == maxYs.length);
+    final ids = api.aabbNewBulk(
+        minXs: Float64List.fromList(minXs),
+        minYs: Float64List.fromList(minYs),
+        maxXs: Float64List.fromList(maxXs),
+        maxYs: Float64List.fromList(maxYs));
+    return ids.toList().map((id) => AABB(id.toInt())).toList();
+  }
+
+  static List<AABB> fromListBulk(List<List<double>> minMaxs) {
+    final minXs = <double>[];
+    final minYs = <double>[];
+    final maxXs = <double>[];
+    final maxYs = <double>[];
+    for (final minMax in minMaxs) {
+      assert(minMax.length == 4);
+      minXs.add(minMax[0]);
+      minYs.add(minMax[1]);
+      maxXs.add(minMax[2]);
+      maxYs.add(minMax[3]);
+    }
+    return minMaxBulk(minXs, minYs, maxXs, maxYs);
+  }
+
+  static List<AABB> fromXYWHBulk(List<double> xs, List<double> ys,
+      List<double> widths, List<double> heights) {
+    assert(xs.length == ys.length);
+    assert(xs.length == widths.length);
+    assert(xs.length == heights.length);
+    final minXs = <double>[];
+    final minYs = <double>[];
+    final maxXs = <double>[];
+    final maxYs = <double>[];
+    for (var i = 0; i < xs.length; ++i) {
+      final x = xs[i];
+      final y = ys[i];
+      final width = widths[i];
+      final height = heights[i];
+      minXs.add(x);
+      minYs.add(y);
+      maxXs.add(x + width);
+      maxYs.add(y + height);
+    }
+    return minMaxBulk(minXs, minYs, maxXs, maxYs);
+  }
+
   // Properties
   List<double> get min {
     final min = api.aabbMin(aabbId: id);

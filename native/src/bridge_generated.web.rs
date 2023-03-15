@@ -136,6 +136,11 @@ pub fn wire_bvh_print_async(port_: MessagePort, bvh_id: u64) {
     wire_bvh_print_async_impl(port_, bvh_id)
 }
 
+#[wasm_bindgen]
+pub fn wire_bvh_overlap_ratio(bvh_id: u64) -> support::WireSyncReturn {
+    wire_bvh_overlap_ratio_impl(bvh_id)
+}
+
 // Section: allocate functions
 
 // Section: related functions

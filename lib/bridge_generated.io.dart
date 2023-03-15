@@ -562,6 +562,20 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_bvh_print_async =
       _wire_bvh_print_asyncPtr.asFunction<void Function(int, int)>();
 
+  WireSyncReturn wire_bvh_overlap_ratio(
+    int bvh_id,
+  ) {
+    return _wire_bvh_overlap_ratio(
+      bvh_id,
+    );
+  }
+
+  late final _wire_bvh_overlap_ratioPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint64)>>(
+          'wire_bvh_overlap_ratio');
+  late final _wire_bvh_overlap_ratio =
+      _wire_bvh_overlap_ratioPtr.asFunction<WireSyncReturn Function(int)>();
+
   ffi.Pointer<wire_float_64_list> new_float_64_list_0(
     int len,
   ) {
