@@ -156,8 +156,35 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     final deepestPath = api.bvhDepth(bvhId: bvh);
     debugPrint('Deepest path: $deepestPath');
 
-    // final printed = api.bvhPrint(bvhId: bvh);
-    // debugPrint('BVH: $printed');
+    // Test a time of some queries
+    final queries = 100;
+    final queryAABBs = <int>[];
+    final queryResults = <int>[];
+    for (var i = 0; i < queries; i++) {
+      final minX = random.nextDouble();
+      final minY = random.nextDouble();
+      final width = random.nextDouble();
+      final height = random.nextDouble();
+      final maxX = minX + width;
+      final maxY = minY + height;
+      final aabb = api.aabbNew(minX: minX, minY: minY, maxX: maxX, maxY: maxY);
+      queryAABBs.add(aabb);
+      queryResults.add(0);
+    }
+    stopwatch.reset();
+    stopwatch.start();
+    for (var i = 0; i < queries; i++) {
+      final aabb = queryAABBs[i];
+      final result = api.bvhQueryAabbCollisions(bvhId: bvh, aabbId: aabb);
+    }
+    stopwatch.stop();
+    debugPrint(
+        'Performed $queries AABB queries in ${stopwatch.elapsedMilliseconds} ms');
+    final queryPerformance = stopwatch.elapsedMilliseconds / queries / gridSize;
+    debugPrint('Average query performance: $queryPerformance ms/query/leaf');
+    final timeFor500QueriesOn1000Leaves = queryPerformance * 500 * 1000;
+    debugPrint(
+        'Time for 500 queries on 1000 leaves: $timeFor500QueriesOn1000Leaves ms');
   }
 
   void pointerUpdate(details) {
