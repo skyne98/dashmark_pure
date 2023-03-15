@@ -173,13 +173,15 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     }
     stopwatch.reset();
     stopwatch.start();
+    var collisionsCount = 0;
     for (var i = 0; i < queries; i++) {
       final aabb = queryAABBs[i];
       final result = api.bvhQueryAabbCollisions(bvhId: bvh, aabbId: aabb);
+      collisionsCount += result.length;
     }
     stopwatch.stop();
     debugPrint(
-        'Performed $queries AABB queries in ${stopwatch.elapsedMilliseconds} ms');
+        'Performed $queries AABB queries in ${stopwatch.elapsedMilliseconds} ms, found $collisionsCount collisions');
     final queryPerformance = stopwatch.elapsedMilliseconds / queries / gridSize;
     debugPrint('Average query performance: $queryPerformance ms/query/leaf');
     final timeFor500QueriesOn1000Leaves = queryPerformance * 500 * 1000;
