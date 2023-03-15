@@ -147,7 +147,7 @@ pub fn bvh_new(aabbs: Vec<u64>) -> SyncReturn<u64> {
         .iter()
         .map(|aabb_id| store_lock[*aabb_id as usize].read().unwrap().clone())
         .collect();
-    let bvh = BVH::new(cloned_aabbs.as_slice());
+    let bvh = BVH::build(cloned_aabbs.as_slice());
     let mut bvh_store = BVH_STORE.write().unwrap();
     bvh_store.push(RustOpaque::new(RwLock::new(bvh)));
     SyncReturn((bvh_store.len() - 1) as u64)
@@ -159,7 +159,7 @@ pub fn bvh_new_async(aabbs: Vec<u64>) -> u64 {
         .iter()
         .map(|aabb_id| store_lock[*aabb_id as usize].read().unwrap().clone())
         .collect();
-    let bvh = BVH::new(cloned_aabbs.as_slice());
+    let bvh = BVH::build(cloned_aabbs.as_slice());
     let mut bvh_store = BVH_STORE.write().unwrap();
     bvh_store.push(RustOpaque::new(RwLock::new(bvh)));
     (bvh_store.len() - 1) as u64
@@ -183,14 +183,14 @@ pub fn bvh_depth(bvh_id: u64) -> SyncReturn<u64> {
     let store_lock = BVH_STORE.read().unwrap();
     let bvh = store_lock[bvh_id as usize].read().unwrap();
     let depth = bvh.depth();
-    SyncReturn(depth)
+    SyncReturn(depth as u64)
 }
 
 pub fn bvh_depth_async(bvh_id: u64) -> u64 {
     let store_lock = BVH_STORE.read().unwrap();
     let bvh = store_lock[bvh_id as usize].read().unwrap();
     let depth = bvh.depth();
-    depth
+    depth as u64
 }
 
 pub fn bvh_print(bvh_id: u64) -> SyncReturn<String> {

@@ -1,149 +1,172 @@
+use std::time::Instant;
+
 use crate::{aabb::AABB, api::morton_codes_async, flat_bvh::FlatBVH};
 
 #[derive(Debug, Clone)]
 pub enum BVHNode {
     Leaf(AABB),
-    Internal(Box<BVHNode>, Box<BVHNode>, AABB),
+    Internal(u64, u64, AABB),
+}
+
+impl BVHNode {
+    pub fn empty() -> Self {
+        BVHNode::Leaf(AABB::empty())
+    }
+
+    pub fn get_aabb(&self) -> AABB {
+        match self {
+            BVHNode::Leaf(aabb) => *aabb,
+            BVHNode::Internal(_, _, aabb) => *aabb,
+        }
+    }
 }
 
 pub struct BVH {
-    root: Option<Box<BVHNode>>,
+    nodes: Vec<BVHNode>,
 }
 
 impl BVH {
-    pub fn new(aabbs: &[AABB]) -> Self {
-        let mut index_and_codes: Vec<(usize, u64)> = Vec::with_capacity(aabbs.len());
-
-        let centers: Vec<_> = aabbs.iter().map(|aabb| aabb.center()).collect();
-        let xs = centers.iter().map(|center| center.0).collect();
-        let ys = centers.iter().map(|center| center.1).collect();
-        let morton_codes = morton_codes_async(xs, ys);
-        for (i, code) in morton_codes.iter().enumerate() {
-            index_and_codes.push((i, *code));
+    pub fn build(aabbs: &[AABB]) -> Self {
+        let n = aabbs.len();
+        if n == 0 {
+            return Self { nodes: vec![] };
         }
-        index_and_codes.sort_unstable_by(|a, b| a.1.cmp(&b.1));
 
-        let sorted_aabbs: Vec<_> = index_and_codes.iter().map(|&(i, _)| aabbs[i]).collect();
-        let sorted_morton_codes: Vec<_> = index_and_codes.iter().map(|&(_, code)| code).collect();
+        let (xs, ys): (Vec<f64>, Vec<f64>) = aabbs.iter().map(|aabb| aabb.center()).unzip();
 
-        BVH {
-            root: Some(Box::new(Self::build_lbv_nodes(
-                &sorted_aabbs,
-                &sorted_morton_codes,
-                0,
-                aabbs.len() - 1,
-            ))),
-        }
+        let morton_time = Instant::now();
+        let morton_codes = morton_codes_async(xs.clone(), ys.clone());
+        println!("Morton codes computed in {:?}", morton_time.elapsed());
+
+        let mut aabb_indices: Vec<usize> = (0..n).collect();
+        aabb_indices.sort_unstable_by(|&a, &b| morton_codes[a].cmp(&morton_codes[b]));
+
+        let sorted_aabbs: Vec<AABB> = aabb_indices.iter().map(|&idx| aabbs[idx]).collect();
+
+        let mut nodes = vec![];
+        Self::build_recursive(&mut nodes, &sorted_aabbs, 0, n);
+
+        Self { nodes }
     }
-    fn build_lbv_nodes(
-        primitives: &[AABB],
-        morton_codes: &[u64],
+
+    fn build_recursive(
+        nodes: &mut Vec<BVHNode>,
+        aabbs: &[AABB],
         start: usize,
         end: usize,
-    ) -> BVHNode {
-        if start == end {
-            BVHNode::Leaf(primitives[start])
-        } else {
-            let split = Self::find_morton_split(morton_codes, start, end);
-
-            let left_child = Self::build_lbv_nodes(primitives, morton_codes, start, split);
-            let right_child = Self::build_lbv_nodes(primitives, morton_codes, split + 1, end);
-
-            let mut bbox = AABB::empty();
-            if let BVHNode::Leaf(ref child_bbox) | BVHNode::Internal(_, _, ref child_bbox) =
-                left_child
-            {
-                bbox.merge_with(child_bbox);
-            }
-            if let BVHNode::Leaf(ref child_bbox) | BVHNode::Internal(_, _, ref child_bbox) =
-                right_child
-            {
-                bbox.merge_with(child_bbox);
-            }
-
-            BVHNode::Internal(Box::new(left_child), Box::new(right_child), bbox)
-        }
-    }
-    fn find_morton_split(codes: &[u64], start: usize, end: usize) -> usize {
-        let mut split = start;
-        let mut max_diff = 0;
-
-        for i in start..end {
-            let diff = (codes[i] ^ codes[i + 1]).trailing_zeros();
-            if diff > max_diff {
-                max_diff = diff;
-                split = i;
-            }
+    ) -> usize {
+        let n = end - start;
+        if n == 1 {
+            let current_index = nodes.len();
+            nodes.push(BVHNode::Leaf(aabbs[start]));
+            return current_index;
         }
 
-        split
+        let split = start + n / 2;
+
+        let current_index = nodes.len();
+        nodes.push(BVHNode::empty()); // Placeholder for the internal node
+
+        let left_child_index = Self::build_recursive(nodes, aabbs, start, split);
+        let right_child_index = Self::build_recursive(nodes, aabbs, split, end);
+
+        let left_aabb = nodes[left_child_index].get_aabb();
+        let right_aabb = nodes[right_child_index].get_aabb();
+        let merged_aabb = left_aabb.merge(&right_aabb);
+
+        nodes[current_index] = BVHNode::Internal(
+            left_child_index as u64,
+            right_child_index as u64,
+            merged_aabb,
+        );
+
+        current_index
     }
 
     // Utilities
-    pub fn depth(&self) -> u64 {
-        if let Some(ref root) = self.root {
-            Self::depth_node(root)
-        } else {
-            0
-        }
+    pub fn depth(&self) -> usize {
+        self.depth_recursive(0)
     }
-    fn depth_node(node: &BVHNode) -> u64 {
-        match node {
+
+    fn depth_recursive(&self, current_idx: u64) -> usize {
+        match self.nodes[current_idx as usize] {
             BVHNode::Leaf(_) => 1,
-            BVHNode::Internal(left, right, _) => {
-                1 + Self::depth_node(left).max(Self::depth_node(right))
+            BVHNode::Internal(left_idx, right_idx, _) => {
+                1 + std::cmp::max(
+                    self.depth_recursive(left_idx),
+                    self.depth_recursive(right_idx),
+                )
             }
         }
     }
 
+    // Flattening
     pub fn flatten(&self) -> FlatBVH {
-        let mut flat_bvh = FlatBVH {
-            min_x: Vec::new(),
-            min_y: Vec::new(),
-            max_x: Vec::new(),
-            max_y: Vec::new(),
-            depth: Vec::new(),
-        };
+        let mut min_x = Vec::new();
+        let mut min_y = Vec::new();
+        let mut max_x = Vec::new();
+        let mut max_y = Vec::new();
+        let mut depth = Vec::new();
 
-        if let Some(ref root) = self.root {
-            Self::flatten_node(root, None, &mut flat_bvh, 0);
+        self.flatten_recursive(
+            0, 0, &mut min_x, &mut min_y, &mut max_x, &mut max_y, &mut depth,
+        );
+
+        FlatBVH {
+            min_x,
+            min_y,
+            max_x,
+            max_y,
+            depth,
         }
-
-        flat_bvh
     }
-    fn flatten_node(node: &BVHNode, parent: Option<u64>, flat_bvh: &mut FlatBVH, depth: u64) {
-        let index = flat_bvh.min_x.len();
 
-        match node {
-            BVHNode::Leaf(aabb) => {
-                flat_bvh.min_x.push(aabb.min.0);
-                flat_bvh.min_y.push(aabb.min.1);
-                flat_bvh.max_x.push(aabb.max.0);
-                flat_bvh.max_y.push(aabb.max.1);
-                flat_bvh.depth.push(depth);
-            }
-            BVHNode::Internal(left, right, aabb) => {
-                flat_bvh.min_x.push(aabb.min.0);
-                flat_bvh.min_y.push(aabb.min.1);
-                flat_bvh.max_x.push(aabb.max.0);
-                flat_bvh.max_y.push(aabb.max.1);
-                flat_bvh.depth.push(depth);
+    fn flatten_recursive(
+        &self,
+        current_idx: u64,
+        current_depth: u64,
+        min_x: &mut Vec<f64>,
+        min_y: &mut Vec<f64>,
+        max_x: &mut Vec<f64>,
+        max_y: &mut Vec<f64>,
+        depth: &mut Vec<u64>,
+    ) {
+        let node = &self.nodes[current_idx as usize];
+        let aabb = node.get_aabb();
+        min_x.push(aabb.min.0);
+        min_y.push(aabb.min.1);
+        max_x.push(aabb.max.0);
+        max_y.push(aabb.max.1);
+        depth.push(current_depth);
 
-                Self::flatten_node(left, Some(index as u64), flat_bvh, depth + 1);
-                Self::flatten_node(right, Some(index as u64), flat_bvh, depth + 1);
-            }
+        if let BVHNode::Internal(left_idx, right_idx, _) = node {
+            self.flatten_recursive(
+                *left_idx,
+                current_depth + 1,
+                min_x,
+                min_y,
+                max_x,
+                max_y,
+                depth,
+            );
+            self.flatten_recursive(
+                *right_idx,
+                current_depth + 1,
+                min_x,
+                min_y,
+                max_x,
+                max_y,
+                depth,
+            );
         }
     }
 
     // Printing
     pub fn print_bvh(&self) -> String {
-        if let Some(ref root) = self.root {
-            Self::print_bvh_tree(root, 0)
-        } else {
-            String::new()
-        }
+        self.print_bvh_tree(0, 0)
     }
-    fn print_bvh_tree(node: &BVHNode, depth: usize) -> String {
+    fn print_bvh_tree(&self, node: u64, depth: usize) -> String {
+        let node = &self.nodes[node as usize];
         let mut output = String::new();
         let indent = "│ ".repeat(depth);
         let prefix = if depth == 0 {
@@ -157,8 +180,8 @@ impl BVH {
             }
             BVHNode::Internal(left, right, aabb) => {
                 output.push_str(&format!("{}{} INTERNAL {:?}\n", prefix, indent, aabb));
-                output.push_str(&Self::print_bvh_tree(left, depth + 1));
-                output.push_str(&Self::print_bvh_tree(right, depth + 1));
+                output.push_str(&self.print_bvh_tree(*left, depth + 1));
+                output.push_str(&self.print_bvh_tree(*right, depth + 1));
             }
         }
         output

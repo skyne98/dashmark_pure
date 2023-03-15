@@ -70,4 +70,18 @@ impl AABB {
             && other.max.0 <= self.max.0
             && other.max.1 <= self.max.1
     }
+
+    pub fn overlap_ratio(&self, other: &Self) -> f64 {
+        let x_overlap = self.max.0.min(other.max.0) - self.min.0.max(other.min.0);
+        let y_overlap = self.max.1.min(other.max.1) - self.min.1.max(other.min.1);
+
+        if x_overlap > 0.0 && y_overlap > 0.0 {
+            let overlap_area = x_overlap * y_overlap;
+            let self_area = (self.max.0 - self.min.0) * (self.max.1 - self.min.1);
+            let other_area = (other.max.0 - other.min.0) * (other.max.1 - other.min.1);
+            overlap_area / (self_area + other_area - overlap_area)
+        } else {
+            0.0
+        }
+    }
 }
