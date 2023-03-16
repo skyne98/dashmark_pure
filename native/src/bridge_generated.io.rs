@@ -44,8 +44,8 @@ pub extern "C" fn wire_aabb_new_bulk(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_aabb_drop(aabb_id: *mut wire_Index) -> support::WireSyncReturn {
-    wire_aabb_drop_impl(aabb_id)
+pub extern "C" fn wire_aabb_drop_bulk(aabb_ids: *mut wire_list_index) -> support::WireSyncReturn {
+    wire_aabb_drop_bulk_impl(aabb_ids)
 }
 
 #[no_mangle]

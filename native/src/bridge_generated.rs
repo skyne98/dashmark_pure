@@ -112,16 +112,18 @@ fn wire_aabb_new_bulk_impl(
         },
     )
 }
-fn wire_aabb_drop_impl(aabb_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_aabb_drop_bulk_impl(
+    aabb_ids: impl Wire2Api<Vec<Index>> + UnwindSafe,
+) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
-            debug_name: "aabb_drop",
+            debug_name: "aabb_drop_bulk",
             port: None,
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_aabb_id = aabb_id.wire2api();
-            Ok(aabb_drop(api_aabb_id))
+            let api_aabb_ids = aabb_ids.wire2api();
+            Ok(aabb_drop_bulk(api_aabb_ids))
         },
     )
 }

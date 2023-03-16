@@ -32,8 +32,8 @@ pub fn wire_aabb_new_bulk(
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_drop(aabb_id: JsValue) -> support::WireSyncReturn {
-    wire_aabb_drop_impl(aabb_id)
+pub fn wire_aabb_drop_bulk(aabb_ids: JsValue) -> support::WireSyncReturn {
+    wire_aabb_drop_bulk_impl(aabb_ids)
 }
 
 #[wasm_bindgen]

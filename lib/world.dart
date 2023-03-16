@@ -350,9 +350,7 @@ class World {
 
       // Clean up
       bvh.drop();
-      for (var i = 0; i < aabbs.length; ++i) {
-        aabbs[i].drop();
-      }
+      AABB.dropBulk(aabbs);
     }
   }
 }

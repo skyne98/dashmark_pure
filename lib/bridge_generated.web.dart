@@ -70,7 +70,7 @@ class NativeWasmModule implements WasmModule {
   external dynamic /* List<dynamic> */ wire_aabb_new_bulk(Float64List min_xs,
       Float64List min_ys, Float64List max_xs, Float64List max_ys);
 
-  external dynamic /* bool */ wire_aabb_drop(List<dynamic> aabb_id);
+  external dynamic /* Uint8List */ wire_aabb_drop_bulk(List<dynamic> aabb_ids);
 
   external dynamic /* Float64List */ wire_aabb_min(List<dynamic> aabb_id);
 
@@ -158,8 +158,8 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
           Float64List min_ys, Float64List max_xs, Float64List max_ys) =>
       wasmModule.wire_aabb_new_bulk(min_xs, min_ys, max_xs, max_ys);
 
-  dynamic /* bool */ wire_aabb_drop(List<dynamic> aabb_id) =>
-      wasmModule.wire_aabb_drop(aabb_id);
+  dynamic /* Uint8List */ wire_aabb_drop_bulk(List<dynamic> aabb_ids) =>
+      wasmModule.wire_aabb_drop_bulk(aabb_ids);
 
   dynamic /* Float64List */ wire_aabb_min(List<dynamic> aabb_id) =>
       wasmModule.wire_aabb_min(aabb_id);

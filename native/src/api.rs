@@ -106,11 +106,16 @@ pub fn aabb_new_bulk(
     })
 }
 
-pub fn aabb_drop(aabb_id: Index) -> SyncReturn<bool> {
+pub fn aabb_drop_bulk(aabb_ids: Vec<Index>) -> SyncReturn<Vec<u8>> {
+    let mut results = Vec::with_capacity(aabb_ids.len());
     AABB_STORE.with(|store| {
         let mut store = store.borrow_mut();
-        let existing = store.remove(aabb_id.to_external_index());
-        SyncReturn(existing.is_some())
+        for aabb_id in aabb_ids {
+            let existing = store.remove(aabb_id.to_external_index());
+            results.push(existing.is_some());
+        }
+        let results_u8 = results.iter().map(|x| *x as u8).collect();
+        SyncReturn(results_u8)
     })
 }
 

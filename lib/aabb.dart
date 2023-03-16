@@ -4,7 +4,7 @@ import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class AABB {
   static final Finalizer<Index> _finalizer =
-      Finalizer((aabb) => api.aabbDrop(aabbId: aabb));
+      Finalizer((aabb) => api.aabbDropBulk(aabbIds: [aabb]));
 
   final Index id;
 
@@ -82,6 +82,11 @@ class AABB {
     return minMaxBulk(minXs, minYs, maxXs, maxYs);
   }
 
+  static List<bool> dropBulk(List<AABB> aabbs) {
+    final ids = aabbs.map((aabb) => aabb.id).toList();
+    return api.aabbDropBulk(aabbIds: ids).map((i) => i == 1).toList();
+  }
+
   // Properties
   List<double> get min {
     final min = api.aabbMin(aabbId: id);
@@ -112,7 +117,7 @@ class AABB {
 
   // Methods
   bool drop() {
-    return api.aabbDrop(aabbId: id);
+    return api.aabbDropBulk(aabbIds: [id])[0] == 1;
   }
 
   bool contains(double x, double y) {

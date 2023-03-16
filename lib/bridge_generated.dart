@@ -47,9 +47,9 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbNewBulkConstMeta;
 
-  bool aabbDrop({required Index aabbId, dynamic hint});
+  Uint8List aabbDropBulk({required List<Index> aabbIds, dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kAabbDropConstMeta;
+  FlutterRustBridgeTaskConstMeta get kAabbDropBulkConstMeta;
 
   Float64List aabbMin({required Index aabbId, dynamic hint});
 
@@ -296,21 +296,21 @@ class NativeImpl implements Native {
         argNames: ["minXs", "minYs", "maxXs", "maxYs"],
       );
 
-  bool aabbDrop({required Index aabbId, dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
+  Uint8List aabbDropBulk({required List<Index> aabbIds, dynamic hint}) {
+    var arg0 = _platform.api2wire_list_index(aabbIds);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_aabb_drop(arg0),
-      parseSuccessData: _wire2api_bool,
-      constMeta: kAabbDropConstMeta,
-      argValues: [aabbId],
+      callFfi: () => _platform.inner.wire_aabb_drop_bulk(arg0),
+      parseSuccessData: _wire2api_uint_8_list,
+      constMeta: kAabbDropBulkConstMeta,
+      argValues: [aabbIds],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kAabbDropConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kAabbDropBulkConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "aabb_drop",
-        argNames: ["aabbId"],
+        debugName: "aabb_drop_bulk",
+        argNames: ["aabbIds"],
       );
 
   Float64List aabbMin({required Index aabbId, dynamic hint}) {

@@ -254,19 +254,20 @@ class NativeWire implements FlutterRustBridgeWireBase {
           ffi.Pointer<wire_float_64_list>,
           ffi.Pointer<wire_float_64_list>)>();
 
-  WireSyncReturn wire_aabb_drop(
-    ffi.Pointer<wire_Index> aabb_id,
+  WireSyncReturn wire_aabb_drop_bulk(
+    ffi.Pointer<wire_list_index> aabb_ids,
   ) {
-    return _wire_aabb_drop(
-      aabb_id,
+    return _wire_aabb_drop_bulk(
+      aabb_ids,
     );
   }
 
-  late final _wire_aabb_dropPtr = _lookup<
-          ffi.NativeFunction<WireSyncReturn Function(ffi.Pointer<wire_Index>)>>(
-      'wire_aabb_drop');
-  late final _wire_aabb_drop = _wire_aabb_dropPtr
-      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_Index>)>();
+  late final _wire_aabb_drop_bulkPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_list_index>)>>('wire_aabb_drop_bulk');
+  late final _wire_aabb_drop_bulk = _wire_aabb_drop_bulkPtr
+      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_list_index>)>();
 
   WireSyncReturn wire_aabb_min(
     ffi.Pointer<wire_Index> aabb_id,
