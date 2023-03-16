@@ -168,12 +168,12 @@ impl BVH {
             let bounds_range = bounds_max - bounds_min;
             let split_size = bounds_range / NUM_SPLITS as f64;
             for aabb in aabbs {
-                let binId = usize::min(
+                let bin_id = usize::min(
                     ((aabb.center()[axis] - bounds_min) / split_size) as usize,
                     NUM_SPLITS as usize - 1,
                 );
-                bins[binId].primitive_count += 1;
-                bins[binId].aabb.merge_with(aabb);
+                bins[bin_id].primitive_count += 1;
+                bins[bin_id].aabb.merge_with(aabb);
             }
             // Gather data for the planes (bins - 1) between the bins
             let mut left_area = vec![0.0; NUM_SPLITS as usize - 1];
