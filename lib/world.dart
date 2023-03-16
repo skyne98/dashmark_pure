@@ -77,7 +77,7 @@ class World {
   void input(double x, double y) {
     _spawnPosition = Vector2(x, y);
     if (dashImage != null && fragmentShader != null) {
-      const amountPerSecond = 100;
+      const amountPerSecond = 5000;
       var amount = (amountPerSecond * lastDt).toInt();
       if (amount > amountPerSecond) {
         amount = amountPerSecond;
@@ -194,59 +194,6 @@ class World {
   void render(double t, Canvas canvas) {
     if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
-
-      // Draw the grid with morton codes
-      final gridSize = 50;
-      final gridColor = Color.fromARGB(255, 80, 80, 80);
-      final gridPaint = Paint()..color = gridColor;
-      final mortonColor = Color.fromARGB(255, 255, 255, 255);
-      final mortonPaint = Paint()..color = mortonColor;
-      final renderedCoordinates = <Vector2>[];
-      for (var x = 0; x < gridSize; ++x) {
-        for (var y = 0; y < gridSize; ++y) {
-          // render a circle
-          final xCoord = x * size.x / gridSize;
-          final yCoord = y * size.y / gridSize;
-          final center = Vector2(xCoord, yCoord);
-          const radius = 5.0;
-          canvas.drawCircle(Offset(center.x, center.y), radius, gridPaint);
-          renderedCoordinates.add(center);
-        }
-      }
-      final mortonCodes = api.mortonCodes(
-          xs: Float64List.fromList(
-              renderedCoordinates.map((coords) => coords.x).toList()),
-          ys: Float64List.fromList(
-              renderedCoordinates.map((coords) => coords.y).toList()));
-      // sort centers by morton code
-      final sortedCenters = <Vector2>[];
-      final sortedMortonCodes = <int>[];
-      for (var i = 0; i < mortonCodes.length; ++i) {
-        final mortonCode = mortonCodes[i].toInt();
-        final center = renderedCoordinates[i];
-        var inserted = false;
-        for (var j = 0; j < sortedMortonCodes.length; ++j) {
-          final sortedMortonCode = sortedMortonCodes[j];
-          if (mortonCode < sortedMortonCode) {
-            sortedMortonCodes.insert(j, mortonCode);
-            sortedCenters.insert(j, center);
-            inserted = true;
-            break;
-          }
-        }
-        if (!inserted) {
-          sortedMortonCodes.add(mortonCode);
-          sortedCenters.add(center);
-        }
-      }
-      // render morton codes (as lines)
-      for (var i = 0; i < sortedCenters.length; ++i) {
-        final center = sortedCenters[i];
-        final nextCenter = sortedCenters[(i + 1) % sortedCenters.length];
-
-        canvas.drawLine(Offset(center.x, center.y),
-            Offset(nextCenter.x, nextCenter.y), mortonPaint);
-      }
 
       // Draw the dashes
       final vertexTopLeft = Vector2(0.0, 0.0);

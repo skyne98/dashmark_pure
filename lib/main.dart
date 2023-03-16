@@ -76,7 +76,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
 
     // Test out the speed of generating morton codes
-    const gridSize = 3;
+    const gridSize = 1000;
     final gridSide = sqrt(gridSize);
     final valuesX = <double>[];
     for (var i = 0; i < gridSide; i++) {
@@ -157,8 +157,8 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     debugPrint('Deepest path: $deepestPath');
 
     // Print the BVH
-    final bvhString = api.bvhPrint(bvhId: bvh);
-    debugPrint(bvhString);
+    // final bvhString = api.bvhPrint(bvhId: bvh);
+    // debugPrint(bvhString);
 
     // Test a time of some queries
     final queries = 100;

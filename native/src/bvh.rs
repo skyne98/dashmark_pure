@@ -107,12 +107,6 @@ impl BVH {
             }
         }
 
-        println!("Best cost: {}", best_cost);
-        println!("Best position: {}", best_position);
-        println!("Best axis: {}", best_axis);
-        println!("Smallest position: {}", smallest_position);
-        println!("Largest position: {}", largest_position);
-
         (best_position, best_axis)
     }
 
@@ -131,6 +125,10 @@ impl BVH {
                 right_aabb = right_aabb.merge(aabb);
                 right_count += 1;
             }
+        }
+
+        if left_count == 0 || right_count == 0 {
+            return std::f64::MAX;
         }
 
         let left_area = left_aabb.area();
