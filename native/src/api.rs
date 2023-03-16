@@ -3,6 +3,7 @@ use crate::{aabb::AABB, bvh::BVH};
 use flutter_rust_bridge::{frb, SyncReturn};
 pub use generational_arena::{Arena, Index as ExternalIndex};
 use std::cell::RefCell;
+use std::env;
 pub use std::{
     ops::Deref,
     sync::{Mutex, RwLock},
@@ -80,6 +81,7 @@ pub fn aabb_new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> SyncReturn<In
     AABB_STORE.with(|store| {
         let mut store = store.borrow_mut();
         let id = store.insert(aabb);
+        store[id].id = Some(id);
         SyncReturn(Index::from_external_index(id))
     })
 }
@@ -100,6 +102,7 @@ pub fn aabb_new_bulk(
             let max_y = max_ys[i];
             let aabb = AABB::new((min_x, min_y), (max_x, max_y));
             let id = store.insert(aabb);
+            store[id].id = Some(id);
             ids.push(Index::from_external_index(id));
         }
         SyncReturn(ids)
@@ -139,7 +142,7 @@ pub fn aabb_size(aabb_id: Index) -> SyncReturn<Vec<f64>> {
     AABB_STORE.with(|store| {
         let store = store.borrow();
         let aabb = &store[aabb_id.to_external_index()];
-        SyncReturn(vec![aabb.size().0, aabb.size().1])
+        SyncReturn(aabb.size())
     })
 }
 
@@ -147,7 +150,7 @@ pub fn aabb_center(aabb_id: Index) -> SyncReturn<Vec<f64>> {
     AABB_STORE.with(|store| {
         let store = store.borrow();
         let aabb = &store[aabb_id.to_external_index()];
-        SyncReturn(vec![aabb.center().0, aabb.center().1])
+        SyncReturn(aabb.center())
     })
 }
 
@@ -184,6 +187,7 @@ pub fn aabb_merge(aabb_left_id: Index, aabb_right_id: Index) -> SyncReturn<Index
         let aabb_right = &store[aabb_right_id.to_external_index()];
         let aabb = aabb_left.merge(aabb_right);
         let id = store.insert(aabb);
+        store[id].id = Some(id);
         SyncReturn(Index::from_external_index(id))
     })
 }

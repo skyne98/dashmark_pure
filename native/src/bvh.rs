@@ -29,58 +29,154 @@ pub struct BVH {
 
 impl BVH {
     pub fn build(aabbs: &[&AABB]) -> Self {
-        let n = aabbs.len();
-        if n == 0 {
+        if aabbs.len() == 0 {
             return Self { nodes: vec![] };
         }
 
-        let (xs, ys): (Vec<f64>, Vec<f64>) = aabbs.iter().map(|aabb| aabb.center()).unzip();
-
-        let morton_codes = morton_codes_async(xs.clone(), ys.clone());
-
-        let mut aabb_indices: Vec<usize> = (0..n).collect();
-        aabb_indices.sort_unstable_by(|&a, &b| morton_codes[a].cmp(&morton_codes[b]));
-
-        let sorted_aabbs: Vec<&AABB> = aabb_indices.iter().map(|&idx| aabbs[idx]).collect();
+        let mut sorted_by_x_centroid = aabbs.to_vec();
+        sorted_by_x_centroid.sort_by(|a, b| {
+            let a_center = a.center()[0];
+            let b_center = b.center()[1];
+            a_center.partial_cmp(&b_center).unwrap()
+        });
 
         let mut nodes = vec![];
-        Self::build_recursive(&mut nodes, &sorted_aabbs, 0, n);
+        let aabbs = sorted_by_x_centroid
+            .iter()
+            .map(|aabb| (*aabb).clone())
+            .collect::<Vec<_>>();
+        Self::build_recursive(&mut nodes, aabbs);
 
         Self { nodes }
     }
 
-    fn build_recursive(
-        nodes: &mut Vec<BVHNode>,
-        aabbs: &[&AABB],
-        start: usize,
-        end: usize,
-    ) -> usize {
-        let n = end - start;
-        if n == 1 {
-            let current_index = nodes.len();
-            nodes.push(BVHNode::Leaf(aabbs[start].clone()));
-            return current_index;
+    fn build_recursive(nodes: &mut Vec<BVHNode>, aabbs: Vec<AABB>) -> usize {
+        let mut stack = vec![(aabbs, nodes.len(), 0usize)];
+        let mut max_depth = 0;
+
+        while let Some((aabbs, current_index, depth)) = stack.pop() {
+            max_depth = max_depth.max(depth);
+            if depth > 10000 {
+                println!("Emergency exit");
+                println!("AABBs: {}", aabbs.len());
+                println!("Nodes: {}", nodes.len());
+                println!("Stack: {}", stack.len());
+                break;
+            }
+
+            if aabbs.len() == 1 {
+                nodes.push(BVHNode::Leaf(aabbs[0].clone()));
+            } else {
+                let (split_position, split_axis) = Self::find_split(&aabbs[..]);
+                let mut left_aabbs = vec![];
+                let mut right_aabbs = vec![];
+                let mut left_aabb = AABB::empty();
+                let mut right_aabb = AABB::empty();
+
+                for aabb in aabbs {
+                    if aabb.center()[split_axis] < split_position {
+                        left_aabbs.push(aabb.clone());
+                        left_aabb.merge_with(&aabb);
+                    } else {
+                        right_aabbs.push(aabb.clone());
+                        right_aabb.merge_with(&aabb);
+                    }
+                }
+
+                nodes.push(BVHNode::empty()); // Placeholder for the internal node
+
+                let right_child_index = nodes.len();
+                stack.push((right_aabbs, right_child_index, depth + 1));
+
+                let left_child_index = nodes.len();
+                stack.push((left_aabbs, left_child_index, depth + 1));
+                let merged_aabb = left_aabb.merge(&right_aabb);
+
+                nodes[current_index] = BVHNode::Internal(
+                    left_child_index as u64,
+                    right_child_index as u64,
+                    merged_aabb,
+                );
+            }
         }
 
-        let split = start + n / 2;
+        println!("Max depth: {}", max_depth);
 
-        let current_index = nodes.len();
-        nodes.push(BVHNode::empty()); // Placeholder for the internal node
+        let leaf_nodes = nodes
+            .iter()
+            .filter(|node| match node {
+                BVHNode::Leaf(_) => true,
+                _ => false,
+            })
+            .count();
+        println!("Leaf nodes: {}", leaf_nodes);
 
-        let left_child_index = Self::build_recursive(nodes, aabbs, start, split);
-        let right_child_index = Self::build_recursive(nodes, aabbs, split, end);
+        0
+    }
 
-        let left_aabb = nodes[left_child_index].get_aabb();
-        let right_aabb = nodes[right_child_index].get_aabb();
-        let merged_aabb = left_aabb.merge(&right_aabb);
+    fn find_split(aabbs: &[AABB]) -> (f64, usize) {
+        // Use SAH to find the best split along the best axis
+        let mut best_cost = std::f64::MAX;
+        let mut best_position = 0.0;
+        let mut best_axis = 0;
 
-        nodes[current_index] = BVHNode::Internal(
-            left_child_index as u64,
-            right_child_index as u64,
-            merged_aabb,
-        );
+        let mut smallest_position = std::f64::MAX;
+        let mut largest_position = std::f64::MIN;
 
-        current_index
+        for axis in 0..2 {
+            for aabb in aabbs {
+                let position = aabb.center()[axis];
+                let cost = Self::evaluate_sah(position, axis, aabbs);
+
+                if cost < best_cost {
+                    best_cost = cost;
+                    best_position = position;
+                    best_axis = axis;
+                }
+
+                smallest_position = smallest_position.min(position);
+                largest_position = largest_position.max(position);
+            }
+        }
+
+        println!("Best cost: {}", best_cost);
+        println!("Best position: {}", best_position);
+        println!("Best axis: {}", best_axis);
+        println!("Smallest position: {}", smallest_position);
+        println!("Largest position: {}", largest_position);
+
+        (best_position, best_axis)
+    }
+
+    fn evaluate_sah(position: f64, axis: usize, aabbs: &[AABB]) -> f64 {
+        let mut left_aabb = AABB::empty();
+        let mut left_count = 0;
+        let mut right_aabb = AABB::empty();
+        let mut right_count = 0;
+
+        for aabb in aabbs {
+            let other_position = aabb.center()[axis];
+            if other_position < position {
+                left_aabb = left_aabb.merge(aabb);
+                left_count += 1;
+            } else {
+                right_aabb = right_aabb.merge(aabb);
+                right_count += 1;
+            }
+        }
+
+        let left_area = left_aabb.area();
+        let right_area = right_aabb.area();
+
+        let left_cost = left_count as f64 * left_area;
+        let right_cost = right_count as f64 * right_area;
+        let cost = left_cost + right_cost;
+
+        if cost > 0.0 {
+            cost
+        } else {
+            std::f64::MAX
+        }
     }
 
     // Flattening

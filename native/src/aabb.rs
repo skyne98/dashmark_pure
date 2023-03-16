@@ -20,16 +20,16 @@ impl AABB {
         Self { id: None, min, max }
     }
 
-    pub fn center(&self) -> (f64, f64) {
+    pub fn center(&self) -> Vec<f64> {
         let x = (self.min.0 + self.max.0) / 2.0;
         let y = (self.min.1 + self.max.1) / 2.0;
-        (x, y)
+        vec![x, y]
     }
 
-    pub fn size(&self) -> (f64, f64) {
+    pub fn size(&self) -> Vec<f64> {
         let width = self.max.0 - self.min.0;
         let height = self.max.1 - self.min.1;
-        (width, height)
+        vec![width, height]
     }
 
     pub fn contains_point(&self, point: (f64, f64)) -> bool {
@@ -61,6 +61,21 @@ impl AABB {
         self.max.1 = self.max.1.max(other.max.1);
     }
 
+    pub fn merge_point(&self, point: (f64, f64)) -> Self {
+        let min_x = self.min.0.min(point.0);
+        let min_y = self.min.1.min(point.1);
+        let max_x = self.max.0.max(point.0);
+        let max_y = self.max.1.max(point.1);
+        Self::new((min_x, min_y), (max_x, max_y))
+    }
+
+    pub fn merge_with_point(&mut self, point: (f64, f64)) {
+        self.min.0 = self.min.0.min(point.0);
+        self.min.1 = self.min.1.min(point.1);
+        self.max.0 = self.max.0.max(point.0);
+        self.max.1 = self.max.1.max(point.1);
+    }
+
     pub fn contains_aabb(&self, other: &Self) -> bool {
         other.min.0 >= self.min.0
             && other.min.1 >= self.min.1
@@ -80,5 +95,10 @@ impl AABB {
         } else {
             0.0
         }
+    }
+
+    pub fn area(&self) -> f64 {
+        let size = self.size();
+        size[0] * size[1]
     }
 }

@@ -77,7 +77,7 @@ class World {
   void input(double x, double y) {
     _spawnPosition = Vector2(x, y);
     if (dashImage != null && fragmentShader != null) {
-      const amountPerSecond = 5000;
+      const amountPerSecond = 100;
       var amount = (amountPerSecond * lastDt).toInt();
       if (amount > amountPerSecond) {
         amount = amountPerSecond;
@@ -345,12 +345,26 @@ class World {
       final flattened = bvh.flatten();
       debugPrint('BVH flattened in ${stopwatch.elapsedMilliseconds} ms');
 
+      // Make a query in the middle of the screen
+      final querySize = 100.0;
+      final query = AABB.fromXYWH(
+        size.x / 2 - querySize / 2,
+        size.y / 2 - querySize / 2,
+        querySize,
+        querySize,
+      );
+      stopwatch.reset();
+      final queryResults = bvh.queryAABB(query);
+      debugPrint(
+          'BVH query in ${stopwatch.elapsedMilliseconds} ms (${queryResults.length} results)');
+
       // Draw the BVH
-      // drawFlatBVH(bvh, flattened, canvas);
+      drawFlatBVH(bvh, flattened, canvas);
 
       // Clean up
       bvh.drop();
       AABB.dropBulk(aabbs);
+      query.drop();
     }
   }
 }
