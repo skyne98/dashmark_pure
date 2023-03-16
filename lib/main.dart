@@ -114,10 +114,10 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     final maxYS = <double>[];
     // ... generate random values
     for (var i = 0; i < gridSize; i++) {
-      minXS.add(random.nextDouble());
-      minYS.add(random.nextDouble());
-      final width = random.nextDouble();
-      final height = random.nextDouble();
+      minXS.add(random.nextDouble() * 980);
+      minYS.add(random.nextDouble() * 980);
+      final width = random.nextDouble() * 20;
+      final height = random.nextDouble() * 20;
       maxXS.add(minXS[i] + width);
       maxYS.add(minYS[i] + height);
     }
@@ -164,10 +164,11 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     final queries = 100;
     final queryAABBs = <Index>[];
     for (var i = 0; i < queries; i++) {
-      final minX = random.nextDouble();
-      final minY = random.nextDouble();
-      final width = random.nextDouble();
-      final height = random.nextDouble();
+      // In a 1000x1000 world, create 20x20 AABBs
+      final minX = random.nextDouble() * 980;
+      final minY = random.nextDouble() * 980;
+      final width = random.nextDouble() * 20;
+      final height = random.nextDouble() * 20;
       final maxX = minX + width;
       final maxY = minY + height;
       final aabb = api.aabbNew(minX: minX, minY: minY, maxX: maxX, maxY: maxY);
