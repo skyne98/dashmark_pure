@@ -58,12 +58,31 @@ impl BVH {
             let mut left_aabb = AABB::empty();
             let mut right_aabb = AABB::empty();
 
-            for aabb in aabbs {
+            for aabb in aabbs.iter() {
                 if aabb.center()[split_axis] < split_position {
                     left_aabbs.push(aabb.clone());
                     left_aabb.merge_with(&aabb);
                 } else {
                     right_aabbs.push(aabb.clone());
+                    right_aabb.merge_with(&aabb);
+                }
+            }
+
+            // Special measure for when all the boxes are in the same spot
+            if (left_aabbs.len() == 0) || (right_aabbs.len() == 0) {
+                // Doesn't matter, split the group directly in half
+                let half = aabbs.len() / 2;
+                left_aabbs = aabbs[..half].to_vec();
+                right_aabbs = aabbs[half..].to_vec();
+
+                left_aabb = AABB::empty();
+                right_aabb = AABB::empty();
+
+                for aabb in left_aabbs.iter() {
+                    left_aabb.merge_with(&aabb);
+                }
+
+                for aabb in right_aabbs.iter() {
                     right_aabb.merge_with(&aabb);
                 }
             }
