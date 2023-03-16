@@ -40,7 +40,7 @@ impl BVH {
     }
 
     fn build_recursive(nodes: &mut Vec<BVHNode>, aabbs: Vec<AABB>) -> usize {
-        let mut current_index = nodes.len();
+        let current_index = nodes.len();
 
         if aabbs.len() == 1 {
             nodes.push(BVHNode::Leaf(aabbs[0].clone()));
@@ -52,7 +52,7 @@ impl BVH {
             // let split_axis = merged_aabb.longest_axis();
             // let split_position = merged_aabb.center()[split_axis];
 
-            // let (split_position, split_axis) = Self::find_split(&aabbs[..]);
+            // let (split_position, split_axis) = Self::find_split_best(&aabbs[..]);
             let (split_position, split_axis) = Self::find_split_uniform(&aabbs[..], &merged_aabb);
             let mut left_aabbs = vec![];
             let mut right_aabbs = vec![];
@@ -100,7 +100,7 @@ impl BVH {
         current_index
     }
 
-    fn find_split(aabbs: &[AABB]) -> (f64, usize) {
+    fn find_split_best(aabbs: &[AABB]) -> (f64, usize) {
         // Use SAH to find the best split along the best axis
         let mut best_cost = std::f64::MAX;
         let mut best_position = 0.0;
@@ -160,10 +160,10 @@ impl BVH {
         for aabb in aabbs {
             let other_position = aabb.center()[axis];
             if other_position < position {
-                left_aabb = left_aabb.merge(aabb);
+                left_aabb.merge_with(aabb);
                 left_count += 1;
             } else {
-                right_aabb = right_aabb.merge(aabb);
+                right_aabb.merge_with(aabb);
                 right_count += 1;
             }
         }
