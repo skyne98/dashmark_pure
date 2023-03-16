@@ -77,7 +77,7 @@ pub fn morton_codes(xs: Vec<f64>, ys: Vec<f64>) -> SyncReturn<Vec<u64>> {
 
 // AABB API
 pub fn aabb_new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> SyncReturn<Index> {
-    let aabb = AABB::new((min_x, min_y), (max_x, max_y));
+    let aabb = AABB::new(min_x, min_y, max_x, max_y);
     AABB_STORE.with(|store| {
         let mut store = store.borrow_mut();
         let id = store.insert(aabb);
@@ -100,7 +100,7 @@ pub fn aabb_new_bulk(
             let min_y = min_ys[i];
             let max_x = max_xs[i];
             let max_y = max_ys[i];
-            let aabb = AABB::new((min_x, min_y), (max_x, max_y));
+            let aabb = AABB::new(min_x, min_y, max_x, max_y);
             let id = store.insert(aabb);
             store[id].id = Some(id);
             ids.push(Index::from_external_index(id));
@@ -126,7 +126,7 @@ pub fn aabb_min(aabb_id: Index) -> SyncReturn<Vec<f64>> {
     AABB_STORE.with(|store| {
         let store = store.borrow();
         let aabb = &store[aabb_id.to_external_index()];
-        SyncReturn(vec![aabb.min.0, aabb.min.1])
+        SyncReturn(vec![aabb.min_x, aabb.min_y])
     })
 }
 
@@ -134,7 +134,7 @@ pub fn aabb_max(aabb_id: Index) -> SyncReturn<Vec<f64>> {
     AABB_STORE.with(|store| {
         let store = store.borrow();
         let aabb = &store[aabb_id.to_external_index()];
-        SyncReturn(vec![aabb.max.0, aabb.max.1])
+        SyncReturn(vec![aabb.max_x, aabb.max_y])
     })
 }
 
@@ -309,7 +309,7 @@ pub fn bvh_query_aabb_collisions_min_max(
     BVH_STORE.with(|store| {
         let store = store.borrow();
         let bvh = &store[bvh_id.to_external_index()];
-        let aabb = AABB::new((min_x, min_y), (max_x, max_y));
+        let aabb = AABB::new(min_x, min_y, max_x, max_y);
         let collisions = bvh.query_aabb_collisions(&aabb);
         let collisions_wrapped = collisions
             .iter()

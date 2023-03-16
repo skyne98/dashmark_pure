@@ -8,8 +8,8 @@ fn hello_world_test() {
 // Test out the BVH
 #[test]
 fn bvh_splits() {
-    let left_aabb = AABB::new((0.0, 0.0), (0.5, 0.5));
-    let right_aabb = AABB::new((1.0, 0.0), (1.5, 0.5));
+    let left_aabb = AABB::new(0.0, 0.0, 0.5, 0.5);
+    let right_aabb = AABB::new(1.0, 0.0, 1.5, 0.5);
     let vec = vec![left_aabb, right_aabb];
     let vec_of_refs = vec.iter().collect::<Vec<&AABB>>();
     let bvh = BVH::build(&vec_of_refs[..]);
@@ -18,8 +18,8 @@ fn bvh_splits() {
 
 #[test]
 fn bvh_splits_two_boxes_in_one_spot() {
-    let left_aabb = AABB::new((0.0, 0.0), (0.5, 0.5));
-    let right_aabb = AABB::new((0.0, 0.0), (0.5, 0.5));
+    let left_aabb = AABB::new(0.0, 0.0, 0.5, 0.5);
+    let right_aabb = AABB::new(0.0, 0.0, 0.5, 0.5);
     let vec = vec![left_aabb, right_aabb];
     let vec_of_refs = vec.iter().collect::<Vec<&AABB>>();
     let bvh = BVH::build(&vec_of_refs[..]);

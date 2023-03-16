@@ -45,14 +45,15 @@ impl BVH {
         if aabbs.len() == 1 {
             nodes.push(BVHNode::Leaf(aabbs[0].clone()));
         } else {
-            // let mut merged_aabb = AABB::empty();
-            // for aabb in &aabbs {
-            //     merged_aabb.merge_with(aabb);
-            // }
+            let mut merged_aabb = AABB::empty();
+            for aabb in &aabbs {
+                merged_aabb.merge_with(aabb);
+            }
             // let split_axis = merged_aabb.longest_axis();
             // let split_position = merged_aabb.center()[split_axis];
 
-            let (split_position, split_axis) = Self::find_split(&aabbs[..]);
+            // let (split_position, split_axis) = Self::find_split(&aabbs[..]);
+            let (split_position, split_axis) = Self::find_split_uniform(&aabbs[..], &merged_aabb);
             let mut left_aabbs = vec![];
             let mut right_aabbs = vec![];
             let mut left_aabb = AABB::empty();
@@ -92,8 +93,6 @@ impl BVH {
 
             let left_index = Self::build_recursive(nodes, left_aabbs);
             let right_index = Self::build_recursive(nodes, right_aabbs);
-
-            let merged_aabb = left_aabb.merge(&right_aabb);
             nodes[current_index] =
                 BVHNode::Internal(left_index as u64, right_index as u64, merged_aabb);
         }
@@ -107,9 +106,6 @@ impl BVH {
         let mut best_position = 0.0;
         let mut best_axis = 0;
 
-        let mut smallest_position = std::f64::MAX;
-        let mut largest_position = std::f64::MIN;
-
         for axis in 0..2 {
             for aabb in aabbs {
                 let position = aabb.center()[axis];
@@ -120,9 +116,35 @@ impl BVH {
                     best_position = position;
                     best_axis = axis;
                 }
+            }
+        }
 
-                smallest_position = smallest_position.min(position);
-                largest_position = largest_position.max(position);
+        (best_position, best_axis)
+    }
+
+    fn find_split_uniform(aabbs: &[AABB], node_aabb: &AABB) -> (f64, usize) {
+        const NUM_SPLITS: u8 = 16;
+
+        // Use SAH to find the best split along the best axis
+        let mut best_cost = std::f64::MAX;
+        let mut best_position = 0.0;
+        let mut best_axis = 0;
+
+        for axis in 0..2 {
+            let bounds_min = node_aabb.min()[axis];
+            let bounds_max = node_aabb.max()[axis];
+            let bounds_range = bounds_max - bounds_min;
+            let split_size = bounds_range / NUM_SPLITS as f64;
+
+            for i in 0..NUM_SPLITS {
+                let position = bounds_min + (i as f64 * split_size);
+                let cost = Self::evaluate_sah(position, axis, aabbs);
+
+                if cost < best_cost {
+                    best_cost = cost;
+                    best_position = position;
+                    best_axis = axis;
+                }
             }
         }
 
@@ -207,10 +229,10 @@ impl BVH {
     ) {
         let node = &self.nodes[current_idx as usize];
         let aabb = node.get_aabb();
-        min_x.push(aabb.min.0);
-        min_y.push(aabb.min.1);
-        max_x.push(aabb.max.0);
-        max_y.push(aabb.max.1);
+        min_x.push(aabb.min_x);
+        min_y.push(aabb.min_y);
+        max_x.push(aabb.max_x);
+        max_y.push(aabb.max_y);
         depth.push(current_depth);
 
         if let BVHNode::Internal(left_idx, right_idx, _) = node {
@@ -385,8 +407,10 @@ impl BVH {
             for i in 0..min_x.len() {
                 if this_depth == &depth[i as usize] {
                     aabbs.push(AABB::new(
-                        (min_x[i as usize], min_y[i as usize]),
-                        (max_x[i as usize], max_y[i as usize]),
+                        min_x[i as usize],
+                        min_y[i as usize],
+                        max_x[i as usize],
+                        max_y[i as usize],
                     ));
                 }
             }
