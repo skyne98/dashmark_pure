@@ -5,6 +5,12 @@ use generational_arena::Index;
 use crate::{aabb::AABB, api::morton_codes_async, flat_bvh::FlatBVH};
 
 #[derive(Debug, Clone)]
+struct IntervalBin {
+    aabb: AABB,
+    primitive_count: u64,
+}
+
+#[derive(Debug, Clone)]
 pub enum BVHNode {
     Leaf(AABB),
     Internal(u64, u64, AABB),
@@ -45,15 +51,15 @@ impl BVH {
         if aabbs.len() == 1 {
             nodes.push(BVHNode::Leaf(aabbs[0].clone()));
         } else {
-            let mut merged_aabb = AABB::empty();
-            for aabb in &aabbs {
-                merged_aabb.merge_with(aabb);
-            }
+            // let mut merged_aabb = AABB::empty();
+            // for aabb in &aabbs {
+            //     merged_aabb.merge_with(aabb);
+            // }
             // let split_axis = merged_aabb.longest_axis();
             // let split_position = merged_aabb.center()[split_axis];
 
             // let (split_position, split_axis) = Self::find_split_best(&aabbs[..]);
-            let (split_position, split_axis) = Self::find_split_uniform(&aabbs[..], &merged_aabb);
+            let (split_position, split_axis) = Self::find_split_uniform(&aabbs[..]);
             let mut left_aabbs = vec![];
             let mut right_aabbs = vec![];
             let mut left_aabb = AABB::empty();
@@ -93,6 +99,7 @@ impl BVH {
 
             let left_index = Self::build_recursive(nodes, left_aabbs);
             let right_index = Self::build_recursive(nodes, right_aabbs);
+            let merged_aabb = left_aabb.merge(&right_aabb);
             nodes[current_index] =
                 BVHNode::Internal(left_index as u64, right_index as u64, merged_aabb);
         }
@@ -122,7 +129,7 @@ impl BVH {
         (best_position, best_axis)
     }
 
-    fn find_split_uniform(aabbs: &[AABB], node_aabb: &AABB) -> (f64, usize) {
+    fn find_split_uniform(aabbs: &[AABB]) -> (f64, usize) {
         const NUM_SPLITS: u8 = 16;
 
         // Use SAH to find the best split along the best axis
@@ -131,18 +138,71 @@ impl BVH {
         let mut best_axis = 0;
 
         for axis in 0..2 {
-            let bounds_min = node_aabb.min()[axis];
-            let bounds_max = node_aabb.max()[axis];
+            let mut bounds_min = f64::INFINITY;
+            let mut bounds_max = f64::NEG_INFINITY;
+
+            // Simple improvement to BVH quality
+            // https://jacco.ompf2.com/2022/04/21/how-to-build-a-bvh-part-3-quick-builds/
+            // this effectively allows us to make split intervals smaller
+            for aabb in aabbs {
+                let position = aabb.center()[axis];
+                if position < bounds_min {
+                    bounds_min = position;
+                }
+                if position > bounds_max {
+                    bounds_max = position;
+                }
+            }
+            if bounds_min == bounds_max {
+                continue;
+            }
+
+            // Populate the bins
+            let mut bins = vec![
+                IntervalBin {
+                    aabb: AABB::empty(),
+                    primitive_count: 0
+                };
+                NUM_SPLITS as usize
+            ];
             let bounds_range = bounds_max - bounds_min;
             let split_size = bounds_range / NUM_SPLITS as f64;
+            for aabb in aabbs {
+                let binId = usize::min(
+                    ((aabb.center()[axis] - bounds_min) / split_size) as usize,
+                    NUM_SPLITS as usize - 1,
+                );
+                bins[binId].primitive_count += 1;
+                bins[binId].aabb.merge_with(aabb);
+            }
+            // Gather data for the planes (bins - 1) between the bins
+            let mut left_area = vec![0.0; NUM_SPLITS as usize - 1];
+            let mut left_count = vec![0; NUM_SPLITS as usize - 1];
+            let mut right_area = vec![0.0; NUM_SPLITS as usize - 1];
+            let mut right_count = vec![0; NUM_SPLITS as usize - 1];
+            let mut left_box = AABB::empty();
+            let mut right_box = AABB::empty();
+            let mut left_sum = 0;
+            let mut right_sum = 0;
+            for i in 0..NUM_SPLITS as usize - 1 {
+                left_sum += bins[i].primitive_count;
+                left_count[i] = left_sum;
+                left_box.merge_with(&bins[i].aabb);
+                left_area[i] = left_box.area();
 
-            for i in 0..NUM_SPLITS {
-                let position = bounds_min + (i as f64 * split_size);
-                let cost = Self::evaluate_sah(position, axis, aabbs);
+                right_sum += bins[NUM_SPLITS as usize - 1 - i].primitive_count;
+                right_count[NUM_SPLITS as usize - 2 - i] = right_sum;
+                right_box.merge_with(&bins[NUM_SPLITS as usize - 1 - i].aabb);
+                right_area[NUM_SPLITS as usize - 2 - i] = right_box.area();
+            }
 
+            // Calculate SAH cost for each plane
+            for i in 0..NUM_SPLITS as usize - 1 {
+                let cost =
+                    left_area[i] * left_count[i] as f64 + right_area[i] * right_count[i] as f64;
                 if cost < best_cost {
                     best_cost = cost;
-                    best_position = position;
+                    best_position = bounds_min + (i as f64 + 0.5) * split_size;
                     best_axis = axis;
                 }
             }
