@@ -29,7 +29,7 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kMortonCodesConstMeta;
 
-  int aabbNew(
+  Index aabbNew(
       {required double minX,
       required double minY,
       required double maxX,
@@ -38,7 +38,7 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbNewConstMeta;
 
-  Uint64List aabbNewBulk(
+  List<Index> aabbNewBulk(
       {required Float64List minXs,
       required Float64List minYs,
       required Float64List maxXs,
@@ -47,98 +47,111 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbNewBulkConstMeta;
 
-  void aabbDrop({required int aabbId, dynamic hint});
+  void aabbDrop({required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbDropConstMeta;
 
-  Float64List aabbMin({required int aabbId, dynamic hint});
+  Float64List aabbMin({required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbMinConstMeta;
 
-  Float64List aabbMax({required int aabbId, dynamic hint});
+  Float64List aabbMax({required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbMaxConstMeta;
 
-  Float64List aabbSize({required int aabbId, dynamic hint});
+  Float64List aabbSize({required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbSizeConstMeta;
 
-  Float64List aabbCenter({required int aabbId, dynamic hint});
+  Float64List aabbCenter({required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbCenterConstMeta;
 
   bool aabbIntersectsAabb(
-      {required int aabbLeftId, required int aabbRightId, dynamic hint});
+      {required Index aabbLeftId, required Index aabbRightId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbIntersectsAabbConstMeta;
 
   bool aabbContainsPoint(
-      {required int aabbId, required Float64List point, dynamic hint});
+      {required Index aabbId, required Float64List point, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbContainsPointConstMeta;
 
   bool aabbContainsAabb(
-      {required int aabbLeftId, required int aabbRightId, dynamic hint});
+      {required Index aabbLeftId, required Index aabbRightId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbContainsAabbConstMeta;
 
-  int aabbMerge(
-      {required int aabbLeftId, required int aabbRightId, dynamic hint});
+  Index aabbMerge(
+      {required Index aabbLeftId, required Index aabbRightId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbMergeConstMeta;
 
   Future<void> aabbMergeWith(
-      {required int aabbId, required int otherId, dynamic hint});
+      {required Index aabb, required Index other, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbMergeWithConstMeta;
 
-  int bvhNew({required Uint64List aabbs, dynamic hint});
+  Index bvhNew({required List<Index> aabbs, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhNewConstMeta;
 
-  Future<int> bvhNewAsync({required Uint64List aabbs, dynamic hint});
+  Future<Index> bvhNewAsync({required List<Index> aabbs, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhNewAsyncConstMeta;
 
-  void bvhDrop({required int bvhId, dynamic hint});
+  void bvhDrop({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhDropConstMeta;
 
-  FlatBVH bvhFlatten({required int bvhId, dynamic hint});
+  FlatBVH bvhFlatten({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhFlattenConstMeta;
 
-  Future<FlatBVH> bvhFlattenAsync({required int bvhId, dynamic hint});
+  Future<FlatBVH> bvhFlattenAsync({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhFlattenAsyncConstMeta;
 
-  int bvhDepth({required int bvhId, dynamic hint});
+  int bvhDepth({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhDepthConstMeta;
 
-  Future<int> bvhDepthAsync({required int bvhId, dynamic hint});
+  Future<int> bvhDepthAsync({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhDepthAsyncConstMeta;
 
-  Uint64List bvhQueryAabbCollisions(
-      {required int bvhId, required int aabbId, dynamic hint});
+  List<Index> bvhQueryAabbCollisions(
+      {required Index bvhId, required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhQueryAabbCollisionsConstMeta;
 
-  Uint64List bvhQueryPointCollisions(
-      {required int bvhId, required double x, required double y, dynamic hint});
+  List<Index> bvhQueryAabbCollisionsMinMax(
+      {required Index bvhId,
+      required double minX,
+      required double minY,
+      required double maxX,
+      required double maxY,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhQueryAabbCollisionsMinMaxConstMeta;
+
+  List<Index> bvhQueryPointCollisions(
+      {required Index bvhId,
+      required double x,
+      required double y,
+      dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhQueryPointCollisionsConstMeta;
 
-  String bvhPrint({required int bvhId, dynamic hint});
+  String bvhPrint({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhPrintConstMeta;
 
-  Future<String> bvhPrintAsync({required int bvhId, dynamic hint});
+  Future<String> bvhPrintAsync({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhPrintAsyncConstMeta;
 
-  double bvhOverlapRatio({required int bvhId, dynamic hint});
+  double bvhOverlapRatio({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhOverlapRatioConstMeta;
 }
@@ -156,6 +169,16 @@ class FlatBVH {
     required this.maxX,
     required this.maxY,
     required this.depth,
+  });
+}
+
+class Index {
+  final int index;
+  final int generation;
+
+  const Index({
+    required this.index,
+    required this.generation,
   });
 }
 
@@ -223,7 +246,7 @@ class NativeImpl implements Native {
         argNames: ["xs", "ys"],
       );
 
-  int aabbNew(
+  Index aabbNew(
       {required double minX,
       required double minY,
       required double maxX,
@@ -235,7 +258,7 @@ class NativeImpl implements Native {
     var arg3 = api2wire_f64(maxY);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_new(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_u64,
+      parseSuccessData: _wire2api_index,
       constMeta: kAabbNewConstMeta,
       argValues: [minX, minY, maxX, maxY],
       hint: hint,
@@ -248,7 +271,7 @@ class NativeImpl implements Native {
         argNames: ["minX", "minY", "maxX", "maxY"],
       );
 
-  Uint64List aabbNewBulk(
+  List<Index> aabbNewBulk(
       {required Float64List minXs,
       required Float64List minYs,
       required Float64List maxXs,
@@ -260,7 +283,7 @@ class NativeImpl implements Native {
     var arg3 = _platform.api2wire_float_64_list(maxYs);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_new_bulk(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_uint_64_list,
+      parseSuccessData: _wire2api_list_index,
       constMeta: kAabbNewBulkConstMeta,
       argValues: [minXs, minYs, maxXs, maxYs],
       hint: hint,
@@ -273,8 +296,8 @@ class NativeImpl implements Native {
         argNames: ["minXs", "minYs", "maxXs", "maxYs"],
       );
 
-  void aabbDrop({required int aabbId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbId);
+  void aabbDrop({required Index aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_drop(arg0),
       parseSuccessData: _wire2api_unit,
@@ -290,8 +313,8 @@ class NativeImpl implements Native {
         argNames: ["aabbId"],
       );
 
-  Float64List aabbMin({required int aabbId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbId);
+  Float64List aabbMin({required Index aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_min(arg0),
       parseSuccessData: _wire2api_float_64_list,
@@ -307,8 +330,8 @@ class NativeImpl implements Native {
         argNames: ["aabbId"],
       );
 
-  Float64List aabbMax({required int aabbId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbId);
+  Float64List aabbMax({required Index aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_max(arg0),
       parseSuccessData: _wire2api_float_64_list,
@@ -324,8 +347,8 @@ class NativeImpl implements Native {
         argNames: ["aabbId"],
       );
 
-  Float64List aabbSize({required int aabbId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbId);
+  Float64List aabbSize({required Index aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_size(arg0),
       parseSuccessData: _wire2api_float_64_list,
@@ -341,8 +364,8 @@ class NativeImpl implements Native {
         argNames: ["aabbId"],
       );
 
-  Float64List aabbCenter({required int aabbId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbId);
+  Float64List aabbCenter({required Index aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_center(arg0),
       parseSuccessData: _wire2api_float_64_list,
@@ -359,9 +382,9 @@ class NativeImpl implements Native {
       );
 
   bool aabbIntersectsAabb(
-      {required int aabbLeftId, required int aabbRightId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbLeftId);
-    var arg1 = _platform.api2wire_u64(aabbRightId);
+      {required Index aabbLeftId, required Index aabbRightId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbLeftId);
+    var arg1 = _platform.api2wire_box_autoadd_index(aabbRightId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_intersects_aabb(arg0, arg1),
       parseSuccessData: _wire2api_bool,
@@ -378,8 +401,8 @@ class NativeImpl implements Native {
       );
 
   bool aabbContainsPoint(
-      {required int aabbId, required Float64List point, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbId);
+      {required Index aabbId, required Float64List point, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     var arg1 = _platform.api2wire_float_64_list(point);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_contains_point(arg0, arg1),
@@ -397,9 +420,9 @@ class NativeImpl implements Native {
       );
 
   bool aabbContainsAabb(
-      {required int aabbLeftId, required int aabbRightId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbLeftId);
-    var arg1 = _platform.api2wire_u64(aabbRightId);
+      {required Index aabbLeftId, required Index aabbRightId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbLeftId);
+    var arg1 = _platform.api2wire_box_autoadd_index(aabbRightId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_contains_aabb(arg0, arg1),
       parseSuccessData: _wire2api_bool,
@@ -415,13 +438,13 @@ class NativeImpl implements Native {
         argNames: ["aabbLeftId", "aabbRightId"],
       );
 
-  int aabbMerge(
-      {required int aabbLeftId, required int aabbRightId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbLeftId);
-    var arg1 = _platform.api2wire_u64(aabbRightId);
+  Index aabbMerge(
+      {required Index aabbLeftId, required Index aabbRightId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabbLeftId);
+    var arg1 = _platform.api2wire_box_autoadd_index(aabbRightId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_merge(arg0, arg1),
-      parseSuccessData: _wire2api_u64,
+      parseSuccessData: _wire2api_index,
       constMeta: kAabbMergeConstMeta,
       argValues: [aabbLeftId, aabbRightId],
       hint: hint,
@@ -435,15 +458,15 @@ class NativeImpl implements Native {
       );
 
   Future<void> aabbMergeWith(
-      {required int aabbId, required int otherId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(aabbId);
-    var arg1 = _platform.api2wire_u64(otherId);
+      {required Index aabb, required Index other, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(aabb);
+    var arg1 = _platform.api2wire_box_autoadd_index(other);
     return _platform.executeNormal(FlutterRustBridgeTask(
       callFfi: (port_) =>
           _platform.inner.wire_aabb_merge_with(port_, arg0, arg1),
       parseSuccessData: _wire2api_unit,
       constMeta: kAabbMergeWithConstMeta,
-      argValues: [aabbId, otherId],
+      argValues: [aabb, other],
       hint: hint,
     ));
   }
@@ -451,14 +474,14 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbMergeWithConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_merge_with",
-        argNames: ["aabbId", "otherId"],
+        argNames: ["aabb", "other"],
       );
 
-  int bvhNew({required Uint64List aabbs, dynamic hint}) {
-    var arg0 = _platform.api2wire_uint_64_list(aabbs);
+  Index bvhNew({required List<Index> aabbs, dynamic hint}) {
+    var arg0 = _platform.api2wire_list_index(aabbs);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_new(arg0),
-      parseSuccessData: _wire2api_u64,
+      parseSuccessData: _wire2api_index,
       constMeta: kBvhNewConstMeta,
       argValues: [aabbs],
       hint: hint,
@@ -471,11 +494,11 @@ class NativeImpl implements Native {
         argNames: ["aabbs"],
       );
 
-  Future<int> bvhNewAsync({required Uint64List aabbs, dynamic hint}) {
-    var arg0 = _platform.api2wire_uint_64_list(aabbs);
+  Future<Index> bvhNewAsync({required List<Index> aabbs, dynamic hint}) {
+    var arg0 = _platform.api2wire_list_index(aabbs);
     return _platform.executeNormal(FlutterRustBridgeTask(
       callFfi: (port_) => _platform.inner.wire_bvh_new_async(port_, arg0),
-      parseSuccessData: _wire2api_u64,
+      parseSuccessData: _wire2api_index,
       constMeta: kBvhNewAsyncConstMeta,
       argValues: [aabbs],
       hint: hint,
@@ -488,8 +511,8 @@ class NativeImpl implements Native {
         argNames: ["aabbs"],
       );
 
-  void bvhDrop({required int bvhId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+  void bvhDrop({required Index bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_drop(arg0),
       parseSuccessData: _wire2api_unit,
@@ -505,8 +528,8 @@ class NativeImpl implements Native {
         argNames: ["bvhId"],
       );
 
-  FlatBVH bvhFlatten({required int bvhId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+  FlatBVH bvhFlatten({required Index bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_flatten(arg0),
       parseSuccessData: _wire2api_flat_bvh,
@@ -522,8 +545,8 @@ class NativeImpl implements Native {
         argNames: ["bvhId"],
       );
 
-  Future<FlatBVH> bvhFlattenAsync({required int bvhId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+  Future<FlatBVH> bvhFlattenAsync({required Index bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeNormal(FlutterRustBridgeTask(
       callFfi: (port_) => _platform.inner.wire_bvh_flatten_async(port_, arg0),
       parseSuccessData: _wire2api_flat_bvh,
@@ -539,8 +562,8 @@ class NativeImpl implements Native {
         argNames: ["bvhId"],
       );
 
-  int bvhDepth({required int bvhId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+  int bvhDepth({required Index bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_depth(arg0),
       parseSuccessData: _wire2api_u64,
@@ -556,8 +579,8 @@ class NativeImpl implements Native {
         argNames: ["bvhId"],
       );
 
-  Future<int> bvhDepthAsync({required int bvhId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+  Future<int> bvhDepthAsync({required Index bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeNormal(FlutterRustBridgeTask(
       callFfi: (port_) => _platform.inner.wire_bvh_depth_async(port_, arg0),
       parseSuccessData: _wire2api_u64,
@@ -573,13 +596,13 @@ class NativeImpl implements Native {
         argNames: ["bvhId"],
       );
 
-  Uint64List bvhQueryAabbCollisions(
-      {required int bvhId, required int aabbId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
-    var arg1 = _platform.api2wire_u64(aabbId);
+  List<Index> bvhQueryAabbCollisions(
+      {required Index bvhId, required Index aabbId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
+    var arg1 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_query_aabb_collisions(arg0, arg1),
-      parseSuccessData: _wire2api_uint_64_list,
+      parseSuccessData: _wire2api_list_index,
       constMeta: kBvhQueryAabbCollisionsConstMeta,
       argValues: [bvhId, aabbId],
       hint: hint,
@@ -592,18 +615,46 @@ class NativeImpl implements Native {
         argNames: ["bvhId", "aabbId"],
       );
 
-  Uint64List bvhQueryPointCollisions(
-      {required int bvhId,
+  List<Index> bvhQueryAabbCollisionsMinMax(
+      {required Index bvhId,
+      required double minX,
+      required double minY,
+      required double maxX,
+      required double maxY,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
+    var arg1 = api2wire_f64(minX);
+    var arg2 = api2wire_f64(minY);
+    var arg3 = api2wire_f64(maxX);
+    var arg4 = api2wire_f64(maxY);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner
+          .wire_bvh_query_aabb_collisions_min_max(arg0, arg1, arg2, arg3, arg4),
+      parseSuccessData: _wire2api_list_index,
+      constMeta: kBvhQueryAabbCollisionsMinMaxConstMeta,
+      argValues: [bvhId, minX, minY, maxX, maxY],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhQueryAabbCollisionsMinMaxConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_query_aabb_collisions_min_max",
+        argNames: ["bvhId", "minX", "minY", "maxX", "maxY"],
+      );
+
+  List<Index> bvhQueryPointCollisions(
+      {required Index bvhId,
       required double x,
       required double y,
       dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     var arg1 = api2wire_f64(x);
     var arg2 = api2wire_f64(y);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () =>
           _platform.inner.wire_bvh_query_point_collisions(arg0, arg1, arg2),
-      parseSuccessData: _wire2api_uint_64_list,
+      parseSuccessData: _wire2api_list_index,
       constMeta: kBvhQueryPointCollisionsConstMeta,
       argValues: [bvhId, x, y],
       hint: hint,
@@ -616,8 +667,8 @@ class NativeImpl implements Native {
         argNames: ["bvhId", "x", "y"],
       );
 
-  String bvhPrint({required int bvhId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+  String bvhPrint({required Index bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_print(arg0),
       parseSuccessData: _wire2api_String,
@@ -633,8 +684,8 @@ class NativeImpl implements Native {
         argNames: ["bvhId"],
       );
 
-  Future<String> bvhPrintAsync({required int bvhId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+  Future<String> bvhPrintAsync({required Index bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeNormal(FlutterRustBridgeTask(
       callFfi: (port_) => _platform.inner.wire_bvh_print_async(port_, arg0),
       parseSuccessData: _wire2api_String,
@@ -650,8 +701,8 @@ class NativeImpl implements Native {
         argNames: ["bvhId"],
       );
 
-  double bvhOverlapRatio({required int bvhId, dynamic hint}) {
-    var arg0 = _platform.api2wire_u64(bvhId);
+  double bvhOverlapRatio({required Index bvhId, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_overlap_ratio(arg0),
       parseSuccessData: _wire2api_f64,
@@ -701,6 +752,20 @@ class NativeImpl implements Native {
     return raw as Float64List;
   }
 
+  Index _wire2api_index(dynamic raw) {
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return Index(
+      index: _wire2api_usize(arr[0]),
+      generation: _wire2api_u64(arr[1]),
+    );
+  }
+
+  List<Index> _wire2api_list_index(dynamic raw) {
+    return (raw as List<dynamic>).map(_wire2api_index).toList();
+  }
+
   int _wire2api_u64(dynamic raw) {
     return castInt(raw);
   }
@@ -720,6 +785,10 @@ class NativeImpl implements Native {
   void _wire2api_unit(dynamic raw) {
     return;
   }
+
+  int _wire2api_usize(dynamic raw) {
+    return castInt(raw);
+  }
 }
 
 // Section: api2wire
@@ -729,4 +798,8 @@ double api2wire_f64(double raw) {
   return raw;
 }
 
+@protected
+int api2wire_usize(int raw) {
+  return raw;
+}
 // Section: finalizer

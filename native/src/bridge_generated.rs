@@ -112,7 +112,7 @@ fn wire_aabb_new_bulk_impl(
         },
     )
 }
-fn wire_aabb_drop_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_aabb_drop_impl(aabb_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_drop",
@@ -125,7 +125,7 @@ fn wire_aabb_drop_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::Wir
         },
     )
 }
-fn wire_aabb_min_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_aabb_min_impl(aabb_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_min",
@@ -138,7 +138,7 @@ fn wire_aabb_min_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::Wire
         },
     )
 }
-fn wire_aabb_max_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_aabb_max_impl(aabb_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_max",
@@ -151,7 +151,7 @@ fn wire_aabb_max_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::Wire
         },
     )
 }
-fn wire_aabb_size_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_aabb_size_impl(aabb_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_size",
@@ -164,7 +164,7 @@ fn wire_aabb_size_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::Wir
         },
     )
 }
-fn wire_aabb_center_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_aabb_center_impl(aabb_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "aabb_center",
@@ -178,8 +178,8 @@ fn wire_aabb_center_impl(aabb_id: impl Wire2Api<u64> + UnwindSafe) -> support::W
     )
 }
 fn wire_aabb_intersects_aabb_impl(
-    aabb_left_id: impl Wire2Api<u64> + UnwindSafe,
-    aabb_right_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb_left_id: impl Wire2Api<Index> + UnwindSafe,
+    aabb_right_id: impl Wire2Api<Index> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -195,7 +195,7 @@ fn wire_aabb_intersects_aabb_impl(
     )
 }
 fn wire_aabb_contains_point_impl(
-    aabb_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb_id: impl Wire2Api<Index> + UnwindSafe,
     point: impl Wire2Api<Vec<f64>> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
@@ -212,8 +212,8 @@ fn wire_aabb_contains_point_impl(
     )
 }
 fn wire_aabb_contains_aabb_impl(
-    aabb_left_id: impl Wire2Api<u64> + UnwindSafe,
-    aabb_right_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb_left_id: impl Wire2Api<Index> + UnwindSafe,
+    aabb_right_id: impl Wire2Api<Index> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -229,8 +229,8 @@ fn wire_aabb_contains_aabb_impl(
     )
 }
 fn wire_aabb_merge_impl(
-    aabb_left_id: impl Wire2Api<u64> + UnwindSafe,
-    aabb_right_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb_left_id: impl Wire2Api<Index> + UnwindSafe,
+    aabb_right_id: impl Wire2Api<Index> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -247,8 +247,8 @@ fn wire_aabb_merge_impl(
 }
 fn wire_aabb_merge_with_impl(
     port_: MessagePort,
-    aabb_id: impl Wire2Api<u64> + UnwindSafe,
-    other_id: impl Wire2Api<u64> + UnwindSafe,
+    aabb: impl Wire2Api<Index> + UnwindSafe,
+    other: impl Wire2Api<Index> + UnwindSafe,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
@@ -257,13 +257,13 @@ fn wire_aabb_merge_with_impl(
             mode: FfiCallMode::Normal,
         },
         move || {
-            let api_aabb_id = aabb_id.wire2api();
-            let api_other_id = other_id.wire2api();
-            move |task_callback| Ok(aabb_merge_with(api_aabb_id, api_other_id))
+            let api_aabb = aabb.wire2api();
+            let api_other = other.wire2api();
+            move |task_callback| Ok(aabb_merge_with(api_aabb, api_other))
         },
     )
 }
-fn wire_bvh_new_impl(aabbs: impl Wire2Api<Vec<u64>> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_bvh_new_impl(aabbs: impl Wire2Api<Vec<Index>> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "bvh_new",
@@ -276,7 +276,7 @@ fn wire_bvh_new_impl(aabbs: impl Wire2Api<Vec<u64>> + UnwindSafe) -> support::Wi
         },
     )
 }
-fn wire_bvh_new_async_impl(port_: MessagePort, aabbs: impl Wire2Api<Vec<u64>> + UnwindSafe) {
+fn wire_bvh_new_async_impl(port_: MessagePort, aabbs: impl Wire2Api<Vec<Index>> + UnwindSafe) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "bvh_new_async",
@@ -289,7 +289,7 @@ fn wire_bvh_new_async_impl(port_: MessagePort, aabbs: impl Wire2Api<Vec<u64>> + 
         },
     )
 }
-fn wire_bvh_drop_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_bvh_drop_impl(bvh_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "bvh_drop",
@@ -302,7 +302,7 @@ fn wire_bvh_drop_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireS
         },
     )
 }
-fn wire_bvh_flatten_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_bvh_flatten_impl(bvh_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "bvh_flatten",
@@ -315,7 +315,7 @@ fn wire_bvh_flatten_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::Wi
         },
     )
 }
-fn wire_bvh_flatten_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + UnwindSafe) {
+fn wire_bvh_flatten_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<Index> + UnwindSafe) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "bvh_flatten_async",
@@ -328,7 +328,7 @@ fn wire_bvh_flatten_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + 
         },
     )
 }
-fn wire_bvh_depth_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_bvh_depth_impl(bvh_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "bvh_depth",
@@ -341,7 +341,7 @@ fn wire_bvh_depth_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::Wire
         },
     )
 }
-fn wire_bvh_depth_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + UnwindSafe) {
+fn wire_bvh_depth_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<Index> + UnwindSafe) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "bvh_depth_async",
@@ -355,8 +355,8 @@ fn wire_bvh_depth_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + Un
     )
 }
 fn wire_bvh_query_aabb_collisions_impl(
-    bvh_id: impl Wire2Api<u64> + UnwindSafe,
-    aabb_id: impl Wire2Api<u64> + UnwindSafe,
+    bvh_id: impl Wire2Api<Index> + UnwindSafe,
+    aabb_id: impl Wire2Api<Index> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -371,8 +371,33 @@ fn wire_bvh_query_aabb_collisions_impl(
         },
     )
 }
+fn wire_bvh_query_aabb_collisions_min_max_impl(
+    bvh_id: impl Wire2Api<Index> + UnwindSafe,
+    min_x: impl Wire2Api<f64> + UnwindSafe,
+    min_y: impl Wire2Api<f64> + UnwindSafe,
+    max_x: impl Wire2Api<f64> + UnwindSafe,
+    max_y: impl Wire2Api<f64> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_query_aabb_collisions_min_max",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_bvh_id = bvh_id.wire2api();
+            let api_min_x = min_x.wire2api();
+            let api_min_y = min_y.wire2api();
+            let api_max_x = max_x.wire2api();
+            let api_max_y = max_y.wire2api();
+            Ok(bvh_query_aabb_collisions_min_max(
+                api_bvh_id, api_min_x, api_min_y, api_max_x, api_max_y,
+            ))
+        },
+    )
+}
 fn wire_bvh_query_point_collisions_impl(
-    bvh_id: impl Wire2Api<u64> + UnwindSafe,
+    bvh_id: impl Wire2Api<Index> + UnwindSafe,
     x: impl Wire2Api<f64> + UnwindSafe,
     y: impl Wire2Api<f64> + UnwindSafe,
 ) -> support::WireSyncReturn {
@@ -390,7 +415,7 @@ fn wire_bvh_query_point_collisions_impl(
         },
     )
 }
-fn wire_bvh_print_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_bvh_print_impl(bvh_id: impl Wire2Api<Index> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "bvh_print",
@@ -403,7 +428,7 @@ fn wire_bvh_print_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::Wire
         },
     )
 }
-fn wire_bvh_print_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + UnwindSafe) {
+fn wire_bvh_print_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<Index> + UnwindSafe) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "bvh_print_async",
@@ -416,7 +441,9 @@ fn wire_bvh_print_async_impl(port_: MessagePort, bvh_id: impl Wire2Api<u64> + Un
         },
     )
 }
-fn wire_bvh_overlap_ratio_impl(bvh_id: impl Wire2Api<u64> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_bvh_overlap_ratio_impl(
+    bvh_id: impl Wire2Api<Index> + UnwindSafe,
+) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "bvh_overlap_ratio",
@@ -451,6 +478,7 @@ where
         (!self.is_null()).then(|| self.wire2api())
     }
 }
+
 impl Wire2Api<f64> for f64 {
     fn wire2api(self) -> f64 {
         self
@@ -462,7 +490,11 @@ impl Wire2Api<u64> for u64 {
         self
     }
 }
-
+impl Wire2Api<usize> for usize {
+    fn wire2api(self) -> usize {
+        self
+    }
+}
 // Section: impl IntoDart
 
 impl support::IntoDart for FlatBVH {
@@ -478,6 +510,13 @@ impl support::IntoDart for FlatBVH {
     }
 }
 impl support::IntoDartExceptPrimitive for FlatBVH {}
+
+impl support::IntoDart for Index {
+    fn into_dart(self) -> support::DartAbi {
+        vec![self.index.into_dart(), self.generation.into_dart()].into_dart()
+    }
+}
+impl support::IntoDartExceptPrimitive for Index {}
 
 // Section: executor
 

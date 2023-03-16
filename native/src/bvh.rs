@@ -1,5 +1,7 @@
 use std::{collections::HashSet, time::Instant};
 
+use generational_arena::Index;
+
 use crate::{aabb::AABB, api::morton_codes_async, flat_bvh::FlatBVH};
 
 #[derive(Debug, Clone)]
@@ -15,8 +17,8 @@ impl BVHNode {
 
     pub fn get_aabb(&self) -> AABB {
         match self {
-            BVHNode::Leaf(aabb) => *aabb,
-            BVHNode::Internal(_, _, aabb) => *aabb,
+            BVHNode::Leaf(aabb) => aabb.clone(),
+            BVHNode::Internal(_, _, aabb) => aabb.clone(),
         }
     }
 }
@@ -26,7 +28,7 @@ pub struct BVH {
 }
 
 impl BVH {
-    pub fn build(aabbs: &[AABB]) -> Self {
+    pub fn build(aabbs: &[&AABB]) -> Self {
         let n = aabbs.len();
         if n == 0 {
             return Self { nodes: vec![] };
@@ -39,7 +41,7 @@ impl BVH {
         let mut aabb_indices: Vec<usize> = (0..n).collect();
         aabb_indices.sort_unstable_by(|&a, &b| morton_codes[a].cmp(&morton_codes[b]));
 
-        let sorted_aabbs: Vec<AABB> = aabb_indices.iter().map(|&idx| aabbs[idx]).collect();
+        let sorted_aabbs: Vec<&AABB> = aabb_indices.iter().map(|&idx| aabbs[idx]).collect();
 
         let mut nodes = vec![];
         Self::build_recursive(&mut nodes, &sorted_aabbs, 0, n);
@@ -49,14 +51,14 @@ impl BVH {
 
     fn build_recursive(
         nodes: &mut Vec<BVHNode>,
-        aabbs: &[AABB],
+        aabbs: &[&AABB],
         start: usize,
         end: usize,
     ) -> usize {
         let n = end - start;
         if n == 1 {
             let current_index = nodes.len();
-            nodes.push(BVHNode::Leaf(aabbs[start]));
+            nodes.push(BVHNode::Leaf(aabbs[start].clone()));
             return current_index;
         }
 
@@ -153,7 +155,7 @@ impl BVH {
     }
 
     // Querying
-    pub fn query_aabb_collisions(&self, query_aabb: &AABB) -> Vec<u64> {
+    pub fn query_aabb_collisions(&self, query_aabb: &AABB) -> Vec<Index> {
         if self.nodes.is_empty() {
             return vec![];
         }
@@ -166,7 +168,7 @@ impl BVH {
         &self,
         node_index: usize,
         query_aabb: &AABB,
-        results: &mut Vec<u64>,
+        results: &mut Vec<Index>,
     ) {
         let node = &self.nodes[node_index];
         if query_aabb.intersects_aabb(&node.get_aabb()) {
@@ -192,7 +194,7 @@ impl BVH {
         }
     }
 
-    pub fn query_point_collisions(&self, point: (f64, f64)) -> Vec<u64> {
+    pub fn query_point_collisions(&self, point: (f64, f64)) -> Vec<Index> {
         if self.nodes.is_empty() {
             return vec![];
         }
@@ -205,10 +207,10 @@ impl BVH {
         &self,
         node_index: usize,
         point: (f64, f64),
-        results: &mut Vec<u64>,
+        results: &mut Vec<Index>,
     ) {
         let node = &self.nodes[node_index];
-        if node.get_aabb().contains(point) {
+        if node.get_aabb().contains_point(point) {
             match node {
                 BVHNode::Leaf(aabb) => {
                     if let Some(id) = aabb.id {

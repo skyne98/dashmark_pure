@@ -32,112 +32,132 @@ pub fn wire_aabb_new_bulk(
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_drop(aabb_id: u64) -> support::WireSyncReturn {
+pub fn wire_aabb_drop(aabb_id: JsValue) -> support::WireSyncReturn {
     wire_aabb_drop_impl(aabb_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_min(aabb_id: u64) -> support::WireSyncReturn {
+pub fn wire_aabb_min(aabb_id: JsValue) -> support::WireSyncReturn {
     wire_aabb_min_impl(aabb_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_max(aabb_id: u64) -> support::WireSyncReturn {
+pub fn wire_aabb_max(aabb_id: JsValue) -> support::WireSyncReturn {
     wire_aabb_max_impl(aabb_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_size(aabb_id: u64) -> support::WireSyncReturn {
+pub fn wire_aabb_size(aabb_id: JsValue) -> support::WireSyncReturn {
     wire_aabb_size_impl(aabb_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_center(aabb_id: u64) -> support::WireSyncReturn {
+pub fn wire_aabb_center(aabb_id: JsValue) -> support::WireSyncReturn {
     wire_aabb_center_impl(aabb_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_intersects_aabb(aabb_left_id: u64, aabb_right_id: u64) -> support::WireSyncReturn {
+pub fn wire_aabb_intersects_aabb(
+    aabb_left_id: JsValue,
+    aabb_right_id: JsValue,
+) -> support::WireSyncReturn {
     wire_aabb_intersects_aabb_impl(aabb_left_id, aabb_right_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_contains_point(aabb_id: u64, point: Box<[f64]>) -> support::WireSyncReturn {
+pub fn wire_aabb_contains_point(aabb_id: JsValue, point: Box<[f64]>) -> support::WireSyncReturn {
     wire_aabb_contains_point_impl(aabb_id, point)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_contains_aabb(aabb_left_id: u64, aabb_right_id: u64) -> support::WireSyncReturn {
+pub fn wire_aabb_contains_aabb(
+    aabb_left_id: JsValue,
+    aabb_right_id: JsValue,
+) -> support::WireSyncReturn {
     wire_aabb_contains_aabb_impl(aabb_left_id, aabb_right_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_merge(aabb_left_id: u64, aabb_right_id: u64) -> support::WireSyncReturn {
+pub fn wire_aabb_merge(aabb_left_id: JsValue, aabb_right_id: JsValue) -> support::WireSyncReturn {
     wire_aabb_merge_impl(aabb_left_id, aabb_right_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_merge_with(port_: MessagePort, aabb_id: u64, other_id: u64) {
-    wire_aabb_merge_with_impl(port_, aabb_id, other_id)
+pub fn wire_aabb_merge_with(port_: MessagePort, aabb: JsValue, other: JsValue) {
+    wire_aabb_merge_with_impl(port_, aabb, other)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_new(aabbs: Box<[u64]>) -> support::WireSyncReturn {
+pub fn wire_bvh_new(aabbs: JsValue) -> support::WireSyncReturn {
     wire_bvh_new_impl(aabbs)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_new_async(port_: MessagePort, aabbs: Box<[u64]>) {
+pub fn wire_bvh_new_async(port_: MessagePort, aabbs: JsValue) {
     wire_bvh_new_async_impl(port_, aabbs)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_drop(bvh_id: u64) -> support::WireSyncReturn {
+pub fn wire_bvh_drop(bvh_id: JsValue) -> support::WireSyncReturn {
     wire_bvh_drop_impl(bvh_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_flatten(bvh_id: u64) -> support::WireSyncReturn {
+pub fn wire_bvh_flatten(bvh_id: JsValue) -> support::WireSyncReturn {
     wire_bvh_flatten_impl(bvh_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_flatten_async(port_: MessagePort, bvh_id: u64) {
+pub fn wire_bvh_flatten_async(port_: MessagePort, bvh_id: JsValue) {
     wire_bvh_flatten_async_impl(port_, bvh_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_depth(bvh_id: u64) -> support::WireSyncReturn {
+pub fn wire_bvh_depth(bvh_id: JsValue) -> support::WireSyncReturn {
     wire_bvh_depth_impl(bvh_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_depth_async(port_: MessagePort, bvh_id: u64) {
+pub fn wire_bvh_depth_async(port_: MessagePort, bvh_id: JsValue) {
     wire_bvh_depth_async_impl(port_, bvh_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_query_aabb_collisions(bvh_id: u64, aabb_id: u64) -> support::WireSyncReturn {
+pub fn wire_bvh_query_aabb_collisions(
+    bvh_id: JsValue,
+    aabb_id: JsValue,
+) -> support::WireSyncReturn {
     wire_bvh_query_aabb_collisions_impl(bvh_id, aabb_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_query_point_collisions(bvh_id: u64, x: f64, y: f64) -> support::WireSyncReturn {
+pub fn wire_bvh_query_aabb_collisions_min_max(
+    bvh_id: JsValue,
+    min_x: f64,
+    min_y: f64,
+    max_x: f64,
+    max_y: f64,
+) -> support::WireSyncReturn {
+    wire_bvh_query_aabb_collisions_min_max_impl(bvh_id, min_x, min_y, max_x, max_y)
+}
+
+#[wasm_bindgen]
+pub fn wire_bvh_query_point_collisions(bvh_id: JsValue, x: f64, y: f64) -> support::WireSyncReturn {
     wire_bvh_query_point_collisions_impl(bvh_id, x, y)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_print(bvh_id: u64) -> support::WireSyncReturn {
+pub fn wire_bvh_print(bvh_id: JsValue) -> support::WireSyncReturn {
     wire_bvh_print_impl(bvh_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_print_async(port_: MessagePort, bvh_id: u64) {
+pub fn wire_bvh_print_async(port_: MessagePort, bvh_id: JsValue) {
     wire_bvh_print_async_impl(port_, bvh_id)
 }
 
 #[wasm_bindgen]
-pub fn wire_bvh_overlap_ratio(bvh_id: u64) -> support::WireSyncReturn {
+pub fn wire_bvh_overlap_ratio(bvh_id: JsValue) -> support::WireSyncReturn {
     wire_bvh_overlap_ratio_impl(bvh_id)
 }
 
@@ -152,12 +172,31 @@ impl Wire2Api<Vec<f64>> for Box<[f64]> {
         self.into_vec()
     }
 }
-
-impl Wire2Api<Vec<u64>> for Box<[u64]> {
-    fn wire2api(self) -> Vec<u64> {
-        self.into_vec()
+impl Wire2Api<Index> for JsValue {
+    fn wire2api(self) -> Index {
+        let self_ = self.dyn_into::<JsArray>().unwrap();
+        assert_eq!(
+            self_.length(),
+            2,
+            "Expected 2 elements, got {}",
+            self_.length()
+        );
+        Index {
+            index: self_.get(0).wire2api(),
+            generation: self_.get(1).wire2api(),
+        }
     }
 }
+impl Wire2Api<Vec<Index>> for JsValue {
+    fn wire2api(self) -> Vec<Index> {
+        self.dyn_into::<JsArray>()
+            .unwrap()
+            .iter()
+            .map(Wire2Api::wire2api)
+            .collect()
+    }
+}
+
 // Section: impl Wire2Api for JsValue
 
 impl Wire2Api<f64> for JsValue {
@@ -177,10 +216,8 @@ impl Wire2Api<u64> for JsValue {
         ::std::convert::TryInto::try_into(self.dyn_into::<js_sys::BigInt>().unwrap()).unwrap()
     }
 }
-impl Wire2Api<Vec<u64>> for JsValue {
-    fn wire2api(self) -> Vec<u64> {
-        let buf = self.dyn_into::<js_sys::BigUint64Array>().unwrap();
-        let buf = js_sys::Uint8Array::new(&buf.buffer());
-        support::slice_from_byte_buffer(buf.to_vec()).into()
+impl Wire2Api<usize> for JsValue {
+    fn wire2api(self) -> usize {
+        self.unchecked_into_f64() as _
     }
 }

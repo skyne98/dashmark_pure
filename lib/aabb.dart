@@ -3,10 +3,10 @@ import 'dart:typed_data';
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class AABB {
-  static final Finalizer<int> _finalizer =
+  static final Finalizer<Index> _finalizer =
       Finalizer((aabb) => api.aabbDrop(aabbId: aabb));
 
-  final int id;
+  final Index id;
 
   AABB(this.id) {
     _finalizer.attach(this, id);
@@ -42,7 +42,7 @@ class AABB {
         minYs: Float64List.fromList(minYs),
         maxXs: Float64List.fromList(maxXs),
         maxYs: Float64List.fromList(maxYs));
-    return ids.toList().map((id) => AABB(id.toInt())).toList();
+    return ids.toList().map((id) => AABB(id)).toList();
   }
 
   static List<AABB> fromListBulk(List<List<double>> minMaxs) {
@@ -130,6 +130,6 @@ class AABB {
   }
 
   void mergeWith(AABB other) {
-    api.aabbMergeWith(aabbId: id, otherId: other.id);
+    api.aabbMergeWith(aabb: id, other: other.id);
   }
 }

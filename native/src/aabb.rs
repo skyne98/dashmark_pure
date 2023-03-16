@@ -1,6 +1,8 @@
-#[derive(Debug, Clone, Copy)]
+use generational_arena::Index;
+
+#[derive(Debug, Clone)]
 pub struct AABB {
-    pub id: Option<u64>,
+    pub id: Option<Index>,
     pub min: (f64, f64),
     pub max: (f64, f64),
 }
@@ -30,7 +32,7 @@ impl AABB {
         (width, height)
     }
 
-    pub fn contains(&self, point: (f64, f64)) -> bool {
+    pub fn contains_point(&self, point: (f64, f64)) -> bool {
         point.0 >= self.min.0
             && point.0 <= self.max.0
             && point.1 >= self.min.1

@@ -158,8 +158,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
 
     // Test a time of some queries
     final queries = 100;
-    final queryAABBs = <int>[];
-    final queryResults = <int>[];
+    final queryAABBs = <Index>[];
     for (var i = 0; i < queries; i++) {
       final minX = random.nextDouble();
       final minY = random.nextDouble();
@@ -169,7 +168,6 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
       final maxY = minY + height;
       final aabb = api.aabbNew(minX: minX, minY: minY, maxX: maxX, maxY: maxY);
       queryAABBs.add(aabb);
-      queryResults.add(0);
     }
     stopwatch.reset();
     stopwatch.start();

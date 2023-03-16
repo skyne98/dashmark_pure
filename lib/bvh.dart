@@ -6,10 +6,10 @@ import 'aabb.dart';
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class BVH {
-  static final Finalizer<int> _finalizer =
+  static final Finalizer<Index> _finalizer =
       Finalizer((bvh) => api.bvhDrop(bvhId: bvh));
 
-  final int id;
+  final Index id;
   List<AABB>? aabbs = [];
 
   BVH(this.id, {this.aabbs}) {
@@ -19,15 +19,13 @@ class BVH {
   // Factories
   factory BVH.fromAABBs(List<AABB> aabbs) {
     final aabbIds = aabbs.map((aabb) => aabb.id).toList();
-    final aabbIdsUint64 = Uint64List.fromList(aabbIds);
-    final id = api.bvhNew(aabbs: aabbIdsUint64);
+    final id = api.bvhNew(aabbs: aabbIds);
     return BVH(id, aabbs: aabbs);
   }
 
   static Future<BVH> fromAABBsAsync(List<AABB> aabbs) async {
     final aabbIds = aabbs.map((aabb) => aabb.id).toList();
-    final aabbIdsUint64 = Uint64List.fromList(aabbIds);
-    final id = await api.bvhNewAsync(aabbs: aabbIdsUint64);
+    final id = await api.bvhNewAsync(aabbs: aabbIds);
     return BVH(id, aabbs: aabbs);
   }
 
@@ -51,12 +49,12 @@ class BVH {
 
   List<AABB> queryAABB(AABB aabb) {
     final ids = api.bvhQueryAabbCollisions(bvhId: id, aabbId: aabb.id);
-    return ids.toList().map((id) => AABB(id.toInt())).toList();
+    return ids.toList().map((id) => AABB(id)).toList();
   }
 
   List<AABB> queryPoint(double x, double y) {
     final ids = api.bvhQueryPointCollisions(bvhId: id, x: x, y: y);
-    return ids.toList().map((id) => AABB(id.toInt())).toList();
+    return ids.toList().map((id) => AABB(id)).toList();
   }
 }
 
