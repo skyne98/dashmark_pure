@@ -45,14 +45,14 @@ impl BVH {
         if aabbs.len() == 1 {
             nodes.push(BVHNode::Leaf(aabbs[0].clone()));
         } else {
-            let mut merged_aabb = AABB::empty();
-            for aabb in &aabbs {
-                merged_aabb.merge_with(aabb);
-            }
-            let split_axis = merged_aabb.longest_axis();
-            let split_position = merged_aabb.center()[split_axis];
+            // let mut merged_aabb = AABB::empty();
+            // for aabb in &aabbs {
+            //     merged_aabb.merge_with(aabb);
+            // }
+            // let split_axis = merged_aabb.longest_axis();
+            // let split_position = merged_aabb.center()[split_axis];
 
-            // let (split_position, split_axis) = Self::find_split(&aabbs[..]);
+            let (split_position, split_axis) = Self::find_split(&aabbs[..]);
             let mut left_aabbs = vec![];
             let mut right_aabbs = vec![];
             let mut left_aabb = AABB::empty();
@@ -74,6 +74,7 @@ impl BVH {
             let left_index = Self::build_recursive(nodes, left_aabbs);
             let right_index = Self::build_recursive(nodes, right_aabbs);
 
+            let merged_aabb = left_aabb.merge(&right_aabb);
             nodes[current_index] =
                 BVHNode::Internal(left_index as u64, right_index as u64, merged_aabb);
         }
