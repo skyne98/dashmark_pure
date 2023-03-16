@@ -39,6 +39,10 @@ class BVH {
   }
 
   // Methods
+  bool drop() {
+    return api.bvhDrop(bvhId: id);
+  }
+
   FlatBVH flatten() {
     return api.bvhFlatten(bvhId: id);
   }

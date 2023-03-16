@@ -347,6 +347,12 @@ class World {
 
       // Draw the BVH
       // drawFlatBVH(bvh, flattened, canvas);
+
+      // Clean up
+      bvh.drop();
+      for (var i = 0; i < aabbs.length; ++i) {
+        aabbs[i].drop();
+      }
     }
   }
 }

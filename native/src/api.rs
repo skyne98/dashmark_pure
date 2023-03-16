@@ -76,7 +76,7 @@ pub fn morton_codes(xs: Vec<f64>, ys: Vec<f64>) -> SyncReturn<Vec<u64>> {
 
 // AABB API
 pub fn aabb_new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> SyncReturn<Index> {
-    let mut aabb = AABB::new((min_x, min_y), (max_x, max_y));
+    let aabb = AABB::new((min_x, min_y), (max_x, max_y));
     AABB_STORE.with(|store| {
         let mut store = store.borrow_mut();
         let id = store.insert(aabb);
@@ -106,11 +106,11 @@ pub fn aabb_new_bulk(
     })
 }
 
-pub fn aabb_drop(aabb_id: Index) -> SyncReturn<()> {
+pub fn aabb_drop(aabb_id: Index) -> SyncReturn<bool> {
     AABB_STORE.with(|store| {
         let mut store = store.borrow_mut();
-        store.remove(aabb_id.to_external_index());
-        SyncReturn(())
+        let existing = store.remove(aabb_id.to_external_index());
+        SyncReturn(existing.is_some())
     })
 }
 
@@ -229,11 +229,11 @@ pub fn bvh_new_async(aabbs: Vec<Index>) -> Index {
     })
 }
 
-pub fn bvh_drop(bvh_id: Index) -> SyncReturn<()> {
+pub fn bvh_drop(bvh_id: Index) -> SyncReturn<bool> {
     BVH_STORE.with(|store| {
         let mut store = store.borrow_mut();
-        store.remove(bvh_id.to_external_index());
-        SyncReturn(())
+        let existing = store.remove(bvh_id.to_external_index());
+        SyncReturn(existing.is_some())
     })
 }
 

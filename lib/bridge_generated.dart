@@ -47,7 +47,7 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbNewBulkConstMeta;
 
-  void aabbDrop({required Index aabbId, dynamic hint});
+  bool aabbDrop({required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbDropConstMeta;
 
@@ -100,7 +100,7 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kBvhNewAsyncConstMeta;
 
-  void bvhDrop({required Index bvhId, dynamic hint});
+  bool bvhDrop({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhDropConstMeta;
 
@@ -296,11 +296,11 @@ class NativeImpl implements Native {
         argNames: ["minXs", "minYs", "maxXs", "maxYs"],
       );
 
-  void aabbDrop({required Index aabbId, dynamic hint}) {
+  bool aabbDrop({required Index aabbId, dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_drop(arg0),
-      parseSuccessData: _wire2api_unit,
+      parseSuccessData: _wire2api_bool,
       constMeta: kAabbDropConstMeta,
       argValues: [aabbId],
       hint: hint,
@@ -511,11 +511,11 @@ class NativeImpl implements Native {
         argNames: ["aabbs"],
       );
 
-  void bvhDrop({required Index bvhId, dynamic hint}) {
+  bool bvhDrop({required Index bvhId, dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_index(bvhId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_drop(arg0),
-      parseSuccessData: _wire2api_unit,
+      parseSuccessData: _wire2api_bool,
       constMeta: kBvhDropConstMeta,
       argValues: [bvhId],
       hint: hint,

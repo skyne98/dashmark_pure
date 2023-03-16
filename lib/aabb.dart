@@ -111,6 +111,10 @@ class AABB {
   }
 
   // Methods
+  bool drop() {
+    return api.aabbDrop(aabbId: id);
+  }
+
   bool contains(double x, double y) {
     return api.aabbContainsPoint(
         aabbId: id, point: Float64List.fromList([x, y]));
