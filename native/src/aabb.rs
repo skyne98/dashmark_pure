@@ -101,4 +101,13 @@ impl AABB {
         let size = self.size();
         size[0] * size[1]
     }
+
+    pub fn longest_axis(&self) -> usize {
+        let size = self.size();
+        if size[0] > size[1] {
+            0
+        } else {
+            1
+        }
+    }
 }

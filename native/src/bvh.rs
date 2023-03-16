@@ -33,85 +33,52 @@ impl BVH {
             return Self { nodes: vec![] };
         }
 
-        let mut sorted_by_x_centroid = aabbs.to_vec();
-        sorted_by_x_centroid.sort_by(|a, b| {
-            let a_center = a.center()[0];
-            let b_center = b.center()[1];
-            a_center.partial_cmp(&b_center).unwrap()
-        });
-
         let mut nodes = vec![];
-        let aabbs = sorted_by_x_centroid
-            .iter()
-            .map(|aabb| (*aabb).clone())
-            .collect::<Vec<_>>();
-        Self::build_recursive(&mut nodes, aabbs);
+        Self::build_recursive(&mut nodes, aabbs.iter().map(|b| (*b).clone()).collect());
 
         Self { nodes }
     }
 
     fn build_recursive(nodes: &mut Vec<BVHNode>, aabbs: Vec<AABB>) -> usize {
-        let mut stack = vec![(aabbs, nodes.len(), 0usize)];
-        let mut max_depth = 0;
+        let mut current_index = nodes.len();
 
-        while let Some((aabbs, current_index, depth)) = stack.pop() {
-            max_depth = max_depth.max(depth);
-            if depth > 10000 {
-                println!("Emergency exit");
-                println!("AABBs: {}", aabbs.len());
-                println!("Nodes: {}", nodes.len());
-                println!("Stack: {}", stack.len());
-                break;
+        if aabbs.len() == 1 {
+            nodes.push(BVHNode::Leaf(aabbs[0].clone()));
+        } else {
+            let mut merged_aabb = AABB::empty();
+            for aabb in &aabbs {
+                merged_aabb.merge_with(aabb);
             }
+            let split_axis = merged_aabb.longest_axis();
+            let split_position = merged_aabb.center()[split_axis];
 
-            if aabbs.len() == 1 {
-                nodes.push(BVHNode::Leaf(aabbs[0].clone()));
-            } else {
-                let (split_position, split_axis) = Self::find_split(&aabbs[..]);
-                let mut left_aabbs = vec![];
-                let mut right_aabbs = vec![];
-                let mut left_aabb = AABB::empty();
-                let mut right_aabb = AABB::empty();
+            // let (split_position, split_axis) = Self::find_split(&aabbs[..]);
+            let mut left_aabbs = vec![];
+            let mut right_aabbs = vec![];
+            let mut left_aabb = AABB::empty();
+            let mut right_aabb = AABB::empty();
 
-                for aabb in aabbs {
-                    if aabb.center()[split_axis] < split_position {
-                        left_aabbs.push(aabb.clone());
-                        left_aabb.merge_with(&aabb);
-                    } else {
-                        right_aabbs.push(aabb.clone());
-                        right_aabb.merge_with(&aabb);
-                    }
+            for aabb in aabbs {
+                if aabb.center()[split_axis] < split_position {
+                    left_aabbs.push(aabb.clone());
+                    left_aabb.merge_with(&aabb);
+                } else {
+                    right_aabbs.push(aabb.clone());
+                    right_aabb.merge_with(&aabb);
                 }
-
-                nodes.push(BVHNode::empty()); // Placeholder for the internal node
-
-                let right_child_index = nodes.len();
-                stack.push((right_aabbs, right_child_index, depth + 1));
-
-                let left_child_index = nodes.len();
-                stack.push((left_aabbs, left_child_index, depth + 1));
-                let merged_aabb = left_aabb.merge(&right_aabb);
-
-                nodes[current_index] = BVHNode::Internal(
-                    left_child_index as u64,
-                    right_child_index as u64,
-                    merged_aabb,
-                );
             }
+
+            // Insert a placeholder node
+            nodes.push(BVHNode::empty());
+
+            let left_index = Self::build_recursive(nodes, left_aabbs);
+            let right_index = Self::build_recursive(nodes, right_aabbs);
+
+            nodes[current_index] =
+                BVHNode::Internal(left_index as u64, right_index as u64, merged_aabb);
         }
 
-        println!("Max depth: {}", max_depth);
-
-        let leaf_nodes = nodes
-            .iter()
-            .filter(|node| match node {
-                BVHNode::Leaf(_) => true,
-                _ => false,
-            })
-            .count();
-        println!("Leaf nodes: {}", leaf_nodes);
-
-        0
+        current_index
     }
 
     fn find_split(aabbs: &[AABB]) -> (f64, usize) {
