@@ -234,32 +234,19 @@ class NativeWire implements FlutterRustBridgeWireBase {
       .asFunction<WireSyncReturn Function(double, double, double, double)>();
 
   WireSyncReturn wire_aabb_new_bulk(
-    ffi.Pointer<wire_float_64_list> min_xs,
-    ffi.Pointer<wire_float_64_list> min_ys,
-    ffi.Pointer<wire_float_64_list> max_xs,
-    ffi.Pointer<wire_float_64_list> max_ys,
+    ffi.Pointer<wire_float_64_list> points,
   ) {
     return _wire_aabb_new_bulk(
-      min_xs,
-      min_ys,
-      max_xs,
-      max_ys,
+      points,
     );
   }
 
   late final _wire_aabb_new_bulkPtr = _lookup<
       ffi.NativeFunction<
           WireSyncReturn Function(
-              ffi.Pointer<wire_float_64_list>,
-              ffi.Pointer<wire_float_64_list>,
-              ffi.Pointer<wire_float_64_list>,
               ffi.Pointer<wire_float_64_list>)>>('wire_aabb_new_bulk');
-  late final _wire_aabb_new_bulk = _wire_aabb_new_bulkPtr.asFunction<
-      WireSyncReturn Function(
-          ffi.Pointer<wire_float_64_list>,
-          ffi.Pointer<wire_float_64_list>,
-          ffi.Pointer<wire_float_64_list>,
-          ffi.Pointer<wire_float_64_list>)>();
+  late final _wire_aabb_new_bulk = _wire_aabb_new_bulkPtr
+      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_float_64_list>)>();
 
   WireSyncReturn wire_aabb_drop_bulk(
     ffi.Pointer<wire_list_index> aabb_ids,

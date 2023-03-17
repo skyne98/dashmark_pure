@@ -78,7 +78,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
 
     // Test out the speed of generating morton codes
-    const gridSize = 1000000;
+    const gridSize = 10;
     final gridSide = sqrt(gridSize);
     final valuesX = <double>[];
     for (var i = 0; i < gridSide; i++) {
@@ -110,28 +110,20 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
 
     final random = Random();
     // Generate 1 million random AABBs
-    final minXS = <double>[];
-    final minYS = <double>[];
-    final maxXS = <double>[];
-    final maxYS = <double>[];
+    final points = <double>[];
     // ... generate random values
     for (var i = 0; i < gridSize; i++) {
-      minXS.add(random.nextDouble() * 980);
-      minYS.add(random.nextDouble() * 980);
+      points.add(random.nextDouble() * 980);
+      points.add(random.nextDouble() * 980);
       final width = random.nextDouble() * 20;
       final height = random.nextDouble() * 20;
-      maxXS.add(minXS[i] + width);
-      maxYS.add(minYS[i] + height);
+      points.add(points[i * 4] + width);
+      points.add(points[i * 4 + 1] + height);
     }
-    final minXSFloat64List = Float64List.fromList(minXS);
-    final minYSFloat64List = Float64List.fromList(minYS);
-    final maxXSFloat64List = Float64List.fromList(maxXS);
-    final maxYSFloat64List = Float64List.fromList(maxYS);
 
     stopwatch.reset();
     stopwatch.start();
-    final aabbs_bulk = AABB.minMaxRawBulk(
-        minXSFloat64List, minYSFloat64List, maxXSFloat64List, maxYSFloat64List);
+    final aabbs_bulk = AABB.minMaxRawBulk(Float64List.fromList(points));
     stopwatch.stop();
     debugPrint(
         'Generated $gridSize AABBs in bulk in ${stopwatch.elapsedMilliseconds} ms');

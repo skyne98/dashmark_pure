@@ -39,12 +39,7 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbNewConstMeta;
 
-  Uint64List aabbNewBulk(
-      {required Float64List minXs,
-      required Float64List minYs,
-      required Float64List maxXs,
-      required Float64List maxYs,
-      dynamic hint});
+  Uint8List aabbNewBulk({required Float64List points, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbNewBulkConstMeta;
 
@@ -281,21 +276,13 @@ class NativeImpl implements Native {
         argNames: ["minX", "minY", "maxX", "maxY"],
       );
 
-  Uint64List aabbNewBulk(
-      {required Float64List minXs,
-      required Float64List minYs,
-      required Float64List maxXs,
-      required Float64List maxYs,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_float_64_list(minXs);
-    var arg1 = _platform.api2wire_float_64_list(minYs);
-    var arg2 = _platform.api2wire_float_64_list(maxXs);
-    var arg3 = _platform.api2wire_float_64_list(maxYs);
+  Uint8List aabbNewBulk({required Float64List points, dynamic hint}) {
+    var arg0 = _platform.api2wire_float_64_list(points);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_aabb_new_bulk(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_uint_64_list,
+      callFfi: () => _platform.inner.wire_aabb_new_bulk(arg0),
+      parseSuccessData: _wire2api_ZeroCopyBuffer_Uint8List,
       constMeta: kAabbNewBulkConstMeta,
-      argValues: [minXs, minYs, maxXs, maxYs],
+      argValues: [points],
       hint: hint,
     ));
   }
@@ -303,7 +290,7 @@ class NativeImpl implements Native {
   FlutterRustBridgeTaskConstMeta get kAabbNewBulkConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "aabb_new_bulk",
-        argNames: ["minXs", "minYs", "maxXs", "maxYs"],
+        argNames: ["points"],
       );
 
   Uint8List aabbDropBulk({required List<Index> aabbIds, dynamic hint}) {
@@ -735,6 +722,10 @@ class NativeImpl implements Native {
 
   String _wire2api_String(dynamic raw) {
     return raw as String;
+  }
+
+  Uint8List _wire2api_ZeroCopyBuffer_Uint8List(dynamic raw) {
+    return raw as Uint8List;
   }
 
   bool _wire2api_bool(dynamic raw) {

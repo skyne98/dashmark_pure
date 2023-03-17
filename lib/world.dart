@@ -265,19 +265,17 @@ class World {
 
       // Build AABBs for all the dashes
       final stopwatch = Stopwatch()..start();
-      final minXs = Float64List(length);
-      final minYs = Float64List(length);
-      final maxXs = Float64List(length);
-      final maxYs = Float64List(length);
+      final points = Float64List(length * 4);
       for (var i = 0; i < length; ++i) {
         final position = _position[i];
         final size = desiredSize;
-        minXs[i] = position.x;
-        minYs[i] = position.y;
-        maxXs[i] = position.x + size;
-        maxYs[i] = position.y + size;
+        final offset = i * 4;
+        points[offset] = position.x;
+        points[offset + 1] = position.y;
+        points[offset + 2] = position.x + size;
+        points[offset + 3] = position.y + size;
       }
-      final aabbs = AABB.minMaxRawBulk(minXs, minYs, maxXs, maxYs);
+      final aabbs = AABB.minMaxRawBulk(points);
       debugPrint(
           'AABBs ($length) built in ${stopwatch.elapsedMilliseconds} ms');
 

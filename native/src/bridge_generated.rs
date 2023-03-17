@@ -90,10 +90,7 @@ fn wire_aabb_new_impl(
     )
 }
 fn wire_aabb_new_bulk_impl(
-    min_xs: impl Wire2Api<Vec<f64>> + UnwindSafe,
-    min_ys: impl Wire2Api<Vec<f64>> + UnwindSafe,
-    max_xs: impl Wire2Api<Vec<f64>> + UnwindSafe,
-    max_ys: impl Wire2Api<Vec<f64>> + UnwindSafe,
+    points: impl Wire2Api<Vec<f64>> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -102,13 +99,8 @@ fn wire_aabb_new_bulk_impl(
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_min_xs = min_xs.wire2api();
-            let api_min_ys = min_ys.wire2api();
-            let api_max_xs = max_xs.wire2api();
-            let api_max_ys = max_ys.wire2api();
-            Ok(aabb_new_bulk(
-                api_min_xs, api_min_ys, api_max_xs, api_max_ys,
-            ))
+            let api_points = points.wire2api();
+            Ok(aabb_new_bulk(api_points))
         },
     )
 }

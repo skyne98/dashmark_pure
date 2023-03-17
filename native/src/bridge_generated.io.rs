@@ -34,13 +34,8 @@ pub extern "C" fn wire_aabb_new(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_aabb_new_bulk(
-    min_xs: *mut wire_float_64_list,
-    min_ys: *mut wire_float_64_list,
-    max_xs: *mut wire_float_64_list,
-    max_ys: *mut wire_float_64_list,
-) -> support::WireSyncReturn {
-    wire_aabb_new_bulk_impl(min_xs, min_ys, max_xs, max_ys)
+pub extern "C" fn wire_aabb_new_bulk(points: *mut wire_float_64_list) -> support::WireSyncReturn {
+    wire_aabb_new_bulk_impl(points)
 }
 
 #[no_mangle]

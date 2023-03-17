@@ -22,13 +22,8 @@ pub fn wire_aabb_new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> support:
 }
 
 #[wasm_bindgen]
-pub fn wire_aabb_new_bulk(
-    min_xs: Box<[f64]>,
-    min_ys: Box<[f64]>,
-    max_xs: Box<[f64]>,
-    max_ys: Box<[f64]>,
-) -> support::WireSyncReturn {
-    wire_aabb_new_bulk_impl(min_xs, min_ys, max_xs, max_ys)
+pub fn wire_aabb_new_bulk(points: Box<[f64]>) -> support::WireSyncReturn {
+    wire_aabb_new_bulk_impl(points)
 }
 
 #[wasm_bindgen]

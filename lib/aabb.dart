@@ -6,8 +6,8 @@ class AABB {
   static final Finalizer<Index> _finalizer =
       Finalizer((aabb) => api.aabbDropBulk(aabbIds: [aabb]));
 
-  final BigInt index;
-  final BigInt generation;
+  final int index;
+  final int generation;
 
   Index getIndex() {
     return Index(index: index.toInt(), generation: generation.toInt());
@@ -20,12 +20,12 @@ class AABB {
 
   // Factories
   factory AABB.fromIndex(Index index) {
-    return AABB(BigInt.from(index.index), BigInt.from(index.generation));
+    return AABB(index.index, index.generation);
   }
 
   factory AABB.minMax(double minX, double minY, double maxX, double maxY) {
     final id = api.aabbNew(minX: minX, minY: minY, maxX: maxX, maxY: maxY);
-    return AABB(BigInt.from(id.index), BigInt.from(id.generation));
+    return AABB(id.index, id.generation);
   }
 
   factory AABB.fromList(List<double> minMax) {
@@ -42,17 +42,16 @@ class AABB {
     return AABB.fromXYWH(xywh[0], xywh[1], xywh[2], xywh[3]);
   }
 
-  static List<AABB> minMaxRawBulk(Float64List minXs, Float64List minYs,
-      Float64List maxXs, Float64List maxYs) {
-    assert(minXs.length == minYs.length);
-    assert(minXs.length == maxXs.length);
-    assert(minXs.length == maxYs.length);
-    final ids =
-        api.aabbNewBulk(minXs: minXs, minYs: minYs, maxXs: maxXs, maxYs: maxYs);
+  static List<AABB> minMaxRawBulk(Float64List points) {
+    final ids = api.aabbNewBulk(points: points);
+    final len = ids.length / 8;
+    final bytes = ByteData.view(ids.buffer);
     final aabbs = <AABB>[];
-    for (var i = 0; i < ids.length; i += 2) {
-      final idIndex = ids[i];
-      final idGeneration = ids[i + 1];
+    for (var i = 0; i < len; i += 2) {
+      final offsetIndex = i * 8;
+      final offsetGeneration = (i + 1) * 8;
+      final idIndex = bytes.getUint64(offsetIndex, Endian.host);
+      final idGeneration = bytes.getUint64(offsetGeneration, Endian.host);
       aabbs.add(AABB(idIndex, idGeneration));
     }
     return aabbs;
@@ -60,11 +59,14 @@ class AABB {
 
   static List<AABB> minMaxBulk(List<double> minXs, List<double> minYs,
       List<double> maxXs, List<double> maxYs) {
-    return minMaxRawBulk(
-        Float64List.fromList(minXs),
-        Float64List.fromList(minYs),
-        Float64List.fromList(maxXs),
-        Float64List.fromList(maxYs));
+    final points = <double>[];
+    for (var i = 0; i < minXs.length; i++) {
+      points.add(minXs[i]);
+      points.add(minYs[i]);
+      points.add(maxXs[i]);
+      points.add(maxYs[i]);
+    }
+    return minMaxRawBulk(Float64List.fromList(points));
   }
 
   static List<AABB> fromListBulk(List<List<double>> minMaxs) {

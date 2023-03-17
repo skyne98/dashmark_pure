@@ -1,10 +1,10 @@
 use crate::flat_bvh::FlatBVH;
 use crate::{aabb::AABB, bvh::BVH};
-use flutter_rust_bridge::{frb, SyncReturn};
+use flutter_rust_bridge::{frb, SyncReturn, ZeroCopyBuffer};
 pub use generational_arena::{Arena, Index as ExternalIndex};
 use std::cell::RefCell;
-use std::env;
 use std::time::Instant;
+use std::{env, mem};
 pub use std::{
     ops::Deref,
     sync::{Mutex, RwLock},
@@ -83,33 +83,45 @@ pub fn aabb_new(min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> SyncReturn<In
     })
 }
 
-pub fn aabb_new_bulk(
-    min_xs: Vec<f64>,
-    min_ys: Vec<f64>,
-    max_xs: Vec<f64>,
-    max_ys: Vec<f64>,
-) -> SyncReturn<Vec<u64>> {
-    if min_xs.is_empty() {
-        return SyncReturn(Vec::new());
+pub fn aabb_new_bulk(points: Vec<f64>) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+    let aabbs_len = points.len() / 4;
+    if points.is_empty() {
+        return SyncReturn(ZeroCopyBuffer(Vec::new()));
     }
 
-    let mut ids = Vec::with_capacity(min_xs.len() * 2);
+    let mut ids = Vec::with_capacity(aabbs_len * 2);
     AABB_STORE.with(|store| {
         let mut store = store.borrow_mut();
 
-        for i in 0..min_xs.len() {
-            let min_x = min_xs[i];
-            let min_y = min_ys[i];
-            let max_x = max_xs[i];
-            let max_y = max_ys[i];
+        for i in 0..aabbs_len {
+            let offset = i * 4;
+            let min_x = points[offset];
+            let min_y = points[offset + 1];
+            let max_x = points[offset + 2];
+            let max_y = points[offset + 3];
             let aabb = AABB::new(min_x, min_y, max_x, max_y);
             let id = store.insert(aabb);
             let (id_index, id_gen) = id.into_raw_parts();
             store[id].id = Some(id);
+
             ids.push(id_index as u64);
             ids.push(id_gen as u64);
         }
-        SyncReturn(ids)
+
+        let ids = unsafe {
+            let ratio = mem::size_of::<u64>() / mem::size_of::<u8>();
+
+            let length = ids.len() * ratio;
+            let capacity = ids.capacity() * ratio;
+            let ptr = ids.as_mut_ptr() as *mut u8;
+
+            // Don't run the destructor for ids
+            mem::forget(ids);
+
+            // Construct new Vec
+            Vec::from_raw_parts(ptr, length, capacity)
+        };
+        SyncReturn(ZeroCopyBuffer(ids))
     })
 }
 
