@@ -42,16 +42,22 @@ impl BVH {
 
         let mut nodes = vec![];
         let indices: Vec<usize> = (0..aabbs.len()).collect();
-        Self::build_recursive(&mut nodes, &aabbs[..], &indices[..]);
+        let centroids: Vec<[f64; 2]> = aabbs.iter().map(|aabb| aabb.center()).collect();
+        Self::build_recursive(&mut nodes, &aabbs[..], &centroids[..], &indices[..]);
 
         Self { nodes }
     }
 
-    fn build_recursive(nodes: &mut Vec<BVHNode>, all_aabbs: &[AABB], aabbs: &[usize]) -> usize {
+    fn build_recursive(
+        nodes: &mut Vec<BVHNode>,
+        all_aabbs: &[AABB],
+        centroids: &[[f64; 2]],
+        aabbs: &[usize],
+    ) -> usize {
         let current_index = nodes.len();
         let aabbs_len = aabbs.len();
 
-        if aabbs.len() == 1 {
+        if aabbs_len == 1 {
             let aabb = all_aabbs[aabbs[0]];
             nodes.push(BVHNode::Leaf(aabb));
         } else {
@@ -63,7 +69,8 @@ impl BVH {
             // let split_position = merged_aabb.center()[split_axis];
 
             // let (split_position, split_axis) = Self::find_split_best(&aabbs[..]);
-            let (split_position, split_axis) = Self::find_split_uniform(all_aabbs, aabbs);
+            let (split_position, split_axis) =
+                Self::find_split_uniform(all_aabbs, centroids, aabbs);
             let mut left_aabbs: SmallVec<[usize; 64]> = smallvec![];
             let mut right_aabbs: SmallVec<[usize; 64]> = smallvec![];
             let mut left_aabb = AABB::empty();
@@ -71,7 +78,7 @@ impl BVH {
 
             for aabb_index in aabbs {
                 let aabb = &all_aabbs[*aabb_index];
-                if aabb.center()[split_axis] < split_position {
+                if centroids[*aabb_index][split_axis] < split_position {
                     left_aabbs.push(*aabb_index);
                     left_aabb.merge_with(&aabb);
                 } else {
@@ -104,8 +111,8 @@ impl BVH {
             // Insert a placeholder node
             nodes.push(BVHNode::empty());
 
-            let left_index = Self::build_recursive(nodes, all_aabbs, &left_aabbs[..]);
-            let right_index = Self::build_recursive(nodes, all_aabbs, &right_aabbs[..]);
+            let left_index = Self::build_recursive(nodes, all_aabbs, centroids, &left_aabbs[..]);
+            let right_index = Self::build_recursive(nodes, all_aabbs, centroids, &right_aabbs[..]);
             let merged_aabb = left_aabb.merge(&right_aabb);
             nodes[current_index] =
                 BVHNode::Internal(left_index as u64, right_index as u64, merged_aabb);
@@ -136,8 +143,12 @@ impl BVH {
         (best_position, best_axis)
     }
 
-    fn find_split_uniform(all_aabbs: &[AABB], aabbs: &[usize]) -> (f64, usize) {
-        const NUM_SPLITS: u8 = 16;
+    fn find_split_uniform(
+        all_aabbs: &[AABB],
+        centroids: &[[f64; 2]],
+        aabbs: &[usize],
+    ) -> (f64, usize) {
+        const NUM_SPLITS: u8 = 8;
 
         // Use SAH to find the best split along the best axis
         let mut best_cost = std::f64::MAX;
@@ -157,8 +168,7 @@ impl BVH {
             // https://jacco.ompf2.com/2022/04/21/how-to-build-a-bvh-part-3-quick-builds/
             // this effectively allows us to make split intervals smaller
             for aabb_index in aabbs {
-                let aabb = &all_aabbs[*aabb_index];
-                let position = aabb.center()[axis];
+                let position = centroids[*aabb_index][axis];
                 if position < bounds_min {
                     bounds_min = position;
                 }
@@ -176,12 +186,13 @@ impl BVH {
             for aabb_index in aabbs {
                 let aabb = &all_aabbs[*aabb_index];
                 let bin_id = usize::min(
-                    ((aabb.center()[axis] - bounds_min) / split_size) as usize,
+                    ((centroids[*aabb_index][axis] - bounds_min) / split_size) as usize,
                     NUM_SPLITS as usize - 1,
                 );
                 bins[bin_id].primitive_count += 1;
                 bins[bin_id].aabb.merge_with(aabb);
             }
+
             // Gather data for the planes (bins - 1) between the bins
             let mut left_area = [0.0; NUM_SPLITS as usize - 1];
             let mut left_count = [0; NUM_SPLITS as usize - 1];
