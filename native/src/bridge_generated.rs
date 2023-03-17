@@ -198,7 +198,7 @@ fn wire_aabb_intersects_aabb_impl(
 }
 fn wire_aabb_contains_point_impl(
     aabb_id: impl Wire2Api<Index> + UnwindSafe,
-    point: impl Wire2Api<Vec<f64>> + UnwindSafe,
+    point: impl Wire2Api<[f64; 2]> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {

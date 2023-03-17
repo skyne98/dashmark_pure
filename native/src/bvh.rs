@@ -34,18 +34,18 @@ pub struct BVH {
 }
 
 impl BVH {
-    pub fn build(aabbs: &[&AABB]) -> Self {
+    pub fn build(aabbs: &[AABB]) -> Self {
         if aabbs.len() == 0 {
             return Self { nodes: vec![] };
         }
 
         let mut nodes = vec![];
-        Self::build_recursive(&mut nodes, aabbs.iter().map(|b| (*b).clone()).collect());
+        Self::build_recursive(&mut nodes, aabbs);
 
         Self { nodes }
     }
 
-    fn build_recursive(nodes: &mut Vec<BVHNode>, aabbs: Vec<AABB>) -> usize {
+    fn build_recursive(nodes: &mut Vec<BVHNode>, aabbs: &[AABB]) -> usize {
         let current_index = nodes.len();
 
         if aabbs.len() == 1 {
@@ -65,12 +65,12 @@ impl BVH {
             let mut left_aabb = AABB::empty();
             let mut right_aabb = AABB::empty();
 
-            for aabb in aabbs.iter() {
+            for aabb in aabbs {
                 if aabb.center()[split_axis] < split_position {
-                    left_aabbs.push(aabb.clone());
+                    left_aabbs.push(*aabb);
                     left_aabb.merge_with(&aabb);
                 } else {
-                    right_aabbs.push(aabb.clone());
+                    right_aabbs.push(*aabb);
                     right_aabb.merge_with(&aabb);
                 }
             }
@@ -97,8 +97,8 @@ impl BVH {
             // Insert a placeholder node
             nodes.push(BVHNode::empty());
 
-            let left_index = Self::build_recursive(nodes, left_aabbs);
-            let right_index = Self::build_recursive(nodes, right_aabbs);
+            let left_index = Self::build_recursive(nodes, &left_aabbs[..]);
+            let right_index = Self::build_recursive(nodes, &right_aabbs[..]);
             let merged_aabb = left_aabb.merge(&right_aabb);
             nodes[current_index] =
                 BVHNode::Internal(left_index as u64, right_index as u64, merged_aabb);
@@ -357,23 +357,24 @@ impl BVH {
         }
     }
 
-    pub fn query_point_collisions(&self, point: (f64, f64)) -> Vec<Index> {
+    pub fn query_point_collisions(&self, point_x: f64, point_y: f64) -> Vec<Index> {
         if self.nodes.is_empty() {
             return vec![];
         }
         let mut results = Vec::new();
-        self.query_point_collisions_recursive(0, point, &mut results);
+        self.query_point_collisions_recursive(0, point_x, point_y, &mut results);
         results
     }
 
     fn query_point_collisions_recursive(
         &self,
         node_index: usize,
-        point: (f64, f64),
+        point_x: f64,
+        point_y: f64,
         results: &mut Vec<Index>,
     ) {
         let node = &self.nodes[node_index];
-        if node.get_aabb().contains_point(point) {
+        if node.get_aabb().contains_point(point_x, point_y) {
             match node {
                 BVHNode::Leaf(aabb) => {
                     if let Some(id) = aabb.id {
@@ -383,12 +384,14 @@ impl BVH {
                 BVHNode::Internal(left_child_index, right_child_index, _) => {
                     self.query_point_collisions_recursive(
                         *left_child_index as usize,
-                        point,
+                        point_x,
+                        point_y,
                         results,
                     );
                     self.query_point_collisions_recursive(
                         *right_child_index as usize,
-                        point,
+                        point_x,
+                        point_y,
                         results,
                     );
                 }

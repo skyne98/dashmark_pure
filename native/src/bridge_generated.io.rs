@@ -219,6 +219,12 @@ impl Wire2Api<Index> for *mut wire_Index {
     }
 }
 
+impl Wire2Api<[f64; 2]> for *mut wire_float_64_list {
+    fn wire2api(self) -> [f64; 2] {
+        let vec: Vec<f64> = self.wire2api();
+        support::from_vec_to_array(vec)
+    }
+}
 impl Wire2Api<Vec<f64>> for *mut wire_float_64_list {
     fn wire2api(self) -> Vec<f64> {
         unsafe {

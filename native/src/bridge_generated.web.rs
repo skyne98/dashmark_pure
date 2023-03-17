@@ -167,6 +167,12 @@ pub fn wire_bvh_overlap_ratio(bvh_id: JsValue) -> support::WireSyncReturn {
 
 // Section: impl Wire2Api
 
+impl Wire2Api<[f64; 2]> for Box<[f64]> {
+    fn wire2api(self) -> [f64; 2] {
+        let vec: Vec<f64> = self.wire2api();
+        support::from_vec_to_array(vec)
+    }
+}
 impl Wire2Api<Vec<f64>> for Box<[f64]> {
     fn wire2api(self) -> Vec<f64> {
         self.into_vec()
@@ -202,6 +208,12 @@ impl Wire2Api<Vec<Index>> for JsValue {
 impl Wire2Api<f64> for JsValue {
     fn wire2api(self) -> f64 {
         self.unchecked_into_f64() as _
+    }
+}
+impl Wire2Api<[f64; 2]> for JsValue {
+    fn wire2api(self) -> [f64; 2] {
+        let vec: Vec<f64> = self.wire2api();
+        support::from_vec_to_array(vec)
     }
 }
 impl Wire2Api<Vec<f64>> for JsValue {

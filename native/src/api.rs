@@ -138,7 +138,7 @@ pub fn aabb_max(aabb_id: Index) -> SyncReturn<Vec<f64>> {
     })
 }
 
-pub fn aabb_size(aabb_id: Index) -> SyncReturn<Vec<f64>> {
+pub fn aabb_size(aabb_id: Index) -> SyncReturn<[f64; 2]> {
     AABB_STORE.with(|store| {
         let store = store.borrow();
         let aabb = &store[aabb_id.to_external_index()];
@@ -146,7 +146,7 @@ pub fn aabb_size(aabb_id: Index) -> SyncReturn<Vec<f64>> {
     })
 }
 
-pub fn aabb_center(aabb_id: Index) -> SyncReturn<Vec<f64>> {
+pub fn aabb_center(aabb_id: Index) -> SyncReturn<[f64; 2]> {
     AABB_STORE.with(|store| {
         let store = store.borrow();
         let aabb = &store[aabb_id.to_external_index()];
@@ -163,11 +163,11 @@ pub fn aabb_intersects_aabb(aabb_left_id: Index, aabb_right_id: Index) -> SyncRe
     })
 }
 
-pub fn aabb_contains_point(aabb_id: Index, point: Vec<f64>) -> SyncReturn<bool> {
+pub fn aabb_contains_point(aabb_id: Index, point: [f64; 2]) -> SyncReturn<bool> {
     AABB_STORE.with(|store| {
         let store = store.borrow();
         let aabb = &store[aabb_id.to_external_index()];
-        SyncReturn(aabb.contains_point((point[0], point[1])))
+        SyncReturn(aabb.contains_point(point[0], point[1]))
     })
 }
 
@@ -212,7 +212,7 @@ pub fn bvh_new(aabbs: Vec<Index>) -> SyncReturn<Index> {
 
             let vec_of_aabbs = aabbs
                 .iter()
-                .map(|aabb_id| &aabb_store[aabb_id.to_external_index()])
+                .map(|aabb_id| aabb_store[aabb_id.to_external_index()])
                 .collect::<Vec<_>>();
             let bvh = BVH::build(&vec_of_aabbs[..]);
             let bvh_id = bvh_store.insert(bvh);
@@ -229,7 +229,7 @@ pub fn bvh_new_async(aabbs: Vec<Index>) -> Index {
 
             let vec_of_aabbs = aabbs
                 .iter()
-                .map(|aabb_id| &aabb_store[aabb_id.to_external_index()])
+                .map(|aabb_id| aabb_store[aabb_id.to_external_index()])
                 .collect::<Vec<_>>();
             let bvh = BVH::build(&vec_of_aabbs[..]);
             let bvh_id = bvh_store.insert(bvh);
@@ -323,7 +323,7 @@ pub fn bvh_query_point_collisions(bvh_id: Index, x: f64, y: f64) -> SyncReturn<V
     BVH_STORE.with(|store| {
         let store = store.borrow();
         let bvh = &store[bvh_id.to_external_index()];
-        let collisions = bvh.query_point_collisions((x, y));
+        let collisions = bvh.query_point_collisions(x, y);
         let collisions_wrapped = collisions
             .iter()
             .map(|collision| Index::from_external_index(*collision))

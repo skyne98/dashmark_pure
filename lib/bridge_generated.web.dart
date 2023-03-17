@@ -24,6 +24,11 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
   }
 
   @protected
+  Float64List api2wire_f64_array_2(F64Array2 raw) {
+    return Float64List.fromList(raw);
+  }
+
+  @protected
   Float64List api2wire_float_64_list(Float64List raw) {
     return raw;
   }

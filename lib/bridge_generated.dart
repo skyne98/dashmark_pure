@@ -59,11 +59,11 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbMaxConstMeta;
 
-  Float64List aabbSize({required Index aabbId, dynamic hint});
+  F64Array2 aabbSize({required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbSizeConstMeta;
 
-  Float64List aabbCenter({required Index aabbId, dynamic hint});
+  F64Array2 aabbCenter({required Index aabbId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbCenterConstMeta;
 
@@ -73,7 +73,7 @@ abstract class Native {
   FlutterRustBridgeTaskConstMeta get kAabbIntersectsAabbConstMeta;
 
   bool aabbContainsPoint(
-      {required Index aabbId, required Float64List point, dynamic hint});
+      {required Index aabbId, required F64Array2 point, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAabbContainsPointConstMeta;
 
@@ -154,6 +154,15 @@ abstract class Native {
   double bvhOverlapRatio({required Index bvhId, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhOverlapRatioConstMeta;
+}
+
+class F64Array2 extends NonGrowableListView<double> {
+  static const arraySize = 2;
+  F64Array2(Float64List inner)
+      : assert(inner.length == arraySize),
+        super(inner);
+  F64Array2.unchecked(Float64List inner) : super(inner);
+  F64Array2.init() : super(Float64List(arraySize));
 }
 
 class FlatBVH {
@@ -347,11 +356,11 @@ class NativeImpl implements Native {
         argNames: ["aabbId"],
       );
 
-  Float64List aabbSize({required Index aabbId, dynamic hint}) {
+  F64Array2 aabbSize({required Index aabbId, dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_size(arg0),
-      parseSuccessData: _wire2api_float_64_list,
+      parseSuccessData: _wire2api_f64_array_2,
       constMeta: kAabbSizeConstMeta,
       argValues: [aabbId],
       hint: hint,
@@ -364,11 +373,11 @@ class NativeImpl implements Native {
         argNames: ["aabbId"],
       );
 
-  Float64List aabbCenter({required Index aabbId, dynamic hint}) {
+  F64Array2 aabbCenter({required Index aabbId, dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_center(arg0),
-      parseSuccessData: _wire2api_float_64_list,
+      parseSuccessData: _wire2api_f64_array_2,
       constMeta: kAabbCenterConstMeta,
       argValues: [aabbId],
       hint: hint,
@@ -401,9 +410,9 @@ class NativeImpl implements Native {
       );
 
   bool aabbContainsPoint(
-      {required Index aabbId, required Float64List point, dynamic hint}) {
+      {required Index aabbId, required F64Array2 point, dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_index(aabbId);
-    var arg1 = _platform.api2wire_float_64_list(point);
+    var arg1 = _platform.api2wire_f64_array_2(point);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_contains_point(arg0, arg1),
       parseSuccessData: _wire2api_bool,
@@ -733,6 +742,10 @@ class NativeImpl implements Native {
 
   double _wire2api_f64(dynamic raw) {
     return raw as double;
+  }
+
+  F64Array2 _wire2api_f64_array_2(dynamic raw) {
+    return F64Array2(_wire2api_float_64_list(raw));
   }
 
   FlatBVH _wire2api_flat_bvh(dynamic raw) {

@@ -1,6 +1,6 @@
 use generational_arena::Index;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct AABB {
     pub id: Option<Index>,
     pub min_x: f64,
@@ -30,31 +30,31 @@ impl AABB {
         }
     }
 
-    pub fn min(&self) -> Vec<f64> {
-        vec![self.min_x, self.min_y]
+    pub fn min(&self) -> [f64; 2] {
+        [self.min_x, self.min_y]
     }
 
-    pub fn max(&self) -> Vec<f64> {
-        vec![self.max_x, self.max_y]
+    pub fn max(&self) -> [f64; 2] {
+        [self.max_x, self.max_y]
     }
 
-    pub fn center(&self) -> Vec<f64> {
+    pub fn center(&self) -> [f64; 2] {
         let x = (self.max_x + self.min_x) / 2.0;
         let y = (self.max_y + self.min_y) / 2.0;
-        vec![x, y]
+        [x, y]
     }
 
-    pub fn size(&self) -> Vec<f64> {
+    pub fn size(&self) -> [f64; 2] {
         let width = self.max_x - self.min_x;
         let height = self.max_y - self.min_y;
-        vec![width, height]
+        [width, height]
     }
 
-    pub fn contains_point(&self, point: (f64, f64)) -> bool {
-        point.0 >= self.min_x
-            && point.0 <= self.max_x
-            && point.1 >= self.min_y
-            && point.1 <= self.max_y
+    pub fn contains_point(&self, point_x: f64, point_y: f64) -> bool {
+        point_x >= self.min_x
+            && point_x <= self.max_x
+            && point_y >= self.min_y
+            && point_y <= self.max_y
     }
 
     pub fn intersects_aabb(&self, other: &Self) -> bool {
@@ -79,19 +79,19 @@ impl AABB {
         self.max_y = self.max_y.max(other.max_y);
     }
 
-    pub fn merge_point(&self, point: (f64, f64)) -> Self {
-        let min_x = self.min_x.min(point.0);
-        let min_y = self.min_y.min(point.1);
-        let max_x = self.max_x.max(point.0);
-        let max_y = self.max_y.max(point.1);
+    pub fn merge_point(&self, point_x: f64, point_y: f64) -> Self {
+        let min_x = self.min_x.min(point_x);
+        let min_y = self.min_y.min(point_y);
+        let max_x = self.max_x.max(point_x);
+        let max_y = self.max_y.max(point_y);
         Self::new(min_x, min_y, max_x, max_y)
     }
 
-    pub fn merge_with_point(&mut self, point: (f64, f64)) {
-        self.min_x = self.min_x.min(point.0);
-        self.min_y = self.min_y.min(point.1);
-        self.max_x = self.max_x.max(point.0);
-        self.max_y = self.max_y.max(point.1);
+    pub fn merge_with_point(&mut self, point_x: f64, point_y: f64) {
+        self.min_x = self.min_x.min(point_x);
+        self.min_y = self.min_y.min(point_y);
+        self.max_x = self.max_x.max(point_x);
+        self.max_y = self.max_y.max(point_y);
     }
 
     pub fn contains_aabb(&self, other: &Self) -> bool {
