@@ -164,13 +164,31 @@ class World {
       // FPS
       _lastFrameTimes.add(t);
       // keep the list max length
-      if (_lastFrameTimes.length > 10) {
+      if (_lastFrameTimes.length > 100) {
         _lastFrameTimes.removeAt(0);
       }
       final fps = 1 /
           (_lastFrameTimes.fold(0.0, (a, b) => a + b) / _lastFrameTimes.length);
       final fpsRounded = fps.round();
-      final title = 'Dashmark - $fpsRounded FPS - ${_velocity.length} entities';
+      // Calculate the 95th percentile frame rate
+      const percentile = 0.95;
+      final sortedFrameTimes = _lastFrameTimes.toList()..sort();
+      final percentileFrameTimes = sortedFrameTimes
+          .sublist((sortedFrameTimes.length.toDouble() * percentile).round());
+      final percentileFrameTime =
+          percentileFrameTimes.fold(0.0, (a, b) => a + b) /
+              percentileFrameTimes.length;
+      final percentileFps = 1 / percentileFrameTime;
+      final percentileFpsRounded = percentileFps.round();
+      // Calculate the median frame rate
+      final medianFrameTimes = sortedFrameTimes
+          .sublist((sortedFrameTimes.length.toDouble() * 0.5).round());
+      final medianFrameTime =
+          medianFrameTimes.fold(0.0, (a, b) => a + b) / medianFrameTimes.length;
+      final medianFps = 1 / medianFrameTime;
+      final medianFpsRounded = medianFps.round();
+      final title =
+          'Dashmark - $fpsRounded FPS - $percentileFpsRounded FPS (95%) - $medianFpsRounded FPS (50%) - ${_velocity.length} dashes';
       status = title;
     }
   }
