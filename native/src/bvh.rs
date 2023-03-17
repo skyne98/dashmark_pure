@@ -61,16 +61,16 @@ impl BVH {
             let aabb = all_aabbs[aabbs[0]];
             nodes.push(BVHNode::Leaf(aabb));
         } else {
-            // let mut merged_aabb = AABB::empty();
-            // for aabb in &aabbs {
-            //     merged_aabb.merge_with(aabb);
-            // }
+            let mut merged_aabb = AABB::empty();
+            for aabb in aabbs {
+                merged_aabb.merge_with(&all_aabbs[*aabb]);
+            }
             // let split_axis = merged_aabb.longest_axis();
             // let split_position = merged_aabb.center()[split_axis];
 
             // let (split_position, split_axis) = Self::find_split_best(&aabbs[..]);
             let (split_position, split_axis) =
-                Self::find_split_uniform(all_aabbs, centroids, aabbs);
+                Self::find_split_uniform(all_aabbs, centroids, &merged_aabb, aabbs);
             let mut left_aabbs: SmallVec<[usize; 64]> = smallvec![];
             let mut right_aabbs: SmallVec<[usize; 64]> = smallvec![];
             let mut left_aabb = AABB::empty();
@@ -113,7 +113,6 @@ impl BVH {
 
             let left_index = Self::build_recursive(nodes, all_aabbs, centroids, &left_aabbs[..]);
             let right_index = Self::build_recursive(nodes, all_aabbs, centroids, &right_aabbs[..]);
-            let merged_aabb = left_aabb.merge(&right_aabb);
             nodes[current_index] =
                 BVHNode::Internal(left_index as u64, right_index as u64, merged_aabb);
         }
@@ -146,6 +145,7 @@ impl BVH {
     fn find_split_uniform(
         all_aabbs: &[AABB],
         centroids: &[[f64; 2]],
+        parent_aabb: &AABB,
         aabbs: &[usize],
     ) -> (f64, usize) {
         const NUM_SPLITS: u8 = 8;
@@ -153,76 +153,69 @@ impl BVH {
         // Use SAH to find the best split along the best axis
         let mut best_cost = std::f64::MAX;
         let mut best_position = 0.0;
-        let mut best_axis = 0;
+        let best_axis = parent_aabb.longest_axis();
 
         let mut bins = [IntervalBin {
             aabb: AABB::empty(),
             primitive_count: 0,
         }; NUM_SPLITS as usize];
 
-        for axis in 0..2 {
-            let mut bounds_min = f64::INFINITY;
-            let mut bounds_max = f64::NEG_INFINITY;
+        let mut bounds_min = f64::INFINITY;
+        let mut bounds_max = f64::NEG_INFINITY;
 
-            // Simple improvement to BVH quality
-            // https://jacco.ompf2.com/2022/04/21/how-to-build-a-bvh-part-3-quick-builds/
-            // this effectively allows us to make split intervals smaller
-            for aabb_index in aabbs {
-                let position = centroids[*aabb_index][axis];
-                if position < bounds_min {
-                    bounds_min = position;
-                }
-                if position > bounds_max {
-                    bounds_max = position;
-                }
+        // Simple improvement to BVH quality
+        // https://jacco.ompf2.com/2022/04/21/how-to-build-a-bvh-part-3-quick-builds/
+        // this effectively allows us to make split intervals smaller
+        for aabb_index in aabbs {
+            let position = centroids[*aabb_index][best_axis];
+            if position < bounds_min {
+                bounds_min = position;
             }
-            if bounds_min == bounds_max {
-                continue;
+            if position > bounds_max {
+                bounds_max = position;
             }
+        }
 
-            // Populate the bins
-            let bounds_range = bounds_max - bounds_min;
-            let split_size = bounds_range / NUM_SPLITS as f64;
-            for aabb_index in aabbs {
-                let aabb = &all_aabbs[*aabb_index];
-                let bin_id = usize::min(
-                    ((centroids[*aabb_index][axis] - bounds_min) / split_size) as usize,
-                    NUM_SPLITS as usize - 1,
-                );
-                bins[bin_id].primitive_count += 1;
-                bins[bin_id].aabb.merge_with(aabb);
-            }
+        // Populate the bins
+        let bounds_range = bounds_max - bounds_min;
+        let split_size = bounds_range / NUM_SPLITS as f64;
+        for aabb_index in aabbs {
+            let aabb = &all_aabbs[*aabb_index];
+            let bin_id = usize::min(
+                ((centroids[*aabb_index][best_axis] - bounds_min) / split_size) as usize,
+                NUM_SPLITS as usize - 1,
+            );
+            bins[bin_id].primitive_count += 1;
+            bins[bin_id].aabb.merge_with(aabb);
+        }
 
-            // Gather data for the planes (bins - 1) between the bins
-            let mut left_area = [0.0; NUM_SPLITS as usize - 1];
-            let mut left_count = [0; NUM_SPLITS as usize - 1];
-            let mut right_area = [0.0; NUM_SPLITS as usize - 1];
-            let mut right_count = [0; NUM_SPLITS as usize - 1];
-            let mut left_box = AABB::empty();
-            let mut right_box = AABB::empty();
-            let mut left_sum = 0;
-            let mut right_sum = 0;
-            for i in 0..NUM_SPLITS as usize - 1 {
-                left_sum += bins[i].primitive_count;
-                left_count[i] = left_sum;
-                left_box.merge_with(&bins[i].aabb);
-                left_area[i] = left_box.area();
+        // Gather data for the planes (bins - 1) between the bins
+        let mut left_area = [0.0; NUM_SPLITS as usize - 1];
+        let mut left_count = [0; NUM_SPLITS as usize - 1];
+        let mut right_area = [0.0; NUM_SPLITS as usize - 1];
+        let mut right_count = [0; NUM_SPLITS as usize - 1];
+        let mut left_box = AABB::empty();
+        let mut right_box = AABB::empty();
+        let mut left_sum = 0;
+        let mut right_sum = 0;
+        for i in 0..NUM_SPLITS as usize - 1 {
+            left_sum += bins[i].primitive_count;
+            left_count[i] = left_sum;
+            left_box.merge_with(&bins[i].aabb);
+            left_area[i] = left_box.area();
 
-                right_sum += bins[NUM_SPLITS as usize - 1 - i].primitive_count;
-                right_count[NUM_SPLITS as usize - 2 - i] = right_sum;
-                right_box.merge_with(&bins[NUM_SPLITS as usize - 1 - i].aabb);
-                right_area[NUM_SPLITS as usize - 2 - i] = right_box.area();
-            }
+            right_sum += bins[NUM_SPLITS as usize - 1 - i].primitive_count;
+            right_count[NUM_SPLITS as usize - 2 - i] = right_sum;
+            right_box.merge_with(&bins[NUM_SPLITS as usize - 1 - i].aabb);
+            right_area[NUM_SPLITS as usize - 2 - i] = right_box.area();
+        }
 
-            // Calculate SAH cost for each plane
-            for i in 0..NUM_SPLITS as usize - 1 {
-                let cost =
-                    left_area[i] * left_count[i] as f64 + right_area[i] * right_count[i] as f64;
-                if cost < best_cost {
-                    best_cost = cost;
-                    best_position = bounds_min + (i as f64 + 0.5) * split_size;
-                    best_axis = axis;
-                }
+        // Calculate SAH cost for each plane
+        for i in 0..NUM_SPLITS as usize - 1 {
+            let cost = left_area[i] * left_count[i] as f64 + right_area[i] * right_count[i] as f64;
+            if cost < best_cost {
+                best_cost = cost;
+                best_position = bounds_min + (i as f64 + 0.5) * split_size;
             }
         }
 

@@ -265,19 +265,19 @@ class World {
 
       // Build AABBs for all the dashes
       final stopwatch = Stopwatch()..start();
-      final minXs = <double>[];
-      final minYs = <double>[];
-      final maxXs = <double>[];
-      final maxYs = <double>[];
+      final minXs = Float64List(length);
+      final minYs = Float64List(length);
+      final maxXs = Float64List(length);
+      final maxYs = Float64List(length);
       for (var i = 0; i < length; ++i) {
         final position = _position[i];
         final size = desiredSize;
-        minXs.add(position.x);
-        minYs.add(position.y);
-        maxXs.add(position.x + size);
-        maxYs.add(position.y + size);
+        minXs[i] = position.x;
+        minYs[i] = position.y;
+        maxXs[i] = position.x + size;
+        maxYs[i] = position.y + size;
       }
-      final aabbs = AABB.minMaxBulk(minXs, minYs, maxXs, maxYs);
+      final aabbs = AABB.minMaxRawBulk(minXs, minYs, maxXs, maxYs);
       debugPrint(
           'AABBs ($length) built in ${stopwatch.elapsedMilliseconds} ms');
 
@@ -306,7 +306,7 @@ class World {
           'BVH query in ${stopwatch.elapsedMilliseconds} ms (${queryResults.length} results)');
 
       // Draw the BVH
-      drawFlatBVH(bvh, flattened, canvas);
+      // drawFlatBVH(bvh, flattened, canvas);
 
       // Clean up
       bvh.drop();

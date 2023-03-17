@@ -4,6 +4,7 @@ use flutter_rust_bridge::{frb, SyncReturn};
 pub use generational_arena::{Arena, Index as ExternalIndex};
 use std::cell::RefCell;
 use std::env;
+use std::time::Instant;
 pub use std::{
     ops::Deref,
     sync::{Mutex, RwLock},
@@ -22,10 +23,6 @@ pub struct Index {
 }
 
 impl Index {
-    fn new(index: usize, generation: u64) -> Self {
-        Self { index, generation }
-    }
-
     fn from_external_index(external_index: ExternalIndex) -> Self {
         let raw_parts = external_index.into_raw_parts();
         Self {
@@ -91,10 +88,15 @@ pub fn aabb_new_bulk(
     min_ys: Vec<f64>,
     max_xs: Vec<f64>,
     max_ys: Vec<f64>,
-) -> SyncReturn<Vec<Index>> {
-    let mut ids = Vec::with_capacity(min_xs.len());
+) -> SyncReturn<Vec<u64>> {
+    if min_xs.is_empty() {
+        return SyncReturn(Vec::new());
+    }
+
+    let mut ids = Vec::with_capacity(min_xs.len() * 2);
     AABB_STORE.with(|store| {
         let mut store = store.borrow_mut();
+
         for i in 0..min_xs.len() {
             let min_x = min_xs[i];
             let min_y = min_ys[i];
@@ -102,8 +104,10 @@ pub fn aabb_new_bulk(
             let max_y = max_ys[i];
             let aabb = AABB::new(min_x, min_y, max_x, max_y);
             let id = store.insert(aabb);
+            let (id_index, id_gen) = id.into_raw_parts();
             store[id].id = Some(id);
-            ids.push(Index::from_external_index(id));
+            ids.push(id_index as u64);
+            ids.push(id_gen as u64);
         }
         SyncReturn(ids)
     })

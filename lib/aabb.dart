@@ -6,16 +6,26 @@ class AABB {
   static final Finalizer<Index> _finalizer =
       Finalizer((aabb) => api.aabbDropBulk(aabbIds: [aabb]));
 
-  final Index id;
+  final BigInt index;
+  final BigInt generation;
 
-  AABB(this.id) {
-    _finalizer.attach(this, id);
+  Index getIndex() {
+    return Index(index: index.toInt(), generation: generation.toInt());
+  }
+
+  AABB(this.index, this.generation) {
+    _finalizer.attach(
+        this, Index(index: index.toInt(), generation: generation.toInt()));
   }
 
   // Factories
+  factory AABB.fromIndex(Index index) {
+    return AABB(BigInt.from(index.index), BigInt.from(index.generation));
+  }
+
   factory AABB.minMax(double minX, double minY, double maxX, double maxY) {
     final id = api.aabbNew(minX: minX, minY: minY, maxX: maxX, maxY: maxY);
-    return AABB(id);
+    return AABB(BigInt.from(id.index), BigInt.from(id.generation));
   }
 
   factory AABB.fromList(List<double> minMax) {
@@ -32,17 +42,29 @@ class AABB {
     return AABB.fromXYWH(xywh[0], xywh[1], xywh[2], xywh[3]);
   }
 
-  static List<AABB> minMaxBulk(List<double> minXs, List<double> minYs,
-      List<double> maxXs, List<double> maxYs) {
+  static List<AABB> minMaxRawBulk(Float64List minXs, Float64List minYs,
+      Float64List maxXs, Float64List maxYs) {
     assert(minXs.length == minYs.length);
     assert(minXs.length == maxXs.length);
     assert(minXs.length == maxYs.length);
-    final ids = api.aabbNewBulk(
-        minXs: Float64List.fromList(minXs),
-        minYs: Float64List.fromList(minYs),
-        maxXs: Float64List.fromList(maxXs),
-        maxYs: Float64List.fromList(maxYs));
-    return ids.toList().map((id) => AABB(id)).toList();
+    final ids =
+        api.aabbNewBulk(minXs: minXs, minYs: minYs, maxXs: maxXs, maxYs: maxYs);
+    final aabbs = <AABB>[];
+    for (var i = 0; i < ids.length; i += 2) {
+      final idIndex = ids[i];
+      final idGeneration = ids[i + 1];
+      aabbs.add(AABB(idIndex, idGeneration));
+    }
+    return aabbs;
+  }
+
+  static List<AABB> minMaxBulk(List<double> minXs, List<double> minYs,
+      List<double> maxXs, List<double> maxYs) {
+    return minMaxRawBulk(
+        Float64List.fromList(minXs),
+        Float64List.fromList(minYs),
+        Float64List.fromList(maxXs),
+        Float64List.fromList(maxYs));
   }
 
   static List<AABB> fromListBulk(List<List<double>> minMaxs) {
@@ -83,23 +105,23 @@ class AABB {
   }
 
   static List<bool> dropBulk(List<AABB> aabbs) {
-    final ids = aabbs.map((aabb) => aabb.id).toList();
+    final ids = aabbs.map((aabb) => aabb.getIndex()).toList();
     return api.aabbDropBulk(aabbIds: ids).map((i) => i == 1).toList();
   }
 
   // Properties
   List<double> get min {
-    final min = api.aabbMin(aabbId: id);
+    final min = api.aabbMin(aabbId: getIndex());
     return [min[0], min[1]];
   }
 
   List<double> get max {
-    final max = api.aabbMax(aabbId: id);
+    final max = api.aabbMax(aabbId: getIndex());
     return [max[0], max[1]];
   }
 
   List<double> get center {
-    final center = api.aabbCenter(aabbId: id);
+    final center = api.aabbCenter(aabbId: getIndex());
     return [center[0], center[1]];
   }
 
@@ -117,28 +139,31 @@ class AABB {
 
   // Methods
   bool drop() {
-    return api.aabbDropBulk(aabbIds: [id])[0] == 1;
+    return api.aabbDropBulk(aabbIds: [getIndex()])[0] == 1;
   }
 
   bool contains(double x, double y) {
     return api.aabbContainsPoint(
-        aabbId: id, point: F64Array2(Float64List.fromList([x, y])));
+        aabbId: getIndex(), point: F64Array2(Float64List.fromList([x, y])));
   }
 
   bool containsAABB(AABB other) {
-    return api.aabbContainsAabb(aabbLeftId: id, aabbRightId: other.id);
+    return api.aabbContainsAabb(
+        aabbLeftId: getIndex(), aabbRightId: other.getIndex());
   }
 
   bool intersectsAABB(AABB other) {
-    return api.aabbIntersectsAabb(aabbLeftId: id, aabbRightId: other.id);
+    return api.aabbIntersectsAabb(
+        aabbLeftId: getIndex(), aabbRightId: other.getIndex());
   }
 
   AABB merge(AABB other) {
-    final newId = api.aabbMerge(aabbLeftId: id, aabbRightId: other.id);
-    return AABB(newId);
+    final newId =
+        api.aabbMerge(aabbLeftId: getIndex(), aabbRightId: other.getIndex());
+    return AABB.fromIndex(newId);
   }
 
   void mergeWith(AABB other) {
-    api.aabbMergeWith(aabb: id, other: other.id);
+    api.aabbMergeWith(aabb: getIndex(), other: other.getIndex());
   }
 }

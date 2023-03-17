@@ -2,9 +2,11 @@ import 'dart:collection';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:dashmark_pure/bvh.dart';
 import 'package:dashmark_pure/painter.dart';
 import 'package:dashmark_pure/world.dart';
 import 'package:flutter/material.dart';
+import 'aabb.dart';
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 main() {
@@ -128,11 +130,8 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
 
     stopwatch.reset();
     stopwatch.start();
-    final aabbs_bulk = api.aabbNewBulk(
-        minXs: minXSFloat64List,
-        minYs: minYSFloat64List,
-        maxXs: maxXSFloat64List,
-        maxYs: maxYSFloat64List);
+    final aabbs_bulk = AABB.minMaxRawBulk(
+        minXSFloat64List, minYSFloat64List, maxXSFloat64List, maxYSFloat64List);
     stopwatch.stop();
     debugPrint(
         'Generated $gridSize AABBs in bulk in ${stopwatch.elapsedMilliseconds} ms');
@@ -140,7 +139,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     // Test the speed of building a BVH
     stopwatch.reset();
     stopwatch.start();
-    final bvh = api.bvhNew(aabbs: aabbs_bulk);
+    final bvh = BVH.fromAABBs(aabbs_bulk);
     stopwatch.stop();
     debugPrint(
         'Built BVH with $gridSize AABBs in ${stopwatch.elapsedMilliseconds} ms');
@@ -148,12 +147,12 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     // Flatten the BVH
     stopwatch.reset();
     stopwatch.start();
-    final flattened = api.bvhFlatten(bvhId: bvh);
+    final flattened = bvh.flatten();
     stopwatch.stop();
     debugPrint(
         'Flattened BVH with $gridSize AABBs in ${stopwatch.elapsedMilliseconds} ms');
 
-    final deepestPath = api.bvhDepth(bvhId: bvh);
+    final deepestPath = bvh.depth;
     debugPrint('Deepest path: $deepestPath');
 
     // Print the BVH
@@ -179,7 +178,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
     var collisionsCount = 0;
     for (var i = 0; i < queries; i++) {
       final aabb = queryAABBs[i];
-      final result = api.bvhQueryAabbCollisions(bvhId: bvh, aabbId: aabb);
+      final result = api.bvhQueryAabbCollisions(bvhId: bvh.id, aabbId: aabb);
       collisionsCount += result.length;
     }
     stopwatch.stop();

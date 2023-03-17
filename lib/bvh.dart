@@ -18,13 +18,13 @@ class BVH {
 
   // Factories
   factory BVH.fromAABBs(List<AABB> aabbs) {
-    final aabbIds = aabbs.map((aabb) => aabb.id).toList();
+    final aabbIds = aabbs.map((aabb) => aabb.getIndex()).toList();
     final id = api.bvhNew(aabbs: aabbIds);
     return BVH(id, aabbs: aabbs);
   }
 
   static Future<BVH> fromAABBsAsync(List<AABB> aabbs) async {
-    final aabbIds = aabbs.map((aabb) => aabb.id).toList();
+    final aabbIds = aabbs.map((aabb) => aabb.getIndex()).toList();
     final id = await api.bvhNewAsync(aabbs: aabbIds);
     return BVH(id, aabbs: aabbs);
   }
@@ -52,13 +52,13 @@ class BVH {
   }
 
   List<AABB> queryAABB(AABB aabb) {
-    final ids = api.bvhQueryAabbCollisions(bvhId: id, aabbId: aabb.id);
-    return ids.toList().map((id) => AABB(id)).toList();
+    final ids = api.bvhQueryAabbCollisions(bvhId: id, aabbId: aabb.getIndex());
+    return ids.toList().map((id) => AABB.fromIndex(id)).toList();
   }
 
   List<AABB> queryPoint(double x, double y) {
     final ids = api.bvhQueryPointCollisions(bvhId: id, x: x, y: y);
-    return ids.toList().map((id) => AABB(id)).toList();
+    return ids.toList().map((id) => AABB.fromIndex(id)).toList();
   }
 }
 

@@ -39,7 +39,7 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kAabbNewConstMeta;
 
-  List<Index> aabbNewBulk(
+  Uint64List aabbNewBulk(
       {required Float64List minXs,
       required Float64List minYs,
       required Float64List maxXs,
@@ -281,7 +281,7 @@ class NativeImpl implements Native {
         argNames: ["minX", "minY", "maxX", "maxY"],
       );
 
-  List<Index> aabbNewBulk(
+  Uint64List aabbNewBulk(
       {required Float64List minXs,
       required Float64List minYs,
       required Float64List maxXs,
@@ -293,7 +293,7 @@ class NativeImpl implements Native {
     var arg3 = _platform.api2wire_float_64_list(maxYs);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_aabb_new_bulk(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_list_index,
+      parseSuccessData: _wire2api_uint_64_list,
       constMeta: kAabbNewBulkConstMeta,
       argValues: [minXs, minYs, maxXs, maxYs],
       hint: hint,
