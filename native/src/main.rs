@@ -1,5 +1,4 @@
 use aabb::AABB;
-use rand::Rng;
 
 mod aabb;
 mod api;
@@ -9,13 +8,12 @@ mod flat_bvh;
 
 fn main() {
     // Generate 1000000 random AABBs between 0 and 1000 with size of 20
-    let mut rng = rand::thread_rng();
     let mut aabbs = Vec::new();
 
     let mut start = std::time::Instant::now();
     for _ in 0..1000000 {
-        let x = rng.gen_range(0.0..1000.0);
-        let y = rng.gen_range(0.0..1000.0);
+        let x = fastrand::f64() * 1000.0;
+        let y = fastrand::f64() * 1000.0;
         let aabb = AABB::new(x, y, x + 20.0, y + 20.0);
         aabbs.push(aabb);
     }
