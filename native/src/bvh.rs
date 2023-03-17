@@ -40,16 +40,18 @@ impl BVH {
         }
 
         let mut nodes = vec![];
-        Self::build_recursive(&mut nodes, aabbs);
+        let indices: Vec<usize> = (0..aabbs.len()).collect();
+        Self::build_recursive(&mut nodes, &aabbs[..], &indices[..]);
 
         Self { nodes }
     }
 
-    fn build_recursive(nodes: &mut Vec<BVHNode>, aabbs: &[AABB]) -> usize {
+    fn build_recursive(nodes: &mut Vec<BVHNode>, all_aabbs: &[AABB], aabbs: &[usize]) -> usize {
         let current_index = nodes.len();
 
         if aabbs.len() == 1 {
-            nodes.push(BVHNode::Leaf(aabbs[0].clone()));
+            let aabb = all_aabbs[aabbs[0]];
+            nodes.push(BVHNode::Leaf(aabb));
         } else {
             // let mut merged_aabb = AABB::empty();
             // for aabb in &aabbs {
@@ -59,18 +61,19 @@ impl BVH {
             // let split_position = merged_aabb.center()[split_axis];
 
             // let (split_position, split_axis) = Self::find_split_best(&aabbs[..]);
-            let (split_position, split_axis) = Self::find_split_uniform(&aabbs[..]);
+            let (split_position, split_axis) = Self::find_split_uniform(all_aabbs, aabbs);
             let mut left_aabbs = vec![];
             let mut right_aabbs = vec![];
             let mut left_aabb = AABB::empty();
             let mut right_aabb = AABB::empty();
 
-            for aabb in aabbs {
+            for aabb_index in aabbs {
+                let aabb = &all_aabbs[*aabb_index];
                 if aabb.center()[split_axis] < split_position {
-                    left_aabbs.push(*aabb);
+                    left_aabbs.push(*aabb_index);
                     left_aabb.merge_with(&aabb);
                 } else {
-                    right_aabbs.push(*aabb);
+                    right_aabbs.push(*aabb_index);
                     right_aabb.merge_with(&aabb);
                 }
             }
@@ -85,11 +88,13 @@ impl BVH {
                 left_aabb = AABB::empty();
                 right_aabb = AABB::empty();
 
-                for aabb in left_aabbs.iter() {
+                for aabb_index in left_aabbs.iter() {
+                    let aabb = &all_aabbs[*aabb_index];
                     left_aabb.merge_with(&aabb);
                 }
 
-                for aabb in right_aabbs.iter() {
+                for aabb_index in right_aabbs.iter() {
+                    let aabb = &all_aabbs[*aabb_index];
                     right_aabb.merge_with(&aabb);
                 }
             }
@@ -97,8 +102,8 @@ impl BVH {
             // Insert a placeholder node
             nodes.push(BVHNode::empty());
 
-            let left_index = Self::build_recursive(nodes, &left_aabbs[..]);
-            let right_index = Self::build_recursive(nodes, &right_aabbs[..]);
+            let left_index = Self::build_recursive(nodes, all_aabbs, &left_aabbs[..]);
+            let right_index = Self::build_recursive(nodes, all_aabbs, &right_aabbs[..]);
             let merged_aabb = left_aabb.merge(&right_aabb);
             nodes[current_index] =
                 BVHNode::Internal(left_index as u64, right_index as u64, merged_aabb);
@@ -129,7 +134,7 @@ impl BVH {
         (best_position, best_axis)
     }
 
-    fn find_split_uniform(aabbs: &[AABB]) -> (f64, usize) {
+    fn find_split_uniform(all_aabbs: &[AABB], aabbs: &[usize]) -> (f64, usize) {
         const NUM_SPLITS: u8 = 16;
 
         // Use SAH to find the best split along the best axis
@@ -144,7 +149,8 @@ impl BVH {
             // Simple improvement to BVH quality
             // https://jacco.ompf2.com/2022/04/21/how-to-build-a-bvh-part-3-quick-builds/
             // this effectively allows us to make split intervals smaller
-            for aabb in aabbs {
+            for aabb_index in aabbs {
+                let aabb = &all_aabbs[*aabb_index];
                 let position = aabb.center()[axis];
                 if position < bounds_min {
                     bounds_min = position;
@@ -167,7 +173,8 @@ impl BVH {
             ];
             let bounds_range = bounds_max - bounds_min;
             let split_size = bounds_range / NUM_SPLITS as f64;
-            for aabb in aabbs {
+            for aabb_index in aabbs {
+                let aabb = &all_aabbs[*aabb_index];
                 let bin_id = usize::min(
                     ((aabb.center()[axis] - bounds_min) / split_size) as usize,
                     NUM_SPLITS as usize - 1,
