@@ -6,3 +6,4 @@ pub struct FlatBVH {
     pub max_y: Vec<f64>,
     pub depth: Vec<u64>,
 }
+
