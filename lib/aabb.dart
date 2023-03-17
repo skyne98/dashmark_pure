@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
+
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class AABB {
@@ -43,6 +45,7 @@ class AABB {
   }
 
   static List<AABB> minMaxRawBulk(Float64List points) {
+    const isWeb = kIsWeb;
     final ids = api.aabbNewBulk(points: points);
     final len = ids.length / 8;
     final bytes = ByteData.view(ids.buffer);
@@ -50,9 +53,22 @@ class AABB {
     for (var i = 0; i < len; i += 2) {
       final offsetIndex = i * 8;
       final offsetGeneration = (i + 1) * 8;
-      final idIndex = bytes.getUint64(offsetIndex, Endian.host);
-      final idGeneration = bytes.getUint64(offsetGeneration, Endian.host);
-      aabbs.add(AABB(idIndex, idGeneration));
+      if (isWeb) {
+        // Work around by getting two Uint32 instead of one Uint64
+        // and then combining them into one Uint64
+        final idIndexLow = bytes.getUint32(offsetIndex, Endian.host);
+        final idIndexHigh = bytes.getUint32(offsetIndex + 4, Endian.host);
+        final idGenerationLow = bytes.getUint32(offsetGeneration, Endian.host);
+        final idGenerationHigh =
+            bytes.getUint32(offsetGeneration + 4, Endian.host);
+        final idIndex = (idIndexHigh << 32) + idIndexLow;
+        final idGeneration = (idGenerationHigh << 32) + idGenerationLow;
+        aabbs.add(AABB(idIndex, idGeneration));
+      } else {
+        final idIndex = bytes.getUint64(offsetIndex, Endian.host);
+        final idGeneration = bytes.getUint64(offsetGeneration, Endian.host);
+        aabbs.add(AABB(idIndex, idGeneration));
+      }
     }
     return aabbs;
   }
