@@ -11,21 +11,23 @@ struct IntervalBin {
     primitive_count: u64,
 }
 
+const LEAF_CHILDREN_COUNT: usize = 16;
+
 #[derive(Debug, Clone)]
 pub enum BVHNode {
-    Leaf(AABB),
+    Leaf([AABB; LEAF_CHILDREN_COUNT], AABB),
     Internal(u64, u64, AABB),
 }
 
 impl BVHNode {
     pub fn empty() -> Self {
-        BVHNode::Leaf(AABB::empty())
+        BVHNode::Leaf([AABB::empty(); LEAF_CHILDREN_COUNT], AABB::empty())
     }
 
     pub fn get_aabb(&self) -> AABB {
         match self {
-            BVHNode::Leaf(aabb) => aabb.clone(),
-            BVHNode::Internal(_, _, aabb) => aabb.clone(),
+            BVHNode::Leaf(_, aabb) => *aabb,
+            BVHNode::Internal(_, _, aabb) => *aabb,
         }
     }
 }
@@ -57,9 +59,17 @@ impl BVH {
         let current_index = nodes.len();
         let aabbs_len = aabbs.len();
 
-        if aabbs_len == 1 {
-            let aabb = all_aabbs[aabbs[0]];
-            nodes.push(BVHNode::Leaf(aabb));
+        if aabbs_len <= LEAF_CHILDREN_COUNT {
+            let mut leaf_aabbs = [AABB::empty(); LEAF_CHILDREN_COUNT];
+            let mut merged_aabb = AABB::empty();
+            for (i, aabb) in aabbs.iter().enumerate() {
+                if i < aabbs_len {
+                    let aabb = all_aabbs[*aabb];
+                    leaf_aabbs[i] = aabb;
+                    merged_aabb.merge_with(&aabb);
+                }
+            }
+            nodes.push(BVHNode::Leaf(leaf_aabbs, merged_aabb));
         } else {
             let mut merged_aabb = AABB::empty();
             for aabb in aabbs {
@@ -347,9 +357,16 @@ impl BVH {
         let node = &self.nodes[node_index];
         if query_aabb.intersects_aabb(&node.get_aabb()) {
             match node {
-                BVHNode::Leaf(aabb) => {
-                    if let Some(id) = aabb.id {
-                        results.push(id);
+                BVHNode::Leaf(aabbs, leaf_aabb) => {
+                    if query_aabb.intersects_aabb(leaf_aabb) {
+                        // Check each AABB in the leaf
+                        for (i, aabb) in aabbs.iter().enumerate() {
+                            if query_aabb.intersects_aabb(aabb) {
+                                if let Some(id) = aabb.id {
+                                    results.push(id);
+                                }
+                            }
+                        }
                     }
                 }
                 BVHNode::Internal(left_child_index, right_child_index, _) => {
@@ -387,9 +404,16 @@ impl BVH {
         let node = &self.nodes[node_index];
         if node.get_aabb().contains_point(point_x, point_y) {
             match node {
-                BVHNode::Leaf(aabb) => {
-                    if let Some(id) = aabb.id {
-                        results.push(id);
+                BVHNode::Leaf(aabbs, leaf_aabb) => {
+                    if leaf_aabb.contains_point(point_x, point_y) {
+                        // Check each AABB in the leaf
+                        for (i, aabb) in aabbs.iter().enumerate() {
+                            if aabb.contains_point(point_x, point_y) {
+                                if let Some(id) = aabb.id {
+                                    results.push(id);
+                                }
+                            }
+                        }
                     }
                 }
                 BVHNode::Internal(left_child_index, right_child_index, _) => {
@@ -427,8 +451,11 @@ impl BVH {
             format!("{}├─", indent)
         };
         match node {
-            BVHNode::Leaf(aabb) => {
+            BVHNode::Leaf(aabbs, aabb) => {
                 output.push_str(&format!("{}{} LEAF {:?}\n", prefix, indent, aabb));
+                for aabb in aabbs {
+                    output.push_str(&format!("{}{} └─{:?}\n", prefix, indent, aabb));
+                }
             }
             BVHNode::Internal(left, right, aabb) => {
                 output.push_str(&format!("{}{} INTERNAL {:?}\n", prefix, indent, aabb));
@@ -449,7 +476,7 @@ impl BVH {
 
     fn depth_recursive(&self, current_idx: u64) -> usize {
         match self.nodes[current_idx as usize] {
-            BVHNode::Leaf(_) => 1,
+            BVHNode::Leaf(_, _) => 1,
             BVHNode::Internal(left_idx, right_idx, _) => {
                 1 + std::cmp::max(
                     self.depth_recursive(left_idx),

@@ -7,7 +7,7 @@ edition = "2021"
 fastrand = "1.9.0"
 flutter_rust_bridge = { version = "1" }
 generational-arena = { version = "0.2.8", features = ["std"] }
-parry2d-f64 = "0.13.3"
+parry2d-f64 = { version = "0.13.3", features = ["simd-stable", "parallel"] }
 smallvec = "1.10.0"
 ultraviolet = { version = "0.9.0", features = ["f64"] }
 

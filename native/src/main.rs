@@ -10,7 +10,7 @@ mod bvh;
 mod flat_bvh;
 
 fn main() {
-    const iterations: u32 = 10000000;
+    const iterations: u32 = 1000000;
 
     // Generate iterations random AABBs between 0 and 1000 with size of 20
     let mut aabbs = Vec::new();
@@ -34,24 +34,29 @@ fn main() {
     let flat_bvh = bvh.flatten();
     println!("Time to generate FlatBVH: {:?}", start.elapsed());
 
-    // Now do 1000 intersection tests
+    // Now do iterations / 10 intersection tests
     start = std::time::Instant::now();
-    for _ in 0..1000 {
+    for _ in 0..iterations / 10 {
         let x = fastrand::f64() * 1000.0;
         let y = fastrand::f64() * 1000.0;
         let aabb = AABB::new(x, y, x + 20.0, y + 20.0);
         bvh.query_aabb_collisions(&aabb);
     }
     let time = start.elapsed();
-    println!("Time to do 1000 BVH intersection tests: {:?}", time);
-    let time_for_per_query_per_aabb = time / 1000 / iterations;
     println!(
-        "Time for per query per aabb: {:?}",
+        "Time to do {} BVH intersection tests: {:?}",
+        iterations / 10,
+        time
+    );
+    let time_for_per_query_per_aabb =
+        time.as_millis() as f64 / iterations as f64 / iterations as f64 * 10.0;
+    println!(
+        "Time for per query per aabb: {:?} ms",
         time_for_per_query_per_aabb
     );
-    let time_for_500_queries_2000_aabbs = time_for_per_query_per_aabb * 500 * 2000;
+    let time_for_500_queries_2000_aabbs = time_for_per_query_per_aabb * 500 as f64 * 2000 as f64;
     println!(
-        "Time for 500 queries 2000 aabbs: {:?}",
+        "Time for 500 queries 2000 aabbs: {:?} ms",
         time_for_500_queries_2000_aabbs
     );
 
@@ -76,9 +81,9 @@ fn main() {
     bvh.clear_and_rebuild(aabbs.into_iter(), 0.0);
     println!("Time to generate ParryQbvh: {:?}", start.elapsed());
 
-    // Now do 1000 intersection tests
+    // Now do iterations / 10 intersection tests
     start = std::time::Instant::now();
-    for _ in 0..1000 {
+    for _ in 0..iterations / 10 {
         let x = fastrand::f64() * 1000.0;
         let y = fastrand::f64() * 1000.0;
         let one_aabb = ParryAabb::new(Point2::new(x, y), Point2::new(x + 20.0, y + 20.0));
@@ -86,13 +91,18 @@ fn main() {
         bvh.intersect_aabb(&one_aabb, &mut results);
     }
     let time = start.elapsed();
-    println!("Time to do 1000 ParryQbvh intersection tests: {:?}", time);
-    let time_for_per_query_per_aabb = time / 1000 / iterations;
+    println!(
+        "Time to do {} ParryQbvh intersection tests: {:?}",
+        iterations / 10,
+        time
+    );
+    let time_for_per_query_per_aabb =
+        time.as_millis() as f64 / iterations as f64 / iterations as f64 * 10.0;
     println!(
         "Time for per query per aabb: {:?}",
         time_for_per_query_per_aabb
     );
-    let time_for_500_queries_2000_aabbs = time_for_per_query_per_aabb * 500 * 2000;
+    let time_for_500_queries_2000_aabbs = time_for_per_query_per_aabb * 500 as f64 * 2000 as f64;
     println!(
         "Time for 500 queries 2000 aabbs: {:?}",
         time_for_500_queries_2000_aabbs
