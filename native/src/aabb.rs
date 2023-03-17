@@ -39,8 +39,8 @@ impl AABB {
     }
 
     pub fn center(&self) -> [f64; 2] {
-        let x = (self.max_x + self.min_x) / 2.0;
-        let y = (self.max_y + self.min_y) / 2.0;
+        let x = (self.max_x + self.min_x) * 0.5;
+        let y = (self.max_y + self.min_y) * 0.5;
         [x, y]
     }
 

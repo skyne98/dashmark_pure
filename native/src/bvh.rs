@@ -1,10 +1,11 @@
 use std::collections::HashSet;
 
 use generational_arena::Index;
+use smallvec::{smallvec, SmallVec, ToSmallVec};
 
 use crate::{aabb::AABB, api::morton_codes_async, flat_bvh::FlatBVH};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct IntervalBin {
     aabb: AABB,
     primitive_count: u64,
@@ -48,6 +49,7 @@ impl BVH {
 
     fn build_recursive(nodes: &mut Vec<BVHNode>, all_aabbs: &[AABB], aabbs: &[usize]) -> usize {
         let current_index = nodes.len();
+        let aabbs_len = aabbs.len();
 
         if aabbs.len() == 1 {
             let aabb = all_aabbs[aabbs[0]];
@@ -62,8 +64,8 @@ impl BVH {
 
             // let (split_position, split_axis) = Self::find_split_best(&aabbs[..]);
             let (split_position, split_axis) = Self::find_split_uniform(all_aabbs, aabbs);
-            let mut left_aabbs = vec![];
-            let mut right_aabbs = vec![];
+            let mut left_aabbs: SmallVec<[usize; 64]> = smallvec![];
+            let mut right_aabbs: SmallVec<[usize; 64]> = smallvec![];
             let mut left_aabb = AABB::empty();
             let mut right_aabb = AABB::empty();
 
@@ -81,9 +83,9 @@ impl BVH {
             // Special measure for when all the boxes are in the same spot
             if (left_aabbs.len() == 0) || (right_aabbs.len() == 0) {
                 // Doesn't matter, split the group directly in half
-                let half = aabbs.len() / 2;
-                left_aabbs = aabbs[..half].to_vec();
-                right_aabbs = aabbs[half..].to_vec();
+                let half = aabbs_len / 2;
+                left_aabbs = aabbs[..half].to_smallvec();
+                right_aabbs = aabbs[half..].to_smallvec();
 
                 left_aabb = AABB::empty();
                 right_aabb = AABB::empty();
@@ -142,6 +144,11 @@ impl BVH {
         let mut best_position = 0.0;
         let mut best_axis = 0;
 
+        let mut bins = [IntervalBin {
+            aabb: AABB::empty(),
+            primitive_count: 0,
+        }; NUM_SPLITS as usize];
+
         for axis in 0..2 {
             let mut bounds_min = f64::INFINITY;
             let mut bounds_max = f64::NEG_INFINITY;
@@ -164,13 +171,6 @@ impl BVH {
             }
 
             // Populate the bins
-            let mut bins = vec![
-                IntervalBin {
-                    aabb: AABB::empty(),
-                    primitive_count: 0
-                };
-                NUM_SPLITS as usize
-            ];
             let bounds_range = bounds_max - bounds_min;
             let split_size = bounds_range / NUM_SPLITS as f64;
             for aabb_index in aabbs {
@@ -183,10 +183,10 @@ impl BVH {
                 bins[bin_id].aabb.merge_with(aabb);
             }
             // Gather data for the planes (bins - 1) between the bins
-            let mut left_area = vec![0.0; NUM_SPLITS as usize - 1];
-            let mut left_count = vec![0; NUM_SPLITS as usize - 1];
-            let mut right_area = vec![0.0; NUM_SPLITS as usize - 1];
-            let mut right_count = vec![0; NUM_SPLITS as usize - 1];
+            let mut left_area = [0.0; NUM_SPLITS as usize - 1];
+            let mut left_count = [0; NUM_SPLITS as usize - 1];
+            let mut right_area = [0.0; NUM_SPLITS as usize - 1];
+            let mut right_count = [0; NUM_SPLITS as usize - 1];
             let mut left_box = AABB::empty();
             let mut right_box = AABB::empty();
             let mut left_sum = 0;
