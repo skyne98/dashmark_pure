@@ -122,7 +122,7 @@ class AABB {
 
   bool contains(double x, double y) {
     return api.aabbContainsPoint(
-        aabbId: id, point: Float64List.fromList([x, y]));
+        aabbId: id, point: F64Array2(Float64List.fromList([x, y])));
   }
 
   bool containsAABB(AABB other) {

@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 
