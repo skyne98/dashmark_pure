@@ -24,8 +24,55 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
   }
 
   @protected
+  List<dynamic> api2wire_box_autoadd_shape(Shape raw) {
+    return api2wire_shape(raw);
+  }
+
+  @protected
+  List<dynamic> api2wire_box_shape(Shape raw) {
+    return api2wire_shape(raw);
+  }
+
+  @protected
+  List<dynamic> api2wire_list_box_shape(List<Shape> raw) {
+    return raw.map(api2wire_box_shape).toList();
+  }
+
+  @protected
+  List<dynamic> api2wire_list_shape_transform(List<ShapeTransform> raw) {
+    return raw.map(api2wire_shape_transform).toList();
+  }
+
+  @protected
   List<dynamic> api2wire_raw_index(RawIndex raw) {
     return [api2wire_usize(raw.field0), api2wire_u64(raw.field1)];
+  }
+
+  @protected
+  List<dynamic> api2wire_shape(Shape raw) {
+    if (raw is Shape_Ball) {
+      return [0, api2wire_f64(raw.radius)];
+    }
+    if (raw is Shape_Compound) {
+      return [
+        1,
+        api2wire_list_box_shape(raw.children),
+        api2wire_list_shape_transform(raw.transforms)
+      ];
+    }
+
+    throw Exception('unreachable');
+  }
+
+  @protected
+  List<dynamic> api2wire_shape_transform(ShapeTransform raw) {
+    return [
+      api2wire_f64(raw.positionX),
+      api2wire_f64(raw.positionY),
+      api2wire_f64(raw.rotation),
+      api2wire_f64(raw.absoluteOriginX),
+      api2wire_f64(raw.absoluteOriginY)
+    ];
   }
 
   @protected
@@ -54,6 +101,15 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* void */ wire_entity_set_position(
       List<dynamic> index, double x, double y);
+
+  external dynamic /* void */ wire_entity_set_origin(
+      List<dynamic> index, bool relative, double x, double y);
+
+  external dynamic /* void */ wire_entity_set_rotation(
+      List<dynamic> index, double rotation);
+
+  external dynamic /* void */ wire_entity_set_shape(
+      List<dynamic> index, List<dynamic> shape);
 }
 
 // Section: WASM wire connector
@@ -73,4 +129,16 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   dynamic /* void */ wire_entity_set_position(
           List<dynamic> index, double x, double y) =>
       wasmModule.wire_entity_set_position(index, x, y);
+
+  dynamic /* void */ wire_entity_set_origin(
+          List<dynamic> index, bool relative, double x, double y) =>
+      wasmModule.wire_entity_set_origin(index, relative, x, y);
+
+  dynamic /* void */ wire_entity_set_rotation(
+          List<dynamic> index, double rotation) =>
+      wasmModule.wire_entity_set_rotation(index, rotation);
+
+  dynamic /* void */ wire_entity_set_shape(
+          List<dynamic> index, List<dynamic> shape) =>
+      wasmModule.wire_entity_set_shape(index, shape);
 }

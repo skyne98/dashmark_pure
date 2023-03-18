@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:meta/meta.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
+import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 
 import 'dart:convert';
 import 'dart:async';
@@ -13,6 +14,8 @@ import 'package:meta/meta.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'bridge_generated.io.dart'
     if (dart.library.html) 'bridge_generated.web.dart';
+
+part 'bridge_generated.freezed.dart';
 
 abstract class Native {
   Future<String> sayHello({dynamic hint});
@@ -34,6 +37,25 @@ abstract class Native {
       dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kEntitySetPositionConstMeta;
+
+  void entitySetOrigin(
+      {required RawIndex index,
+      required bool relative,
+      required double x,
+      required double y,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetOriginConstMeta;
+
+  void entitySetRotation(
+      {required RawIndex index, required double rotation, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetRotationConstMeta;
+
+  void entitySetShape(
+      {required RawIndex index, required Shape shape, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetShapeConstMeta;
 }
 
 class RawIndex {
@@ -43,6 +65,33 @@ class RawIndex {
   const RawIndex({
     required this.field0,
     required this.field1,
+  });
+}
+
+@freezed
+class Shape with _$Shape {
+  const factory Shape.ball({
+    required double radius,
+  }) = Shape_Ball;
+  const factory Shape.compound({
+    required List<Shape> children,
+    required List<ShapeTransform> transforms,
+  }) = Shape_Compound;
+}
+
+class ShapeTransform {
+  final double positionX;
+  final double positionY;
+  final double rotation;
+  final double absoluteOriginX;
+  final double absoluteOriginY;
+
+  const ShapeTransform({
+    required this.positionX,
+    required this.positionY,
+    required this.rotation,
+    required this.absoluteOriginX,
+    required this.absoluteOriginY,
   });
 }
 
@@ -127,6 +176,70 @@ class NativeImpl implements Native {
         argNames: ["index", "x", "y"],
       );
 
+  void entitySetOrigin(
+      {required RawIndex index,
+      required bool relative,
+      required double x,
+      required double y,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
+    var arg1 = relative;
+    var arg2 = api2wire_f64(x);
+    var arg3 = api2wire_f64(y);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () =>
+          _platform.inner.wire_entity_set_origin(arg0, arg1, arg2, arg3),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kEntitySetOriginConstMeta,
+      argValues: [index, relative, x, y],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetOriginConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "entity_set_origin",
+        argNames: ["index", "relative", "x", "y"],
+      );
+
+  void entitySetRotation(
+      {required RawIndex index, required double rotation, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
+    var arg1 = api2wire_f64(rotation);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_entity_set_rotation(arg0, arg1),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kEntitySetRotationConstMeta,
+      argValues: [index, rotation],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetRotationConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "entity_set_rotation",
+        argNames: ["index", "rotation"],
+      );
+
+  void entitySetShape(
+      {required RawIndex index, required Shape shape, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
+    var arg1 = _platform.api2wire_box_autoadd_shape(shape);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_entity_set_shape(arg0, arg1),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kEntitySetShapeConstMeta,
+      argValues: [index, shape],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetShapeConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "entity_set_shape",
+        argNames: ["index", "shape"],
+      );
+
   void dispose() {
     _platform.dispose();
   }
@@ -168,6 +281,11 @@ class NativeImpl implements Native {
 }
 
 // Section: api2wire
+
+@protected
+bool api2wire_bool(bool raw) {
+  return raw;
+}
 
 @protected
 double api2wire_f64(double raw) {

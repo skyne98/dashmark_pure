@@ -23,6 +23,39 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
   }
 
   @protected
+  ffi.Pointer<wire_Shape> api2wire_box_autoadd_shape(Shape raw) {
+    final ptr = inner.new_box_autoadd_shape_0();
+    _api_fill_to_wire_shape(raw, ptr.ref);
+    return ptr;
+  }
+
+  @protected
+  ffi.Pointer<wire_Shape> api2wire_box_shape(Shape raw) {
+    final ptr = inner.new_box_shape_0();
+    _api_fill_to_wire_shape(raw, ptr.ref);
+    return ptr;
+  }
+
+  @protected
+  ffi.Pointer<wire_list_box_shape> api2wire_list_box_shape(List<Shape> raw) {
+    final ans = inner.new_list_box_shape_0(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      _api_fill_to_wire_box_shape(raw[i], ans.ref.ptr[i]);
+    }
+    return ans;
+  }
+
+  @protected
+  ffi.Pointer<wire_list_shape_transform> api2wire_list_shape_transform(
+      List<ShapeTransform> raw) {
+    final ans = inner.new_list_shape_transform_0(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      _api_fill_to_wire_shape_transform(raw[i], ans.ref.ptr[i]);
+    }
+    return ans;
+  }
+
+  @protected
   int api2wire_u64(int raw) {
     return raw;
   }
@@ -36,9 +69,47 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
     _api_fill_to_wire_raw_index(apiObj, wireObj.ref);
   }
 
+  void _api_fill_to_wire_box_autoadd_shape(
+      Shape apiObj, ffi.Pointer<wire_Shape> wireObj) {
+    _api_fill_to_wire_shape(apiObj, wireObj.ref);
+  }
+
+  void _api_fill_to_wire_box_shape(
+      Shape apiObj, ffi.Pointer<wire_Shape> wireObj) {
+    _api_fill_to_wire_shape(apiObj, wireObj.ref);
+  }
+
   void _api_fill_to_wire_raw_index(RawIndex apiObj, wire_RawIndex wireObj) {
     wireObj.field0 = api2wire_usize(apiObj.field0);
     wireObj.field1 = api2wire_u64(apiObj.field1);
+  }
+
+  void _api_fill_to_wire_shape(Shape apiObj, wire_Shape wireObj) {
+    if (apiObj is Shape_Ball) {
+      var pre_radius = api2wire_f64(apiObj.radius);
+      wireObj.tag = 0;
+      wireObj.kind = inner.inflate_Shape_Ball();
+      wireObj.kind.ref.Ball.ref.radius = pre_radius;
+      return;
+    }
+    if (apiObj is Shape_Compound) {
+      var pre_children = api2wire_list_box_shape(apiObj.children);
+      var pre_transforms = api2wire_list_shape_transform(apiObj.transforms);
+      wireObj.tag = 1;
+      wireObj.kind = inner.inflate_Shape_Compound();
+      wireObj.kind.ref.Compound.ref.children = pre_children;
+      wireObj.kind.ref.Compound.ref.transforms = pre_transforms;
+      return;
+    }
+  }
+
+  void _api_fill_to_wire_shape_transform(
+      ShapeTransform apiObj, wire_ShapeTransform wireObj) {
+    wireObj.position_x = api2wire_f64(apiObj.positionX);
+    wireObj.position_y = api2wire_f64(apiObj.positionY);
+    wireObj.rotation = api2wire_f64(apiObj.rotation);
+    wireObj.absolute_origin_x = api2wire_f64(apiObj.absoluteOriginX);
+    wireObj.absolute_origin_y = api2wire_f64(apiObj.absoluteOriginY);
   }
 }
 
@@ -197,6 +268,64 @@ class NativeWire implements FlutterRustBridgeWireBase {
           WireSyncReturn Function(
               ffi.Pointer<wire_RawIndex>, double, double)>();
 
+  WireSyncReturn wire_entity_set_origin(
+    ffi.Pointer<wire_RawIndex> index,
+    bool relative,
+    double x,
+    double y,
+  ) {
+    return _wire_entity_set_origin(
+      index,
+      relative,
+      x,
+      y,
+    );
+  }
+
+  late final _wire_entity_set_originPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>, ffi.Bool,
+              ffi.Double, ffi.Double)>>('wire_entity_set_origin');
+  late final _wire_entity_set_origin = _wire_entity_set_originPtr.asFunction<
+      WireSyncReturn Function(
+          ffi.Pointer<wire_RawIndex>, bool, double, double)>();
+
+  WireSyncReturn wire_entity_set_rotation(
+    ffi.Pointer<wire_RawIndex> index,
+    double rotation,
+  ) {
+    return _wire_entity_set_rotation(
+      index,
+      rotation,
+    );
+  }
+
+  late final _wire_entity_set_rotationPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
+              ffi.Double)>>('wire_entity_set_rotation');
+  late final _wire_entity_set_rotation =
+      _wire_entity_set_rotationPtr.asFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>, double)>();
+
+  WireSyncReturn wire_entity_set_shape(
+    ffi.Pointer<wire_RawIndex> index,
+    ffi.Pointer<wire_Shape> shape,
+  ) {
+    return _wire_entity_set_shape(
+      index,
+      shape,
+    );
+  }
+
+  late final _wire_entity_set_shapePtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
+              ffi.Pointer<wire_Shape>)>>('wire_entity_set_shape');
+  late final _wire_entity_set_shape = _wire_entity_set_shapePtr.asFunction<
+      WireSyncReturn Function(
+          ffi.Pointer<wire_RawIndex>, ffi.Pointer<wire_Shape>)>();
+
   ffi.Pointer<wire_RawIndex> new_box_autoadd_raw_index_0() {
     return _new_box_autoadd_raw_index_0();
   }
@@ -206,6 +335,76 @@ class NativeWire implements FlutterRustBridgeWireBase {
           'new_box_autoadd_raw_index_0');
   late final _new_box_autoadd_raw_index_0 = _new_box_autoadd_raw_index_0Ptr
       .asFunction<ffi.Pointer<wire_RawIndex> Function()>();
+
+  ffi.Pointer<wire_Shape> new_box_autoadd_shape_0() {
+    return _new_box_autoadd_shape_0();
+  }
+
+  late final _new_box_autoadd_shape_0Ptr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_Shape> Function()>>(
+          'new_box_autoadd_shape_0');
+  late final _new_box_autoadd_shape_0 = _new_box_autoadd_shape_0Ptr
+      .asFunction<ffi.Pointer<wire_Shape> Function()>();
+
+  ffi.Pointer<wire_Shape> new_box_shape_0() {
+    return _new_box_shape_0();
+  }
+
+  late final _new_box_shape_0Ptr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_Shape> Function()>>(
+          'new_box_shape_0');
+  late final _new_box_shape_0 =
+      _new_box_shape_0Ptr.asFunction<ffi.Pointer<wire_Shape> Function()>();
+
+  ffi.Pointer<wire_list_box_shape> new_list_box_shape_0(
+    int len,
+  ) {
+    return _new_list_box_shape_0(
+      len,
+    );
+  }
+
+  late final _new_list_box_shape_0Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_list_box_shape> Function(
+              ffi.Int32)>>('new_list_box_shape_0');
+  late final _new_list_box_shape_0 = _new_list_box_shape_0Ptr
+      .asFunction<ffi.Pointer<wire_list_box_shape> Function(int)>();
+
+  ffi.Pointer<wire_list_shape_transform> new_list_shape_transform_0(
+    int len,
+  ) {
+    return _new_list_shape_transform_0(
+      len,
+    );
+  }
+
+  late final _new_list_shape_transform_0Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_list_shape_transform> Function(
+              ffi.Int32)>>('new_list_shape_transform_0');
+  late final _new_list_shape_transform_0 = _new_list_shape_transform_0Ptr
+      .asFunction<ffi.Pointer<wire_list_shape_transform> Function(int)>();
+
+  ffi.Pointer<ShapeKind> inflate_Shape_Ball() {
+    return _inflate_Shape_Ball();
+  }
+
+  late final _inflate_Shape_BallPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ShapeKind> Function()>>(
+          'inflate_Shape_Ball');
+  late final _inflate_Shape_Ball =
+      _inflate_Shape_BallPtr.asFunction<ffi.Pointer<ShapeKind> Function()>();
+
+  ffi.Pointer<ShapeKind> inflate_Shape_Compound() {
+    return _inflate_Shape_Compound();
+  }
+
+  late final _inflate_Shape_CompoundPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ShapeKind> Function()>>(
+          'inflate_Shape_Compound');
+  late final _inflate_Shape_Compound = _inflate_Shape_CompoundPtr
+      .asFunction<ffi.Pointer<ShapeKind> Function()>();
 
   void free_WireSyncReturn(
     WireSyncReturn ptr,
@@ -230,6 +429,61 @@ class wire_RawIndex extends ffi.Struct {
 
   @ffi.Uint64()
   external int field1;
+}
+
+class wire_Shape_Ball extends ffi.Struct {
+  @ffi.Double()
+  external double radius;
+}
+
+class wire_list_box_shape extends ffi.Struct {
+  external ffi.Pointer<wire_Shape> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+class wire_Shape extends ffi.Struct {
+  @ffi.Int32()
+  external int tag;
+
+  external ffi.Pointer<ShapeKind> kind;
+}
+
+class ShapeKind extends ffi.Union {
+  external ffi.Pointer<wire_Shape_Ball> Ball;
+
+  external ffi.Pointer<wire_Shape_Compound> Compound;
+}
+
+class wire_Shape_Compound extends ffi.Struct {
+  external ffi.Pointer<wire_list_box_shape> children;
+
+  external ffi.Pointer<wire_list_shape_transform> transforms;
+}
+
+class wire_list_shape_transform extends ffi.Struct {
+  external ffi.Pointer<wire_ShapeTransform> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+class wire_ShapeTransform extends ffi.Struct {
+  @ffi.Double()
+  external double position_x;
+
+  @ffi.Double()
+  external double position_y;
+
+  @ffi.Double()
+  external double rotation;
+
+  @ffi.Double()
+  external double absolute_origin_x;
+
+  @ffi.Double()
+  external double absolute_origin_y;
 }
 
 typedef DartPostCObjectFnType = ffi.Pointer<

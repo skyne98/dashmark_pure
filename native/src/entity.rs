@@ -4,13 +4,13 @@ use downcast_rs::impl_downcast;
 use generational_arena::Index;
 use rapier2d_f64::{
     na::{Isometry2, Point2, UnitComplex, Vector2},
-    parry::query::RayCast,
-    prelude::{Aabb, Shape},
+    parry::shape::Shape,
+    prelude::Aabb,
 };
 
 // Shape
 pub trait EntityShape: Shape {}
-impl<T> EntityShape for T where T: RayCast + Shape {}
+impl<T> EntityShape for T where T: Shape {}
 
 impl_downcast!(EntityShape);
 
@@ -151,6 +151,16 @@ impl Entity {
 
     pub fn set_shape<S: EntityShape>(&mut self, shape: S) {
         self.shape = Some(Box::new(shape));
+        self.dirty_transforms = true;
+    }
+
+    pub fn set_shape_from_box(&mut self, shape: Box<dyn EntityShape>) {
+        self.shape = Some(shape);
+        self.dirty_transforms = true;
+    }
+
+    pub fn set_shape_to_none(&mut self) {
+        self.shape = None;
         self.dirty_transforms = true;
     }
 
