@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.69"
+downcast-rs = "1.2.0"
 fastrand = "1.9.0"
 flutter_rust_bridge = { version = "1" }
 generational-arena = { version = "0.2.8", features = ["std"] }

@@ -4,8 +4,8 @@ use rapier2d_f64::parry::partitioning::Qbvh as ParryQbvh;
 
 mod api;
 mod bridge_generated;
+mod bvh;
 mod entity;
-mod flat_bvh;
 mod state;
 
 fn main() {
