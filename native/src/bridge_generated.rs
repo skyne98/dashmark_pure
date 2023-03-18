@@ -43,6 +43,38 @@ fn wire_create_entity_impl() -> support::WireSyncReturn {
         move || Ok(create_entity()),
     )
 }
+fn wire_drop_entity_impl(index: impl Wire2Api<RawIndex> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "drop_entity",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_index = index.wire2api();
+            Ok(drop_entity(api_index))
+        },
+    )
+}
+fn wire_entity_set_position_impl(
+    index: impl Wire2Api<RawIndex> + UnwindSafe,
+    x: impl Wire2Api<f64> + UnwindSafe,
+    y: impl Wire2Api<f64> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "entity_set_position",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_index = index.wire2api();
+            let api_x = x.wire2api();
+            let api_y = y.wire2api();
+            Ok(entity_set_position(api_index, api_x, api_y))
+        },
+    )
+}
 // Section: wrapper structs
 
 // Section: static checks
@@ -63,6 +95,23 @@ where
 {
     fn wire2api(self) -> Option<T> {
         (!self.is_null()).then(|| self.wire2api())
+    }
+}
+
+impl Wire2Api<f64> for f64 {
+    fn wire2api(self) -> f64 {
+        self
+    }
+}
+
+impl Wire2Api<u64> for u64 {
+    fn wire2api(self) -> u64 {
+        self
+    }
+}
+impl Wire2Api<usize> for usize {
+    fn wire2api(self) -> usize {
+        self
     }
 }
 // Section: impl IntoDart

@@ -22,6 +22,18 @@ abstract class Native {
   RawIndex createEntity({dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kCreateEntityConstMeta;
+
+  void dropEntity({required RawIndex index, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kDropEntityConstMeta;
+
+  void entitySetPosition(
+      {required RawIndex index,
+      required double x,
+      required double y,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetPositionConstMeta;
 }
 
 class RawIndex {
@@ -75,6 +87,46 @@ class NativeImpl implements Native {
         argNames: [],
       );
 
+  void dropEntity({required RawIndex index, dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_drop_entity(arg0),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kDropEntityConstMeta,
+      argValues: [index],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kDropEntityConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "drop_entity",
+        argNames: ["index"],
+      );
+
+  void entitySetPosition(
+      {required RawIndex index,
+      required double x,
+      required double y,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
+    var arg1 = api2wire_f64(x);
+    var arg2 = api2wire_f64(y);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_entity_set_position(arg0, arg1, arg2),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kEntitySetPositionConstMeta,
+      argValues: [index, x, y],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetPositionConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "entity_set_position",
+        argNames: ["index", "x", "y"],
+      );
+
   void dispose() {
     _platform.dispose();
   }
@@ -106,6 +158,10 @@ class NativeImpl implements Native {
     return raw as Uint8List;
   }
 
+  void _wire2api_unit(dynamic raw) {
+    return;
+  }
+
   int _wire2api_usize(dynamic raw) {
     return castInt(raw);
   }
@@ -113,4 +169,13 @@ class NativeImpl implements Native {
 
 // Section: api2wire
 
+@protected
+double api2wire_f64(double raw) {
+  return raw;
+}
+
+@protected
+int api2wire_usize(int raw) {
+  return raw;
+}
 // Section: finalizer

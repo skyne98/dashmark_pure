@@ -15,9 +15,31 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
 
 // Section: api2wire
 
+  @protected
+  ffi.Pointer<wire_RawIndex> api2wire_box_autoadd_raw_index(RawIndex raw) {
+    final ptr = inner.new_box_autoadd_raw_index_0();
+    _api_fill_to_wire_raw_index(raw, ptr.ref);
+    return ptr;
+  }
+
+  @protected
+  int api2wire_u64(int raw) {
+    return raw;
+  }
+
 // Section: finalizer
 
 // Section: api_fill_to_wire
+
+  void _api_fill_to_wire_box_autoadd_raw_index(
+      RawIndex apiObj, ffi.Pointer<wire_RawIndex> wireObj) {
+    _api_fill_to_wire_raw_index(apiObj, wireObj.ref);
+  }
+
+  void _api_fill_to_wire_raw_index(RawIndex apiObj, wire_RawIndex wireObj) {
+    wireObj.field0 = api2wire_usize(apiObj.field0);
+    wireObj.field1 = api2wire_u64(apiObj.field1);
+  }
 }
 
 // ignore_for_file: camel_case_types, non_constant_identifier_names, avoid_positional_boolean_parameters, annotate_overrides, constant_identifier_names
@@ -139,6 +161,52 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_create_entity =
       _wire_create_entityPtr.asFunction<WireSyncReturn Function()>();
 
+  WireSyncReturn wire_drop_entity(
+    ffi.Pointer<wire_RawIndex> index,
+  ) {
+    return _wire_drop_entity(
+      index,
+    );
+  }
+
+  late final _wire_drop_entityPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_RawIndex>)>>('wire_drop_entity');
+  late final _wire_drop_entity = _wire_drop_entityPtr
+      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_RawIndex>)>();
+
+  WireSyncReturn wire_entity_set_position(
+    ffi.Pointer<wire_RawIndex> index,
+    double x,
+    double y,
+  ) {
+    return _wire_entity_set_position(
+      index,
+      x,
+      y,
+    );
+  }
+
+  late final _wire_entity_set_positionPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>, ffi.Double,
+              ffi.Double)>>('wire_entity_set_position');
+  late final _wire_entity_set_position =
+      _wire_entity_set_positionPtr.asFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_RawIndex>, double, double)>();
+
+  ffi.Pointer<wire_RawIndex> new_box_autoadd_raw_index_0() {
+    return _new_box_autoadd_raw_index_0();
+  }
+
+  late final _new_box_autoadd_raw_index_0Ptr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_RawIndex> Function()>>(
+          'new_box_autoadd_raw_index_0');
+  late final _new_box_autoadd_raw_index_0 = _new_box_autoadd_raw_index_0Ptr
+      .asFunction<ffi.Pointer<wire_RawIndex> Function()>();
+
   void free_WireSyncReturn(
     WireSyncReturn ptr,
   ) {
@@ -155,6 +223,14 @@ class NativeWire implements FlutterRustBridgeWireBase {
 }
 
 class _Dart_Handle extends ffi.Opaque {}
+
+class wire_RawIndex extends ffi.Struct {
+  @ffi.UintPtr()
+  external int field0;
+
+  @ffi.Uint64()
+  external int field1;
+}
 
 typedef DartPostCObjectFnType = ffi.Pointer<
     ffi.NativeFunction<ffi.Bool Function(DartPort, ffi.Pointer<ffi.Void>)>>;

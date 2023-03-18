@@ -18,6 +18,21 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
 
 // Section: api2wire
 
+  @protected
+  List<dynamic> api2wire_box_autoadd_raw_index(RawIndex raw) {
+    return api2wire_raw_index(raw);
+  }
+
+  @protected
+  List<dynamic> api2wire_raw_index(RawIndex raw) {
+    return [api2wire_usize(raw.field0), api2wire_u64(raw.field1)];
+  }
+
+  @protected
+  Object api2wire_u64(int raw) {
+    return castNativeBigInt(raw);
+  }
+
 // Section: finalizer
 }
 
@@ -34,6 +49,11 @@ class NativeWasmModule implements WasmModule {
   external dynamic /* void */ wire_say_hello(NativePortType port_);
 
   external dynamic /* List<dynamic> */ wire_create_entity();
+
+  external dynamic /* void */ wire_drop_entity(List<dynamic> index);
+
+  external dynamic /* void */ wire_entity_set_position(
+      List<dynamic> index, double x, double y);
 }
 
 // Section: WASM wire connector
@@ -46,4 +66,11 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
 
   dynamic /* List<dynamic> */ wire_create_entity() =>
       wasmModule.wire_create_entity();
+
+  dynamic /* void */ wire_drop_entity(List<dynamic> index) =>
+      wasmModule.wire_drop_entity(index);
+
+  dynamic /* void */ wire_entity_set_position(
+          List<dynamic> index, double x, double y) =>
+      wasmModule.wire_entity_set_position(index, x, y);
 }
