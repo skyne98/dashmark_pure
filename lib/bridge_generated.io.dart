@@ -115,6 +115,30 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _init_frb_dart_api_dl = _init_frb_dart_api_dlPtr
       .asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 
+  void wire_say_hello(
+    int port_,
+  ) {
+    return _wire_say_hello(
+      port_,
+    );
+  }
+
+  late final _wire_say_helloPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_say_hello');
+  late final _wire_say_hello =
+      _wire_say_helloPtr.asFunction<void Function(int)>();
+
+  WireSyncReturn wire_create_entity() {
+    return _wire_create_entity();
+  }
+
+  late final _wire_create_entityPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function()>>(
+          'wire_create_entity');
+  late final _wire_create_entity =
+      _wire_create_entityPtr.asFunction<WireSyncReturn Function()>();
+
   void free_WireSyncReturn(
     WireSyncReturn ptr,
   ) {

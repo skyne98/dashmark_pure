@@ -31,6 +31,9 @@ external NativeWasmModule get wasmModule;
 class NativeWasmModule implements WasmModule {
   external Object /* Promise */ call([String? moduleName]);
   external NativeWasmModule bind(dynamic thisArg, String moduleName);
+  external dynamic /* void */ wire_say_hello(NativePortType port_);
+
+  external dynamic /* List<dynamic> */ wire_create_entity();
 }
 
 // Section: WASM wire connector
@@ -38,4 +41,9 @@ class NativeWasmModule implements WasmModule {
 class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   NativeWire(FutureOr<WasmModule> module)
       : super(WasmModule.cast<NativeWasmModule>(module));
+
+  void wire_say_hello(NativePortType port_) => wasmModule.wire_say_hello(port_);
+
+  dynamic /* List<dynamic> */ wire_create_entity() =>
+      wasmModule.wire_create_entity();
 }

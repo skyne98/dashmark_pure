@@ -19,8 +19,30 @@ use std::sync::Arc;
 
 // Section: imports
 
+use crate::index::RawIndex;
+
 // Section: wire functions
 
+fn wire_say_hello_impl(port_: MessagePort) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "say_hello",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || move |task_callback| Ok(say_hello()),
+    )
+}
+fn wire_create_entity_impl() -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "create_entity",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || Ok(create_entity()),
+    )
+}
 // Section: wrapper structs
 
 // Section: static checks
@@ -44,6 +66,13 @@ where
     }
 }
 // Section: impl IntoDart
+
+impl support::IntoDart for RawIndex {
+    fn into_dart(self) -> support::DartAbi {
+        vec![self.0.into_dart(), self.1.into_dart()].into_dart()
+    }
+}
+impl support::IntoDartExceptPrimitive for RawIndex {}
 
 // Section: executor
 

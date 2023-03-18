@@ -1,6 +1,16 @@
 use super::*;
 // Section: wire functions
 
+#[no_mangle]
+pub extern "C" fn wire_say_hello(port_: i64) {
+    wire_say_hello_impl(port_)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_create_entity() -> support::WireSyncReturn {
+    wire_create_entity_impl()
+}
+
 // Section: allocate functions
 
 // Section: related functions

@@ -14,7 +14,25 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'bridge_generated.io.dart'
     if (dart.library.html) 'bridge_generated.web.dart';
 
-abstract class Native {}
+abstract class Native {
+  Future<String> sayHello({dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kSayHelloConstMeta;
+
+  RawIndex createEntity({dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kCreateEntityConstMeta;
+}
+
+class RawIndex {
+  final int field0;
+  final int field1;
+
+  const RawIndex({
+    required this.field0,
+    required this.field1,
+  });
+}
 
 class NativeImpl implements Native {
   final NativePlatform _platform;
@@ -25,10 +43,72 @@ class NativeImpl implements Native {
   factory NativeImpl.wasm(FutureOr<WasmModule> module) =>
       NativeImpl(module as ExternalLibrary);
   NativeImpl.raw(this._platform);
+  Future<String> sayHello({dynamic hint}) {
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) => _platform.inner.wire_say_hello(port_),
+      parseSuccessData: _wire2api_String,
+      constMeta: kSayHelloConstMeta,
+      argValues: [],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kSayHelloConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "say_hello",
+        argNames: [],
+      );
+
+  RawIndex createEntity({dynamic hint}) {
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_create_entity(),
+      parseSuccessData: _wire2api_raw_index,
+      constMeta: kCreateEntityConstMeta,
+      argValues: [],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kCreateEntityConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "create_entity",
+        argNames: [],
+      );
+
   void dispose() {
     _platform.dispose();
   }
 // Section: wire2api
+
+  String _wire2api_String(dynamic raw) {
+    return raw as String;
+  }
+
+  RawIndex _wire2api_raw_index(dynamic raw) {
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return RawIndex(
+      field0: _wire2api_usize(arr[0]),
+      field1: _wire2api_u64(arr[1]),
+    );
+  }
+
+  int _wire2api_u64(dynamic raw) {
+    return castInt(raw);
+  }
+
+  int _wire2api_u8(dynamic raw) {
+    return raw as int;
+  }
+
+  Uint8List _wire2api_uint_8_list(dynamic raw) {
+    return raw as Uint8List;
+  }
+
+  int _wire2api_usize(dynamic raw) {
+    return castInt(raw);
+  }
 }
 
 // Section: api2wire

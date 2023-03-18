@@ -6,6 +6,7 @@ mod api;
 mod bridge_generated;
 mod bvh;
 mod entity;
+mod index;
 mod state;
 
 fn main() {

@@ -1,44 +1,55 @@
-use std::ops::Deref;
-
 use generational_arena::Index;
-use rapier2d_f64::parry::partitioning::{IndexedData, Qbvh};
+use rapier2d_f64::parry::partitioning::Qbvh;
 
-use crate::entity::Entity;
+use crate::{entity::Entity, index::IndexWrapper};
 
-#[derive(Debug, Clone, Copy)]
-pub struct IndexWrapper(Index);
-impl Deref for IndexWrapper {
-    type Target = Index;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl IndexedData for IndexWrapper {
-    fn default() -> Self {
-        IndexWrapper(Index::from_raw_parts(0, 0))
-    }
-
-    fn index(&self) -> usize {
-        self.0.into_raw_parts().0
-    }
+// Bvh
+pub struct Bvh {
+    pub index: Index,
+    pub bvh: Qbvh<IndexWrapper>,
 }
 
-pub fn bvh_from_entities<'a, I>(entities: I) -> Qbvh<IndexWrapper>
-where
-    I: IntoIterator<Item = &'a mut Entity>,
-{
-    let mut bvh = Qbvh::new();
-    let mut aabbs = Vec::new();
-    for entity in entities {
-        aabbs.push((
-            IndexWrapper(entity.index),
-            entity
-                .get_aabb()
-                .expect("Entity has no AABB, a shape is required for an entity to be in the BVH."),
-        ));
+impl Bvh {
+    pub fn new(index: Index) -> Self {
+        Self {
+            bvh: Qbvh::new(),
+            index,
+        }
     }
-    bvh.clear_and_rebuild(aabbs.into_iter(), 0.0);
-    bvh
+
+    pub fn from_entities<'a, I>(entities: I) -> Self
+    where
+        I: IntoIterator<Item = &'a mut Entity>,
+    {
+        let mut bvh = Qbvh::new();
+        let mut aabbs = Vec::new();
+        for entity in entities {
+            aabbs.push((
+                IndexWrapper(entity.index),
+                entity.get_aabb().expect(
+                    "Entity has no AABB, a shape is required for an entity to be in the BVH.",
+                ),
+            ));
+        }
+        bvh.clear_and_rebuild(aabbs.into_iter(), 0.0);
+        Bvh {
+            bvh: bvh,
+            index: Index::from_raw_parts(0, 0),
+        }
+    }
+
+    pub fn from_entities_and_index<'a, I>(entities: I, index: Index) -> Self
+    where
+        I: IntoIterator<Item = &'a mut Entity>,
+    {
+        let mut bvh = Self::from_entities(entities);
+        bvh.index = index;
+        bvh
+    }
+
+    pub fn flatten(&self) -> FlatBvh {
+        FlatBvh::new(&self.bvh)
+    }
 }
 
 // Flattenned
@@ -117,8 +128,8 @@ mod test_bvh {
 
     #[test]
     fn can_build_an_empty_bvh() {
-        let bvh = super::bvh_from_entities(Vec::new());
-        let raw_nodes = bvh.raw_nodes();
+        let bvh = super::Bvh::from_entities(vec![]);
+        let raw_nodes = bvh.bvh.raw_nodes();
         assert_eq!(raw_nodes.len(), 2);
         let root_node = raw_nodes[0];
         let recursive_build_node = raw_nodes[1];
@@ -130,8 +141,8 @@ mod test_bvh {
     fn bvh_and_entity_have_same_aabb() {
         let mut entity = Entity::new(Index::from_raw_parts(0, 0));
         entity.set_shape(Ball::new(2.0));
-        let bvh = super::bvh_from_entities(vec![&mut entity]);
-        let raw_nodes = bvh.raw_nodes();
+        let bvh = super::Bvh::from_entities(vec![&mut entity]);
+        let raw_nodes = bvh.bvh.raw_nodes();
         assert_eq!(raw_nodes.len(), 2);
         let root_node = raw_nodes[0];
         let recursive_build_node = raw_nodes[1];
@@ -147,8 +158,8 @@ mod test_bvh {
     fn bvh_flatten() {
         let mut entity = Entity::new(Index::from_raw_parts(0, 0));
         entity.set_shape(Ball::new(2.0));
-        let bvh = super::bvh_from_entities(vec![&mut entity]);
-        let flat_bvh = super::FlatBvh::new(&bvh);
+        let bvh = super::Bvh::from_entities(vec![&mut entity]);
+        let flat_bvh = bvh.flatten();
         assert_eq!(flat_bvh.min_x.len(), 2);
         assert_eq!(flat_bvh.min_y.len(), 2);
         assert_eq!(flat_bvh.max_x.len(), 2);
