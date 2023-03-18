@@ -53,10 +53,10 @@ impl Bvh {
     }
 
     // Updates
-    pub fn prepare_upsert(&mut self, entity: &mut Entity) {
+    pub fn prepare_upsert(&mut self, entity: &Entity) {
         self.bvh.pre_update_or_insert(IndexWrapper(entity.index));
     }
-    pub fn remove(&mut self, entity: &mut Entity) {
+    pub fn remove(&mut self, entity: &Entity) {
         self.bvh.remove(IndexWrapper(entity.index));
     }
 
