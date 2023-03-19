@@ -21,6 +21,7 @@ use std::sync::Arc;
 
 use crate::api::shape::Shape;
 use crate::api::shape::ShapeTransform;
+use crate::bvh::FlatBvh;
 use crate::index::RawIndex;
 
 // Section: wire functions
@@ -132,6 +133,65 @@ fn wire_entity_set_shape_impl(
         },
     )
 }
+fn wire_create_bvh_impl() -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "create_bvh",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || Ok(create_bvh()),
+    )
+}
+fn wire_drop_bvh_impl(index: impl Wire2Api<RawIndex> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "drop_bvh",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_index = index.wire2api();
+            Ok(drop_bvh(api_index))
+        },
+    )
+}
+fn wire_bvh_clear_and_rebuild_impl(
+    index: impl Wire2Api<RawIndex> + UnwindSafe,
+    entities: impl Wire2Api<Vec<RawIndex>> + UnwindSafe,
+    dilation_factor: impl Wire2Api<f64> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_clear_and_rebuild",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_index = index.wire2api();
+            let api_entities = entities.wire2api();
+            let api_dilation_factor = dilation_factor.wire2api();
+            Ok(bvh_clear_and_rebuild(
+                api_index,
+                api_entities,
+                api_dilation_factor,
+            ))
+        },
+    )
+}
+fn wire_bvh_flatten_impl(index: impl Wire2Api<RawIndex> + UnwindSafe) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_flatten",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_index = index.wire2api();
+            Ok(bvh_flatten(api_index))
+        },
+    )
+}
 // Section: wrapper structs
 
 // Section: static checks
@@ -177,6 +237,21 @@ impl Wire2Api<usize> for usize {
     }
 }
 // Section: impl IntoDart
+
+impl support::IntoDart for FlatBvh {
+    fn into_dart(self) -> support::DartAbi {
+        vec![
+            self.min_x.into_dart(),
+            self.min_y.into_dart(),
+            self.max_x.into_dart(),
+            self.max_y.into_dart(),
+            self.depth.into_dart(),
+            self.is_leaf.into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl support::IntoDartExceptPrimitive for FlatBvh {}
 
 impl support::IntoDart for RawIndex {
     fn into_dart(self) -> support::DartAbi {

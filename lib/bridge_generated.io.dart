@@ -40,7 +40,17 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
   ffi.Pointer<wire_list_box_shape> api2wire_list_box_shape(List<Shape> raw) {
     final ans = inner.new_list_box_shape_0(raw.length);
     for (var i = 0; i < raw.length; ++i) {
-      _api_fill_to_wire_box_shape(raw[i], ans.ref.ptr[i]);
+      _api_fill_to_wire_box_shape(
+          raw[i], ans.ref.ptr[i] as ffi.Pointer<wire_Shape>);
+    }
+    return ans;
+  }
+
+  @protected
+  ffi.Pointer<wire_list_raw_index> api2wire_list_raw_index(List<RawIndex> raw) {
+    final ans = inner.new_list_raw_index_0(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      _api_fill_to_wire_raw_index(raw[i], ans.ref.ptr[i]);
     }
     return ans;
   }
@@ -326,6 +336,68 @@ class NativeWire implements FlutterRustBridgeWireBase {
       WireSyncReturn Function(
           ffi.Pointer<wire_RawIndex>, ffi.Pointer<wire_Shape>)>();
 
+  WireSyncReturn wire_create_bvh() {
+    return _wire_create_bvh();
+  }
+
+  late final _wire_create_bvhPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function()>>('wire_create_bvh');
+  late final _wire_create_bvh =
+      _wire_create_bvhPtr.asFunction<WireSyncReturn Function()>();
+
+  WireSyncReturn wire_drop_bvh(
+    ffi.Pointer<wire_RawIndex> index,
+  ) {
+    return _wire_drop_bvh(
+      index,
+    );
+  }
+
+  late final _wire_drop_bvhPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_RawIndex>)>>('wire_drop_bvh');
+  late final _wire_drop_bvh = _wire_drop_bvhPtr
+      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_RawIndex>)>();
+
+  WireSyncReturn wire_bvh_clear_and_rebuild(
+    ffi.Pointer<wire_RawIndex> index,
+    ffi.Pointer<wire_list_raw_index> entities,
+    double dilation_factor,
+  ) {
+    return _wire_bvh_clear_and_rebuild(
+      index,
+      entities,
+      dilation_factor,
+    );
+  }
+
+  late final _wire_bvh_clear_and_rebuildPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_RawIndex>,
+              ffi.Pointer<wire_list_raw_index>,
+              ffi.Double)>>('wire_bvh_clear_and_rebuild');
+  late final _wire_bvh_clear_and_rebuild =
+      _wire_bvh_clear_and_rebuildPtr.asFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
+              ffi.Pointer<wire_list_raw_index>, double)>();
+
+  WireSyncReturn wire_bvh_flatten(
+    ffi.Pointer<wire_RawIndex> index,
+  ) {
+    return _wire_bvh_flatten(
+      index,
+    );
+  }
+
+  late final _wire_bvh_flattenPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_RawIndex>)>>('wire_bvh_flatten');
+  late final _wire_bvh_flatten = _wire_bvh_flattenPtr
+      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_RawIndex>)>();
+
   ffi.Pointer<wire_RawIndex> new_box_autoadd_raw_index_0() {
     return _new_box_autoadd_raw_index_0();
   }
@@ -370,6 +442,21 @@ class NativeWire implements FlutterRustBridgeWireBase {
               ffi.Int32)>>('new_list_box_shape_0');
   late final _new_list_box_shape_0 = _new_list_box_shape_0Ptr
       .asFunction<ffi.Pointer<wire_list_box_shape> Function(int)>();
+
+  ffi.Pointer<wire_list_raw_index> new_list_raw_index_0(
+    int len,
+  ) {
+    return _new_list_raw_index_0(
+      len,
+    );
+  }
+
+  late final _new_list_raw_index_0Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_list_raw_index> Function(
+              ffi.Int32)>>('new_list_raw_index_0');
+  late final _new_list_raw_index_0 = _new_list_raw_index_0Ptr
+      .asFunction<ffi.Pointer<wire_list_raw_index> Function(int)>();
 
   ffi.Pointer<wire_list_shape_transform> new_list_shape_transform_0(
     int len,
@@ -484,6 +571,13 @@ class wire_ShapeTransform extends ffi.Struct {
 
   @ffi.Double()
   external double absolute_origin_y;
+}
+
+class wire_list_raw_index extends ffi.Struct {
+  external ffi.Pointer<wire_RawIndex> ptr;
+
+  @ffi.Int32()
+  external int len;
 }
 
 typedef DartPostCObjectFnType = ffi.Pointer<

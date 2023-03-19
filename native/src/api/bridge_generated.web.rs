@@ -41,6 +41,30 @@ pub fn wire_entity_set_shape(index: JsValue, shape: JsValue) -> support::WireSyn
     wire_entity_set_shape_impl(index, shape)
 }
 
+#[wasm_bindgen]
+pub fn wire_create_bvh() -> support::WireSyncReturn {
+    wire_create_bvh_impl()
+}
+
+#[wasm_bindgen]
+pub fn wire_drop_bvh(index: JsValue) -> support::WireSyncReturn {
+    wire_drop_bvh_impl(index)
+}
+
+#[wasm_bindgen]
+pub fn wire_bvh_clear_and_rebuild(
+    index: JsValue,
+    entities: JsValue,
+    dilation_factor: f64,
+) -> support::WireSyncReturn {
+    wire_bvh_clear_and_rebuild_impl(index, entities, dilation_factor)
+}
+
+#[wasm_bindgen]
+pub fn wire_bvh_flatten(index: JsValue) -> support::WireSyncReturn {
+    wire_bvh_flatten_impl(index)
+}
+
 // Section: allocate functions
 
 // Section: related functions
@@ -49,6 +73,15 @@ pub fn wire_entity_set_shape(index: JsValue, shape: JsValue) -> support::WireSyn
 
 impl Wire2Api<Vec<Box<Shape>>> for JsValue {
     fn wire2api(self) -> Vec<Box<Shape>> {
+        self.dyn_into::<JsArray>()
+            .unwrap()
+            .iter()
+            .map(Wire2Api::wire2api)
+            .collect()
+    }
+}
+impl Wire2Api<Vec<RawIndex>> for JsValue {
+    fn wire2api(self) -> Vec<RawIndex> {
         self.dyn_into::<JsArray>()
             .unwrap()
             .iter()

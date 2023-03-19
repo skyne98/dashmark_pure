@@ -20,6 +20,11 @@ impl IndexedData for IndexWrapper {
         self.0.into_raw_parts().0
     }
 }
+impl From<RawIndex> for IndexWrapper {
+    fn from(raw_index: RawIndex) -> Self {
+        IndexWrapper(raw_index.into())
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct RawIndex(pub usize, pub u64);

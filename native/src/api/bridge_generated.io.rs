@@ -51,6 +51,30 @@ pub extern "C" fn wire_entity_set_shape(
     wire_entity_set_shape_impl(index, shape)
 }
 
+#[no_mangle]
+pub extern "C" fn wire_create_bvh() -> support::WireSyncReturn {
+    wire_create_bvh_impl()
+}
+
+#[no_mangle]
+pub extern "C" fn wire_drop_bvh(index: *mut wire_RawIndex) -> support::WireSyncReturn {
+    wire_drop_bvh_impl(index)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_bvh_clear_and_rebuild(
+    index: *mut wire_RawIndex,
+    entities: *mut wire_list_raw_index,
+    dilation_factor: f64,
+) -> support::WireSyncReturn {
+    wire_bvh_clear_and_rebuild_impl(index, entities, dilation_factor)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_bvh_flatten(index: *mut wire_RawIndex) -> support::WireSyncReturn {
+    wire_bvh_flatten_impl(index)
+}
+
 // Section: allocate functions
 
 #[no_mangle]
@@ -72,6 +96,15 @@ pub extern "C" fn new_box_shape_0() -> *mut wire_Shape {
 pub extern "C" fn new_list_box_shape_0(len: i32) -> *mut wire_list_box_shape {
     let wrap = wire_list_box_shape {
         ptr: support::new_leak_vec_ptr(<wire_Shape>::new_with_null_ptr(), len),
+        len,
+    };
+    support::new_leak_box_ptr(wrap)
+}
+
+#[no_mangle]
+pub extern "C" fn new_list_raw_index_0(len: i32) -> *mut wire_list_raw_index {
+    let wrap = wire_list_raw_index {
+        ptr: support::new_leak_vec_ptr(<wire_RawIndex>::new_with_null_ptr(), len),
         len,
     };
     support::new_leak_box_ptr(wrap)
@@ -111,6 +144,15 @@ impl Wire2Api<Box<Shape>> for *mut wire_Shape {
 
 impl Wire2Api<Vec<Box<Shape>>> for *mut wire_list_box_shape {
     fn wire2api(self) -> Vec<Box<Shape>> {
+        let vec = unsafe {
+            let wrap = support::box_from_leak_ptr(self);
+            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
+        };
+        vec.into_iter().map(Wire2Api::wire2api).collect()
+    }
+}
+impl Wire2Api<Vec<RawIndex>> for *mut wire_list_raw_index {
+    fn wire2api(self) -> Vec<RawIndex> {
         let vec = unsafe {
             let wrap = support::box_from_leak_ptr(self);
             support::vec_from_leak_ptr(wrap.ptr, wrap.len)
@@ -172,6 +214,13 @@ impl Wire2Api<ShapeTransform> for wire_ShapeTransform {
 #[derive(Clone)]
 pub struct wire_list_box_shape {
     ptr: *mut wire_Shape,
+    len: i32,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct wire_list_raw_index {
+    ptr: *mut wire_RawIndex,
     len: i32,
 }
 

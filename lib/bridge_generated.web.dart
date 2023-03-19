@@ -39,6 +39,11 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
   }
 
   @protected
+  List<dynamic> api2wire_list_raw_index(List<RawIndex> raw) {
+    return raw.map(api2wire_raw_index).toList();
+  }
+
+  @protected
   List<dynamic> api2wire_list_shape_transform(List<ShapeTransform> raw) {
     return raw.map(api2wire_shape_transform).toList();
   }
@@ -110,6 +115,15 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* void */ wire_entity_set_shape(
       List<dynamic> index, List<dynamic> shape);
+
+  external dynamic /* List<dynamic> */ wire_create_bvh();
+
+  external dynamic /* void */ wire_drop_bvh(List<dynamic> index);
+
+  external dynamic /* void */ wire_bvh_clear_and_rebuild(
+      List<dynamic> index, List<dynamic> entities, double dilation_factor);
+
+  external dynamic /* List<dynamic> */ wire_bvh_flatten(List<dynamic> index);
 }
 
 // Section: WASM wire connector
@@ -141,4 +155,16 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   dynamic /* void */ wire_entity_set_shape(
           List<dynamic> index, List<dynamic> shape) =>
       wasmModule.wire_entity_set_shape(index, shape);
+
+  dynamic /* List<dynamic> */ wire_create_bvh() => wasmModule.wire_create_bvh();
+
+  dynamic /* void */ wire_drop_bvh(List<dynamic> index) =>
+      wasmModule.wire_drop_bvh(index);
+
+  dynamic /* void */ wire_bvh_clear_and_rebuild(List<dynamic> index,
+          List<dynamic> entities, double dilation_factor) =>
+      wasmModule.wire_bvh_clear_and_rebuild(index, entities, dilation_factor);
+
+  dynamic /* List<dynamic> */ wire_bvh_flatten(List<dynamic> index) =>
+      wasmModule.wire_bvh_flatten(index);
 }

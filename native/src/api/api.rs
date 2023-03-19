@@ -1,4 +1,4 @@
-use flutter_rust_bridge::SyncReturn;
+use flutter_rust_bridge::{SyncReturn, ZeroCopyBuffer};
 pub use generational_arena::Arena;
 use rapier2d_f64::na::Vector2;
 use std::cell::RefCell;
@@ -9,8 +9,9 @@ pub use std::{
 
 use crate::{
     api::state::State,
+    bvh::{Bvh, FlatBvh},
     entity::{Entity, EntityShape, Origin},
-    index::RawIndex,
+    index::{IndexWrapper, RawIndex},
 };
 
 use crate::api::shape::Shape;
@@ -89,4 +90,53 @@ pub fn entity_set_shape(index: RawIndex, shape: Shape) -> SyncReturn<()> {
         }
     });
     SyncReturn(())
+}
+
+/* BVH */
+pub fn create_bvh() -> SyncReturn<RawIndex> {
+    SyncReturn(state_mut(|state| state.add_bvh(Bvh::default())).into())
+}
+
+pub fn drop_bvh(index: RawIndex) -> SyncReturn<()> {
+    state_mut(|state| {
+        state.remove_bvh(index.into());
+    });
+    SyncReturn(())
+}
+
+pub fn bvh_clear_and_rebuild(
+    index: RawIndex,
+    entities: Vec<RawIndex>,
+    dilation_factor: f64,
+) -> SyncReturn<()> {
+    state_mut(|state| {
+        // Gather indices and AABBs of entities
+        let mut indices_and_aabbs = Vec::with_capacity(entities.len());
+        for entity_index in entities {
+            if let Some(entity) = state.get_entity_mut(entity_index.into()) {
+                indices_and_aabbs.push((
+                    IndexWrapper::from(entity_index),
+                    entity
+                        .get_aabb()
+                        .expect("Entity has no shape, it must have a shape to be added to a BVH."),
+                ));
+            }
+        }
+
+        // Get the BVH
+        if let Some(bvh) = state.get_bvh_mut(index.into()) {
+            bvh.bvh
+                .clear_and_rebuild(indices_and_aabbs.into_iter(), dilation_factor);
+        }
+    });
+    SyncReturn(())
+}
+
+pub fn bvh_flatten(index: RawIndex) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+    state_mut(|state| {
+        let bvh = state.get_bvh(index.into()).expect("BVH not found");
+        let flattened = bvh.flatten();
+        let bytes = flattened.to_byte_buffer();
+        SyncReturn(ZeroCopyBuffer(bytes))
+    })
 }

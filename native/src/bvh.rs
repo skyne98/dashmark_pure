@@ -14,6 +14,15 @@ pub struct Bvh {
     pub bvh: Qbvh<IndexWrapper>,
 }
 
+impl Default for Bvh {
+    fn default() -> Self {
+        Self {
+            bvh: Qbvh::new(),
+            index: Index::from_raw_parts(0, 0),
+        }
+    }
+}
+
 impl Bvh {
     pub fn new(index: Index) -> Self {
         Self {
@@ -110,25 +119,40 @@ pub struct FlatBvh {
     pub min_y: Vec<f64>,
     pub max_x: Vec<f64>,
     pub max_y: Vec<f64>,
-    pub depth: Vec<u64>,
-    pub is_leaf: Vec<bool>,
+    pub depth: Vec<u8>,
+    pub is_leaf: Vec<u8>,
 }
 
-impl FlatBvh {
-    pub fn new(bvh: &Qbvh<IndexWrapper>) -> FlatBvh {
-        let mut flat_bvh = FlatBvh {
+impl Default for FlatBvh {
+    fn default() -> Self {
+        Self {
             min_x: Vec::new(),
             min_y: Vec::new(),
             max_x: Vec::new(),
             max_y: Vec::new(),
             depth: Vec::new(),
             is_leaf: Vec::new(),
-        };
+        }
+    }
+}
 
+impl FlatBvh {
+    pub fn new(bvh: &Qbvh<IndexWrapper>) -> FlatBvh {
+        let start = std::time::Instant::now();
         let nodes = bvh.raw_nodes();
         if nodes.is_empty() {
-            return flat_bvh;
+            return FlatBvh::default();
         }
+        let nodes_len = nodes.len();
+
+        let mut flat_bvh = FlatBvh {
+            min_x: Vec::with_capacity(nodes_len),
+            min_y: Vec::with_capacity(nodes_len),
+            max_x: Vec::with_capacity(nodes_len),
+            max_y: Vec::with_capacity(nodes_len),
+            depth: Vec::with_capacity(nodes_len),
+            is_leaf: Vec::with_capacity(nodes_len),
+        };
 
         let mut stack = vec![(0u32, 0u64)];
 
@@ -139,7 +163,6 @@ impl FlatBvh {
             for ii in 0..rapier2d_f64::parry::math::SIMD_WIDTH {
                 let aabb = simd_aabb.extract(ii);
 
-                println!("aabb: {:?}", aabb);
                 if aabb.mins.x == f64::MAX {
                     continue;
                 }
@@ -147,7 +170,7 @@ impl FlatBvh {
                 flat_bvh.min_y.push(aabb.mins.y);
                 flat_bvh.max_x.push(aabb.maxs.x);
                 flat_bvh.max_y.push(aabb.maxs.y);
-                flat_bvh.depth.push(current_depth);
+                flat_bvh.depth.push(current_depth as u8);
 
                 if node.is_leaf() == false {
                     // Internal node, visit the child.
@@ -158,14 +181,107 @@ impl FlatBvh {
                         stack.push((child_index, current_depth + 1));
                     }
 
-                    flat_bvh.is_leaf.push(false);
+                    flat_bvh.is_leaf.push(0);
                 } else {
-                    flat_bvh.is_leaf.push(true);
+                    flat_bvh.is_leaf.push(1);
                 }
             }
         }
+        println!("Flattened bvh in {:?}", start.elapsed());
 
         flat_bvh
+    }
+
+    pub fn to_byte_buffer(self) -> Vec<u8> {
+        // Use some unsafe operations to turn each Vec into a byte buffer (without copying)
+        // and then concatenate them all together.
+        let minxs_len = self.min_x.len() as u64;
+        let minxs_buffer = unsafe {
+            let minxs = self.min_x;
+            let minxs_ptr = minxs.as_ptr() as *const u8;
+            let minxs_len = minxs.len() * std::mem::size_of::<f64>();
+            let raw_minxs = std::slice::from_raw_parts(minxs_ptr, minxs_len).to_vec();
+            // Make sure the data doesn't get dropped
+            std::mem::forget(minxs);
+            raw_minxs
+        };
+
+        let minys_len = self.min_y.len() as u64;
+        let minys_buffer = unsafe {
+            let minys = self.min_y;
+            let minys_ptr = minys.as_ptr() as *const u8;
+            let minys_len = minys.len() * std::mem::size_of::<f64>();
+            let raw_minys = std::slice::from_raw_parts(minys_ptr, minys_len).to_vec();
+            // Make sure the data doesn't get dropped
+            std::mem::forget(minys);
+            raw_minys
+        };
+
+        let maxxs_len = self.max_x.len() as u64;
+        let maxxs_buffer = unsafe {
+            let maxxs = self.max_x;
+            let maxxs_ptr = maxxs.as_ptr() as *const u8;
+            let maxxs_len = maxxs.len() * std::mem::size_of::<f64>();
+            let raw_maxxs = std::slice::from_raw_parts(maxxs_ptr, maxxs_len).to_vec();
+            // Make sure the data doesn't get dropped
+            std::mem::forget(maxxs);
+            raw_maxxs
+        };
+
+        let maxys_len = self.max_y.len() as u64;
+        let maxys_buffer = unsafe {
+            let maxys = self.max_y;
+            let maxys_ptr = maxys.as_ptr() as *const u8;
+            let maxys_len = maxys.len() * std::mem::size_of::<f64>();
+            let raw_maxys = std::slice::from_raw_parts(maxys_ptr, maxys_len).to_vec();
+            // Make sure the data doesn't get dropped
+            std::mem::forget(maxys);
+            raw_maxys
+        };
+
+        let depths_len = self.depth.len() as u64;
+        let depths_buffer = unsafe {
+            let depths = self.depth;
+            let depths_ptr = depths.as_ptr() as *const u8;
+            let depths_len = depths.len() * std::mem::size_of::<f64>();
+            let raw_depths = std::slice::from_raw_parts(depths_ptr, depths_len).to_vec();
+            // Make sure the data doesn't get dropped
+            std::mem::forget(depths);
+            raw_depths
+        };
+
+        let is_leafs_len = self.is_leaf.len() as u64;
+        let is_leafs_buffer = unsafe {
+            let is_leafs = self.is_leaf;
+            let is_leafs_ptr = is_leafs.as_ptr() as *const u8;
+            let is_leafs_len = is_leafs.len();
+            let raw_is_leafs = std::slice::from_raw_parts(is_leafs_ptr, is_leafs_len).to_vec();
+            // Make sure the data doesn't get dropped
+            std::mem::forget(is_leafs);
+            raw_is_leafs
+        };
+
+        let mut byte_buffer = Vec::new();
+        let len_bytes = minxs_len.to_ne_bytes();
+        byte_buffer.extend(len_bytes);
+        byte_buffer.extend(minxs_buffer);
+        let len_bytes = minys_len.to_ne_bytes();
+        byte_buffer.extend(len_bytes);
+        byte_buffer.extend(minys_buffer);
+        let len_bytes = maxxs_len.to_ne_bytes();
+        byte_buffer.extend(len_bytes);
+        byte_buffer.extend(maxxs_buffer);
+        let len_bytes = maxys_len.to_ne_bytes();
+        byte_buffer.extend(len_bytes);
+        byte_buffer.extend(maxys_buffer);
+        let len_bytes = depths_len.to_ne_bytes();
+        byte_buffer.extend(len_bytes);
+        byte_buffer.extend(depths_buffer);
+        let len_bytes = is_leafs_len.to_ne_bytes();
+        byte_buffer.extend(len_bytes);
+        byte_buffer.extend(is_leafs_buffer);
+
+        byte_buffer
     }
 }
 

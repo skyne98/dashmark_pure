@@ -1,8 +1,6 @@
 // import 'dart:html';
 import 'dart:math';
 import 'dart:ui';
-import 'package:dashmark_pure/aabb.dart';
-import 'package:dashmark_pure/bvh.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
@@ -38,6 +36,10 @@ class World {
   // Status
   String status = 'Status';
 
+  // Native communication
+  final List<RawIndex> _entityIndices = [];
+  late RawIndex _bvhIndex;
+
   World() {
     debugPrint('World created');
     rootBundle.load('assets/images/dash.png').then((data) {
@@ -61,6 +63,8 @@ class World {
       debugPrint('Error loading fragment shader: $error');
       status = 'Error loading fragment shader: $error';
     });
+
+    _bvhIndex = api.createBvh();
   }
 
   void addDash(double x, double y, double vx, double vy) {
@@ -72,6 +76,13 @@ class World {
     _transforms.add(matrix);
     _position.add(Vector2(x, y));
     _velocity.add(Vector2(vx, vy));
+
+    final entity = api.createEntity();
+    _entityIndices.add(entity);
+    api.entitySetPosition(index: entity, x: x, y: y);
+    api.entitySetOrigin(index: entity, relative: true, x: 0.0, y: 0.0);
+    const shape = Shape.ball(radius: 50.0);
+    api.entitySetShape(index: entity, shape: shape);
   }
 
   void input(double x, double y) {
@@ -157,7 +168,11 @@ class World {
 
         // Add gravity
         velocity.y += 0.3;
+
+        // Report the new values to appropriate places
         _transforms[i].setTranslationRaw(position.x, position.y, 0.0);
+        api.entitySetPosition(
+            index: _entityIndices[i], x: position.x, y: position.y);
       }
       lastDt = t;
 
@@ -190,6 +205,15 @@ class World {
       final title =
           'Dashmark - $fpsRounded FPS - $percentileFpsRounded FPS (95%) - $medianFpsRounded FPS (50%) - ${_velocity.length} dashes';
       status = title;
+
+      // Calculate the BVH
+      final start = DateTime.now().millisecondsSinceEpoch;
+      final entities = _entityIndices.toList();
+      api.bvhClearAndRebuild(
+          index: _bvhIndex, entities: entities, dilationFactor: 0.0);
+      final end = DateTime.now().millisecondsSinceEpoch;
+      final bvhTime = end - start;
+      debugPrint('BVH time: $bvhTime ms');
     }
   }
 
@@ -281,53 +305,13 @@ class World {
         ),
       );
 
-      // Build AABBs for all the dashes
-      final stopwatch = Stopwatch()..start();
-      final points = Float64List(length * 4);
-      for (var i = 0; i < length; ++i) {
-        final position = _position[i];
-        final size = desiredSize;
-        final offset = i * 4;
-        points[offset] = position.x;
-        points[offset + 1] = position.y;
-        points[offset + 2] = position.x + size;
-        points[offset + 3] = position.y + size;
-      }
-      final aabbs = AABB.minMaxRawBulk(points);
-      debugPrint(
-          'AABBs ($length) built in ${stopwatch.elapsedMilliseconds} ms');
-
-      // Build a BVH
-      stopwatch.reset();
-      final bvh = BVH.fromAABBs(aabbs);
-      debugPrint('BVH built in ${stopwatch.elapsedMilliseconds} ms');
-      // debugPrint('(overlap: ${bvh.overlapRatio}, depth: ${bvh.depth})');
-
-      // Flatten the BVH
-      stopwatch.reset();
-      final flattened = bvh.flatten();
-      debugPrint('BVH flattened in ${stopwatch.elapsedMilliseconds} ms');
-
-      // Make a query in the middle of the screen
-      final querySize = 100.0;
-      final query = AABB.fromXYWH(
-        size.x / 2 - querySize / 2,
-        size.y / 2 - querySize / 2,
-        querySize,
-        querySize,
-      );
-      stopwatch.reset();
-      final queryResults = bvh.queryAABB(query);
-      debugPrint(
-          'BVH query in ${stopwatch.elapsedMilliseconds} ms (${queryResults.length} results)');
-
-      // Draw the BVH
-      // drawFlatBVH(bvh, flattened, canvas);
-
-      // Clean up
-      bvh.drop();
-      AABB.dropBulk(aabbs);
-      query.drop();
+      // Get the Flat BVH
+      final start = DateTime.now().millisecondsSinceEpoch;
+      final bvh = api.bvhFlatten(index: _bvhIndex);
+      drawFlatBVH(_bvhIndex, bvh, canvas);
+      final end = DateTime.now().millisecondsSinceEpoch;
+      final time = end - start;
+      debugPrint('BVH flatten time: $time ms');
     }
   }
 }
@@ -341,4 +325,25 @@ Vector2 transform2(Vector2 position, Matrix4 matrix) {
 
 Offset toOffset(Vector2 vector) {
   return Offset(vector.x, vector.y);
+}
+
+void drawFlatBVH(RawIndex bvh, FlatBvh flat, Canvas canvas) {
+  final overallDepth = 1;
+  final paint = Paint()
+    ..color = Color.fromARGB(255, 255, 0, 0)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.0;
+
+  final length = flat.minX.length;
+  for (var i = 0; i < length; i++) {
+    final minX = flat.minX[i];
+    final minY = flat.minY[i];
+    final maxX = flat.maxX[i];
+    final maxY = flat.maxY[i];
+    final depth = flat.depth[i].toInt();
+    final color =
+        Color.fromARGB(255, 255, 255 - depth * 255 ~/ overallDepth, 0);
+    paint.color = color;
+    canvas.drawRect(Rect.fromLTRB(minX, minY, maxX, maxY), paint);
+  }
 }
