@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 
 /* Decoding */
@@ -16,7 +14,26 @@ class ByteBufferDecoder {
     _counter = 0;
   }
 
-  int readUint64() {
+  // Single-value read methods
+  bool readBool() {
+    final value = _byteData.getUint8(_counter);
+    _counter += 1;
+    return value == 1;
+  }
+
+  int readU8() {
+    final value = _byteData.getUint8(_counter);
+    _counter += 1;
+    return value;
+  }
+
+  int readI8() {
+    final value = _byteData.getInt8(_counter);
+    _counter += 1;
+    return value;
+  }
+
+  int readU64() {
     if (kIsWeb) {
       // Can read only the most important 32 bits on web
       if (Endian.host == Endian.little) {
@@ -37,29 +54,37 @@ class ByteBufferDecoder {
     }
   }
 
-  int readUint128() {
-    // Cannot read Uint128 at all, read as two Uint64 and combine
-    if (Endian.host == Endian.little) {
-      final low = readUint64();
-      final high = readUint64();
-      return low + (high << 64);
-    } else {
-      final high = readUint64();
-      final low = readUint64();
-      return low + (high << 64);
-    }
-  }
-
-  int readUint8() {
-    final value = _byteData.getUint8(_counter);
-    _counter += 1;
+  int readyU128() {
+    final value = _byteData.getUint64(_counter, Endian.host);
+    _counter += 8;
     return value;
   }
 
-  bool readBool() {
-    final value = _byteData.getUint8(_counter);
-    _counter += 1;
-    return value == 1;
+  double readF32() {
+    final value = _byteData.getFloat32(_counter, Endian.host);
+    _counter += 4;
+    return value;
+  }
+
+  double readF64() {
+    final value = _byteData.getFloat64(_counter, Endian.host);
+    _counter += 8;
+    return value;
+  }
+
+  // Typed array read methods
+  Uint8List readU8Array() {
+    final length = readU64();
+    final array = Uint8List.view(_buffer.buffer, _counter, length);
+    _counter += length;
+    return array;
+  }
+
+  Float64List readF64Array() {
+    final length = readU64();
+    final array = Float64List.view(_buffer.buffer, _counter, length);
+    _counter += length * 8;
+    return array;
   }
 }
 

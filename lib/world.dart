@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:vector_math/vector_math.dart' show Matrix4, Vector2;
+import 'bvh.dart';
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class World {
@@ -307,7 +308,7 @@ class World {
 
       // Get the Flat BVH
       final start = DateTime.now().millisecondsSinceEpoch;
-      final bvh = api.bvhFlatten(index: _bvhIndex);
+      final bvh = FlatBvh.fromBytes(api.bvhFlatten(index: _bvhIndex));
       drawFlatBVH(_bvhIndex, bvh, canvas);
       final end = DateTime.now().millisecondsSinceEpoch;
       final time = end - start;

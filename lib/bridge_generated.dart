@@ -73,27 +73,9 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kBvhClearAndRebuildConstMeta;
 
-  FlatBvh bvhFlatten({required RawIndex index, dynamic hint});
+  Uint8List bvhFlatten({required RawIndex index, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhFlattenConstMeta;
-}
-
-class FlatBvh {
-  final Float64List minX;
-  final Float64List minY;
-  final Float64List maxX;
-  final Float64List maxY;
-  final Uint64List depth;
-  final Uint8List isLeaf;
-
-  const FlatBvh({
-    required this.minX,
-    required this.minY,
-    required this.maxX,
-    required this.maxY,
-    required this.depth,
-    required this.isLeaf,
-  });
 }
 
 class RawIndex {
@@ -335,11 +317,11 @@ class NativeImpl implements Native {
         argNames: ["index", "entities", "dilationFactor"],
       );
 
-  FlatBvh bvhFlatten({required RawIndex index, dynamic hint}) {
+  Uint8List bvhFlatten({required RawIndex index, dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_bvh_flatten(arg0),
-      parseSuccessData: _wire2api_flat_bvh,
+      parseSuccessData: _wire2api_ZeroCopyBuffer_Uint8List,
       constMeta: kBvhFlattenConstMeta,
       argValues: [index],
       hint: hint,
@@ -361,26 +343,8 @@ class NativeImpl implements Native {
     return raw as String;
   }
 
-  double _wire2api_f64(dynamic raw) {
-    return raw as double;
-  }
-
-  FlatBvh _wire2api_flat_bvh(dynamic raw) {
-    final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
-    return FlatBvh(
-      minX: _wire2api_float_64_list(arr[0]),
-      minY: _wire2api_float_64_list(arr[1]),
-      maxX: _wire2api_float_64_list(arr[2]),
-      maxY: _wire2api_float_64_list(arr[3]),
-      depth: _wire2api_uint_64_list(arr[4]),
-      isLeaf: _wire2api_uint_8_list(arr[5]),
-    );
-  }
-
-  Float64List _wire2api_float_64_list(dynamic raw) {
-    return raw as Float64List;
+  Uint8List _wire2api_ZeroCopyBuffer_Uint8List(dynamic raw) {
+    return raw as Uint8List;
   }
 
   RawIndex _wire2api_raw_index(dynamic raw) {
@@ -399,10 +363,6 @@ class NativeImpl implements Native {
 
   int _wire2api_u8(dynamic raw) {
     return raw as int;
-  }
-
-  Uint64List _wire2api_uint_64_list(dynamic raw) {
-    return Uint64List.from(raw);
   }
 
   Uint8List _wire2api_uint_8_list(dynamic raw) {

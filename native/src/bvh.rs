@@ -243,7 +243,7 @@ impl FlatBvh {
         let depths_buffer = unsafe {
             let depths = self.depth;
             let depths_ptr = depths.as_ptr() as *const u8;
-            let depths_len = depths.len() * std::mem::size_of::<f64>();
+            let depths_len = depths.len();
             let raw_depths = std::slice::from_raw_parts(depths_ptr, depths_len).to_vec();
             // Make sure the data doesn't get dropped
             std::mem::forget(depths);

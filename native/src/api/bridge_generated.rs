@@ -21,7 +21,6 @@ use std::sync::Arc;
 
 use crate::api::shape::Shape;
 use crate::api::shape::ShapeTransform;
-use crate::bvh::FlatBvh;
 use crate::index::RawIndex;
 
 // Section: wire functions
@@ -237,21 +236,6 @@ impl Wire2Api<usize> for usize {
     }
 }
 // Section: impl IntoDart
-
-impl support::IntoDart for FlatBvh {
-    fn into_dart(self) -> support::DartAbi {
-        vec![
-            self.min_x.into_dart(),
-            self.min_y.into_dart(),
-            self.max_x.into_dart(),
-            self.max_y.into_dart(),
-            self.depth.into_dart(),
-            self.is_leaf.into_dart(),
-        ]
-        .into_dart()
-    }
-}
-impl support::IntoDartExceptPrimitive for FlatBvh {}
 
 impl support::IntoDart for RawIndex {
     fn into_dart(self) -> support::DartAbi {

@@ -123,7 +123,7 @@ class NativeWasmModule implements WasmModule {
   external dynamic /* void */ wire_bvh_clear_and_rebuild(
       List<dynamic> index, List<dynamic> entities, double dilation_factor);
 
-  external dynamic /* List<dynamic> */ wire_bvh_flatten(List<dynamic> index);
+  external dynamic /* Uint8List */ wire_bvh_flatten(List<dynamic> index);
 }
 
 // Section: WASM wire connector
@@ -165,6 +165,6 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
           List<dynamic> entities, double dilation_factor) =>
       wasmModule.wire_bvh_clear_and_rebuild(index, entities, dilation_factor);
 
-  dynamic /* List<dynamic> */ wire_bvh_flatten(List<dynamic> index) =>
+  dynamic /* Uint8List */ wire_bvh_flatten(List<dynamic> index) =>
       wasmModule.wire_bvh_flatten(index);
 }
