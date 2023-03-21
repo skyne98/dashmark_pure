@@ -1,11 +1,12 @@
 import 'dart:typed_data';
 import 'dart:ui';
 
+import 'package:dashmark_pure/matrix.dart';
 import 'package:dashmark_pure/world.dart';
-import 'package:vector_math/vector_math.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 class Batch {
-  static const int batchSize = 16384;
+  static const int batchSize = 8192;
 
   static const vertexTopLeft = Offset(0.0, 0.0);
   static const vertexBottomLeft = Offset(0.0, 1.0);
@@ -15,9 +16,10 @@ class Batch {
   int _currentId = 0;
 
   // Matrices
-  final List<Matrix4> _transforms = [];
-  final List<Matrix4> _globalTransforms = [];
+  final List<Affine> _transforms = [];
+  final List<Affine> _globalTransforms = [];
   final List<Vector2> _position = [];
+  final List<double> _rotation = [];
   final List<Vector2> _size = [];
   Float32List _vertexCoordsCache = Float32List(0);
   Float32List _textureCoordsCache = Float32List(0);
@@ -35,14 +37,19 @@ class Batch {
     _position[id] = position;
   }
 
+  void setRotationFrom(int id, double rotation) {
+    _rotation[id] = rotation;
+  }
+
   int add(double x, double y, double width, double height) {
     final id = _currentId++;
-    final matrix = Matrix4.identity();
-    matrix.translate(x, y);
-    matrix.scale(World.desiredSize, World.desiredSize);
+    final matrix = Affine.identity();
+    matrix.setTransform(
+        x, y, 0, World.desiredSize, World.desiredSize, 0.5, 0.5);
     _transforms.add(matrix);
-    _globalTransforms.add(Matrix4.identity());
+    _globalTransforms.add(Affine.identity());
     _position.add(Vector2(x, y));
+    _rotation.add(0.3);
     _size.add(Vector2(width, height));
     return id;
   }
@@ -118,137 +125,12 @@ class Batch {
     }
   }
 
-  // Transform operations
-  void transformVertsInCache(int index, Matrix4 matrix) {
-    final matrixStorage = matrix.storage;
-    final indexX = index;
-    final indexY = index + 1;
-
-    final x = _vertexCoordsCache[indexX];
-    final y = _vertexCoordsCache[indexY];
-
-    _vertexCoordsCache[indexX] =
-        (x * matrixStorage[0]) + (y * matrixStorage[4]) + matrixStorage[12];
-    _vertexCoordsCache[indexY] =
-        (x * matrixStorage[1]) + (y * matrixStorage[5]) + matrixStorage[13];
-  }
-
-  void setVertInCache(int index, double x, double y) {
-    _vertexCoordsCache[index] = x;
-    _vertexCoordsCache[index + 1] = y;
-  }
-
-  void transformVertsInCacheFrom(
-      int index, Matrix4 matrix, double x, double y) {
-    final matrixStorage = matrix.storage;
-    final indexX = index;
-    final indexY = index + 1;
-
-    _vertexCoordsCache[indexX] =
-        (x * matrixStorage[0]) + (y * matrixStorage[4]) + matrixStorage[12];
-    _vertexCoordsCache[indexY] =
-        (x * matrixStorage[1]) + (y * matrixStorage[5]) + matrixStorage[13];
-  }
-
-  void transformTopDownVertsInCacheFrom(
-      int index, List<Matrix4> matrices, double x, double y) {
-    final indexX = index;
-    final indexY = index + 1;
-
-    _vertexCoordsCache[indexX] = x;
-    _vertexCoordsCache[indexY] = y;
-
-    for (final matrix in matrices) {
-      final matrixStorage = matrix.storage;
-      final x = _vertexCoordsCache[indexX];
-      final y = _vertexCoordsCache[indexY];
-
-      _vertexCoordsCache[indexX] =
-          (x * matrixStorage[0]) + (y * matrixStorage[4]) + matrixStorage[12];
-      _vertexCoordsCache[indexY] =
-          (x * matrixStorage[1]) + (y * matrixStorage[5]) + matrixStorage[13];
-    }
-  }
-
-  // Matrix operations
-  void setToIdentity(Matrix4 matrix) {
-    final storage = matrix.storage;
-    storage[0] = 1.0;
-    storage[1] = 0.0;
-    storage[2] = 0.0;
-    storage[3] = 0.0;
-    storage[4] = 0.0;
-    storage[5] = 1.0;
-    storage[6] = 0.0;
-    storage[7] = 0.0;
-    storage[8] = 0.0;
-    storage[9] = 0.0;
-    storage[10] = 1.0;
-    storage[11] = 0.0;
-    storage[12] = 0.0;
-    storage[13] = 0.0;
-    storage[14] = 0.0;
-    storage[15] = 1.0;
-  }
-
-  void multiplyBy(Matrix4 matrix, Matrix4 other) {
-    final storage = matrix.storage;
-    final otherStorage = other.storage;
-
-    final m00 = storage[0];
-    final m01 = storage[4];
-    final m02 = storage[8];
-    final m03 = storage[12];
-    final m10 = storage[1];
-    final m11 = storage[5];
-    final m12 = storage[9];
-    final m13 = storage[13];
-    final m20 = storage[2];
-    final m21 = storage[6];
-    final m22 = storage[10];
-    final m23 = storage[14];
-    final m30 = storage[3];
-    final m31 = storage[7];
-    final m32 = storage[11];
-    final m33 = storage[15];
-    final n00 = otherStorage[0];
-    final n01 = otherStorage[4];
-    final n02 = otherStorage[8];
-    final n03 = otherStorage[12];
-    final n10 = otherStorage[1];
-    final n11 = otherStorage[5];
-    final n12 = otherStorage[9];
-    final n13 = otherStorage[13];
-    final n20 = otherStorage[2];
-    final n21 = otherStorage[6];
-    final n22 = otherStorage[10];
-    final n23 = otherStorage[14];
-    final n30 = otherStorage[3];
-    final n31 = otherStorage[7];
-    final n32 = otherStorage[11];
-    final n33 = otherStorage[15];
-    storage[0] = (m00 * n00) + (m01 * n10) + (m02 * n20) + (m03 * n30);
-    storage[4] = (m00 * n01) + (m01 * n11) + (m02 * n21) + (m03 * n31);
-    storage[8] = (m00 * n02) + (m01 * n12) + (m02 * n22) + (m03 * n32);
-    storage[12] = (m00 * n03) + (m01 * n13) + (m02 * n23) + (m03 * n33);
-    storage[1] = (m10 * n00) + (m11 * n10) + (m12 * n20) + (m13 * n30);
-    storage[5] = (m10 * n01) + (m11 * n11) + (m12 * n21) + (m13 * n31);
-    storage[9] = (m10 * n02) + (m11 * n12) + (m12 * n22) + (m13 * n32);
-    storage[13] = (m10 * n03) + (m11 * n13) + (m12 * n23) + (m13 * n33);
-    storage[2] = (m20 * n00) + (m21 * n10) + (m22 * n20) + (m23 * n30);
-    storage[6] = (m20 * n01) + (m21 * n11) + (m22 * n21) + (m23 * n31);
-    storage[10] = (m20 * n02) + (m21 * n12) + (m22 * n22) + (m23 * n32);
-    storage[14] = (m20 * n03) + (m21 * n13) + (m22 * n23) + (m23 * n33);
-    storage[3] = (m30 * n00) + (m31 * n10) + (m32 * n20) + (m33 * n30);
-    storage[7] = (m30 * n01) + (m31 * n11) + (m32 * n21) + (m33 * n31);
-    storage[11] = (m30 * n02) + (m31 * n12) + (m32 * n22) + (m33 * n32);
-    storage[15] = (m30 * n03) + (m31 * n13) + (m32 * n23) + (m33 * n33);
-  }
-
   void draw(Canvas canvas, Paint paint) {
     // Draw the sprites
-    final parentMatrix0 = Matrix4.identity();
-    final parentMatrix1 = Matrix4.identity();
+    final parentMatrix0 = Affine.identity();
+    parentMatrix0.setRotation(45 * degrees2Radians);
+    final parentMatrix1 = Affine.identity();
+    parentMatrix1.setRotation(-45 * degrees2Radians);
 
     // Check if expansion is needed
     if (cachesNeedExpanding) {
@@ -268,8 +150,12 @@ class Batch {
     for (var i = 0; i < length; ++i) {
       // Update the matrix
       final transform = _transforms[i];
+      final position = _position[i];
+      final rotation = _rotation[i];
+
       final multipliedTransform = _globalTransforms[i];
-      transform.setTranslationRaw(_position[i].x, _position[i].y, 0.0);
+      transform.setTransform(position.x, position.y, rotation,
+          World.desiredSize, World.desiredSize, 0.5, 0.5);
 
       final index = i * 8;
       final index0 = index;
@@ -277,20 +163,20 @@ class Batch {
       final index2 = index + 4;
       final index3 = index + 6;
 
-      setToIdentity(multipliedTransform);
-      multiplyBy(multipliedTransform, parentMatrix0);
-      multiplyBy(multipliedTransform, parentMatrix1);
-      multiplyBy(multipliedTransform, transform);
+      multipliedTransform.setIdentity();
+      // multipliedTransform.multiplyBy(parentMatrix0);
+      // multipliedTransform.multiplyBy(parentMatrix1);
+      multipliedTransform.multiplyBy(transform);
 
       // Calculating the transform
-      transformVertsInCacheFrom(
-          index0, multipliedTransform, vertexTopLeft.dx, vertexTopLeft.dy);
-      transformVertsInCacheFrom(
-          index1, multipliedTransform, vertexTopRight.dx, vertexTopRight.dy);
-      transformVertsInCacheFrom(index2, multipliedTransform,
+      multipliedTransform.transformRawFrom(
+          _vertexCoordsCache, index0, vertexTopLeft.dx, vertexTopLeft.dy);
+      multipliedTransform.transformRawFrom(
+          _vertexCoordsCache, index1, vertexTopRight.dx, vertexTopRight.dy);
+      multipliedTransform.transformRawFrom(_vertexCoordsCache, index2,
           vertexBottomRight.dx, vertexBottomRight.dy);
-      transformVertsInCacheFrom(index3, multipliedTransform,
-          vertexBottomLeft.dx, vertexBottomLeft.dy);
+      multipliedTransform.transformRawFrom(
+          _vertexCoordsCache, index3, vertexBottomLeft.dx, vertexBottomLeft.dy);
     }
 
     final vertices = Vertices.raw(VertexMode.triangles, _vertexCoordsCache,
@@ -298,5 +184,6 @@ class Batch {
 
     // Draw the sprite
     canvas.drawVertices(vertices, BlendMode.srcOver, paint);
+    vertices.dispose();
   }
 }

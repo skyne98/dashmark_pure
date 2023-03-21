@@ -2,7 +2,7 @@
 
 #include<flutter/runtime_effect.glsl>
 
-precision highp float;
+precision mediump float;
 
 layout(location=0)uniform sampler2D uTexture;
 layout(location=1)uniform vec2 uTextureSize;

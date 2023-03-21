@@ -1,6 +1,6 @@
 import 'package:dashmark_pure/world.dart';
 import 'package:flutter/widgets.dart';
-import 'package:vector_math/vector_math.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 class MyGame extends CustomPainter {
   final World world;

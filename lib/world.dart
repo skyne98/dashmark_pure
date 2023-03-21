@@ -1,14 +1,13 @@
 // import 'dart:html';
 import 'dart:collection';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui';
 import 'package:dashmark_pure/batch.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:vector_math/vector_math.dart' show Matrix4, Vector2;
+import 'package:vector_math/vector_math_64.dart' show Matrix4, Vector2;
 
 class World {
   static const double desiredSize = 64.0;
@@ -26,6 +25,7 @@ class World {
 
   List<Vector2> _velocity = [];
   List<Vector2> _position = [];
+  List<double> _rotation = [];
 
   // Batches
   List<Batch> _batches = [];
@@ -96,6 +96,7 @@ class World {
             dashImage!.width.toDouble(), dashImage!.height.toDouble());
         _position.add(Vector2(_spawnPosition.x, _spawnPosition.y));
         _velocity.add(Vector2(vx, vy));
+        _rotation.add(0.0);
 
         // Record for later expansion
         touchedBatches.add(batch);
@@ -122,6 +123,7 @@ class World {
         final indexInBatch = i % Batch.batchSize;
         final velocity = _velocity[i];
         final position = _position[i];
+        final rotation = _rotation[i];
 
         // Move the dash
         position.x += velocity.x;
@@ -147,6 +149,10 @@ class World {
         // Add gravity
         velocity.y += 0.3;
         batch.setPositionFrom(indexInBatch, position);
+
+        // Rotate slightly
+        _rotation[i] = rotation + 3.14 * lastDt;
+        batch.setRotationFrom(indexInBatch, _rotation[i]);
       }
       lastDt = t;
 
