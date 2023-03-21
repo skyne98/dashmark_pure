@@ -238,6 +238,14 @@ class World {
     if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
 
+      // Get the Flat BVH
+      // final start = DateTime.now().millisecondsSinceEpoch;
+      // final bvh = FlatBvh.fromBytes(api.bvhFlatten(index: _bvhIndex));
+      // drawFlatBVH(_bvhIndex, bvh, canvas);
+      // final end = DateTime.now().millisecondsSinceEpoch;
+      // final time = end - start;
+      // debugPrint('BVH flatten time: $time ms');
+
       // Draw the dashes
       final vertexTopLeft = Vector2(0.0, 0.0);
       final vertexBottomLeft = Vector2(0.0, 1.0);
@@ -288,7 +296,7 @@ class World {
       final text = TextSpan(
         text: status,
         style: const TextStyle(
-          color: Colors.red,
+          color: Colors.green,
           fontSize: 15.0,
         ),
       );
@@ -305,14 +313,6 @@ class World {
           (size.y - textPainter.height) / 2,
         ),
       );
-
-      // Get the Flat BVH
-      final start = DateTime.now().millisecondsSinceEpoch;
-      final bvh = FlatBvh.fromBytes(api.bvhFlatten(index: _bvhIndex));
-      drawFlatBVH(_bvhIndex, bvh, canvas);
-      final end = DateTime.now().millisecondsSinceEpoch;
-      final time = end - start;
-      debugPrint('BVH flatten time: $time ms');
     }
   }
 }
