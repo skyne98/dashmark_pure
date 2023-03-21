@@ -1,4 +1,3 @@
-// import 'dart:html';
 import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
@@ -22,15 +21,14 @@ class World {
   FragmentShader? fragmentShader;
   double scaleToSize = 0.0;
 
-  Vector2 _spawnPosition = Vector2(0.0, 0.0);
   int _spawnedThisFrame = 0;
 
-  List<Vector2> _velocity = [];
-  List<Vector2> _position = [];
-  List<double> _rotation = [];
+  final List<Vector2> _velocity = [];
+  final List<Vector2> _position = [];
+  final List<double> _rotation = [];
 
   // Batches
-  List<Batch> _batches = [];
+  final List<Batch> _batches = [];
 
   // FPS
   final _lastFrameTimes = <double>[];
@@ -70,7 +68,6 @@ class World {
   }
 
   void input(double x, double y) {
-    _spawnPosition = Vector2(x, y);
     if (dashImage != null && fragmentShader != null) {
       const amountPerSecond = 5000;
       var amount = (amountPerSecond * lastDt).toInt();
@@ -206,13 +203,13 @@ class World {
       status = title;
 
       // Calculate the BVH
-      final start = DateTime.now().millisecondsSinceEpoch;
+      // final start = DateTime.now().millisecondsSinceEpoch;
       final entities = _entityIndices.toList();
       api.bvhClearAndRebuild(
           index: _bvhIndex, entities: entities, dilationFactor: 0.0);
-      final end = DateTime.now().millisecondsSinceEpoch;
-      final bvhTime = end - start;
-      debugPrint('BVH time: $bvhTime ms');
+      // final end = DateTime.now().millisecondsSinceEpoch;
+      // final bvhTime = end - start;
+      // debugPrint('BVH time: $bvhTime ms');
     }
   }
 
@@ -265,25 +262,23 @@ class World {
   }
 }
 
-Vector2 transform2(Vector2 position, Matrix4 matrix) {
-  return Vector2(
-    (position.x * matrix[0]) + (position.y * matrix[4]) + matrix[12],
-    (position.x * matrix[1]) + (position.y * matrix[5]) + matrix[13],
-  );
-}
-
-Offset toOffset(Vector2 vector) {
-  return Offset(vector.x, vector.y);
-}
-
 void drawFlatBVH(RawIndex bvh, FlatBvh flat, Canvas canvas) {
-  final overallDepth = 1;
+  var overallDepth = 0;
+
+  // Find the max depth of the BVH
+  final length = flat.depth.length;
+  for (var i = 0; i < length; i++) {
+    final depth = flat.depth[i].toInt();
+    if (depth > overallDepth) {
+      overallDepth = depth;
+    }
+  }
+
   final paint = Paint()
     ..color = Color.fromARGB(255, 255, 0, 0)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.0;
 
-  final length = flat.minX.length;
   for (var i = 0; i < length; i++) {
     final minX = flat.minX[i];
     final minY = flat.minY[i];
