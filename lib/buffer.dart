@@ -103,7 +103,7 @@ class ByteBufferEncoder {
 
   bool growToFitNext(int bytes) {
     if (_counter + bytes > _byteData.lengthInBytes) {
-      final newLength = _byteData.lengthInBytes * 2 + bytes;
+      final newLength = _byteData.lengthInBytes * 8 + bytes;
       final newByteData = ByteData(newLength);
       newByteData.buffer
           .asUint8List()

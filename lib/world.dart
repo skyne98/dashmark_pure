@@ -216,9 +216,13 @@ class World {
 
       // Calculate the BVH
       // final start = DateTime.now().millisecondsSinceEpoch;
-      final entities = _entityIndices.toList();
-      api.bvhClearAndRebuild(
-          index: _bvhIndex, entities: entities, dilationFactor: 0.0);
+      final entitiesBuilder = ByteBufferEncoder();
+      RawIndexByteBufferExtensions.encodeArray(
+        entitiesBuilder,
+        _entityIndices,
+      );
+      api.bvhClearAndRebuildRaw(
+          index: _bvhIndex, data: entitiesBuilder.build(), dilationFactor: 0.0);
       // final end = DateTime.now().millisecondsSinceEpoch;
       // final bvhTime = end - start;
       // debugPrint('BVH time: $bvhTime ms');

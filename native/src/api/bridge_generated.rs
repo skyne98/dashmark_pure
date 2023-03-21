@@ -193,6 +193,29 @@ fn wire_bvh_clear_and_rebuild_impl(
         },
     )
 }
+fn wire_bvh_clear_and_rebuild_raw_impl(
+    index: impl Wire2Api<RawIndex> + UnwindSafe,
+    data: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+    dilation_factor: impl Wire2Api<f64> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "bvh_clear_and_rebuild_raw",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_index = index.wire2api();
+            let api_data = data.wire2api();
+            let api_dilation_factor = dilation_factor.wire2api();
+            Ok(bvh_clear_and_rebuild_raw(
+                api_index,
+                api_data,
+                api_dilation_factor,
+            ))
+        },
+    )
+}
 fn wire_bvh_flatten_impl(index: impl Wire2Api<RawIndex> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {

@@ -78,6 +78,15 @@ pub extern "C" fn wire_bvh_clear_and_rebuild(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_bvh_clear_and_rebuild_raw(
+    index: *mut wire_RawIndex,
+    data: *mut wire_uint_8_list,
+    dilation_factor: f64,
+) -> support::WireSyncReturn {
+    wire_bvh_clear_and_rebuild_raw_impl(index, data, dilation_factor)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_bvh_flatten(index: *mut wire_RawIndex) -> support::WireSyncReturn {
     wire_bvh_flatten_impl(index)
 }

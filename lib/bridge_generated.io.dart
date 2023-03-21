@@ -411,6 +411,29 @@ class NativeWire implements FlutterRustBridgeWireBase {
           WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
               ffi.Pointer<wire_list_raw_index>, double)>();
 
+  WireSyncReturn wire_bvh_clear_and_rebuild_raw(
+    ffi.Pointer<wire_RawIndex> index,
+    ffi.Pointer<wire_uint_8_list> data,
+    double dilation_factor,
+  ) {
+    return _wire_bvh_clear_and_rebuild_raw(
+      index,
+      data,
+      dilation_factor,
+    );
+  }
+
+  late final _wire_bvh_clear_and_rebuild_rawPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_RawIndex>,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Double)>>('wire_bvh_clear_and_rebuild_raw');
+  late final _wire_bvh_clear_and_rebuild_raw =
+      _wire_bvh_clear_and_rebuild_rawPtr.asFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
+              ffi.Pointer<wire_uint_8_list>, double)>();
+
   WireSyncReturn wire_bvh_flatten(
     ffi.Pointer<wire_RawIndex> index,
   ) {

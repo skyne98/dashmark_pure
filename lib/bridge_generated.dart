@@ -77,6 +77,14 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kBvhClearAndRebuildConstMeta;
 
+  void bvhClearAndRebuildRaw(
+      {required RawIndex index,
+      required Uint8List data,
+      required double dilationFactor,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kBvhClearAndRebuildRawConstMeta;
+
   Uint8List bvhFlatten({required RawIndex index, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kBvhFlattenConstMeta;
@@ -336,6 +344,30 @@ class NativeImpl implements Native {
       const FlutterRustBridgeTaskConstMeta(
         debugName: "bvh_clear_and_rebuild",
         argNames: ["index", "entities", "dilationFactor"],
+      );
+
+  void bvhClearAndRebuildRaw(
+      {required RawIndex index,
+      required Uint8List data,
+      required double dilationFactor,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
+    var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(data);
+    var arg2 = api2wire_f64(dilationFactor);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () =>
+          _platform.inner.wire_bvh_clear_and_rebuild_raw(arg0, arg1, arg2),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kBvhClearAndRebuildRawConstMeta,
+      argValues: [index, data, dilationFactor],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kBvhClearAndRebuildRawConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "bvh_clear_and_rebuild_raw",
+        argNames: ["index", "data", "dilationFactor"],
       );
 
   Uint8List bvhFlatten({required RawIndex index, dynamic hint}) {

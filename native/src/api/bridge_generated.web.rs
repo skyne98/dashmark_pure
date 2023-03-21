@@ -66,6 +66,15 @@ pub fn wire_bvh_clear_and_rebuild(
 }
 
 #[wasm_bindgen]
+pub fn wire_bvh_clear_and_rebuild_raw(
+    index: JsValue,
+    data: Box<[u8]>,
+    dilation_factor: f64,
+) -> support::WireSyncReturn {
+    wire_bvh_clear_and_rebuild_raw_impl(index, data, dilation_factor)
+}
+
+#[wasm_bindgen]
 pub fn wire_bvh_flatten(index: JsValue) -> support::WireSyncReturn {
     wire_bvh_flatten_impl(index)
 }

@@ -169,6 +169,46 @@ pub fn bvh_clear_and_rebuild(
     SyncReturn(())
 }
 
+pub fn bvh_clear_and_rebuild_raw(
+    index: RawIndex,
+    data: ZeroCopyBuffer<Vec<u8>>,
+    dilation_factor: f64,
+) -> SyncReturn<()> {
+    state_mut(|state| {
+        let data = data.0.as_slice();
+        // Read first 8 bytes as the length of the indices array
+        let indices_len = u64::from_ne_bytes(data[0..8].try_into().unwrap()) as u64;
+        // Now read the indices data (8 bytes per index, 8 bytes per generation)
+        // Memory map a region of the data to read the indices
+        let indices_data = unsafe {
+            std::slice::from_raw_parts(data.as_ptr().add(8) as *const u64, indices_len as usize * 2)
+        };
+        let indices = indices_data
+            .chunks_exact(2)
+            .map(|chunk| Index::from_raw_parts(chunk[0] as usize, chunk[1]))
+            .collect::<Vec<_>>();
+
+        let mut indices_and_aabbs = Vec::with_capacity(indices.len());
+        for entity_index in indices {
+            if let Some(entity) = state.get_entity_mut(entity_index) {
+                indices_and_aabbs.push((
+                    IndexWrapper(entity_index),
+                    entity
+                        .get_aabb()
+                        .expect("Entity has no shape, it must have a shape to be added to a BVH."),
+                ));
+            }
+        }
+
+        // Get the BVH
+        if let Some(bvh) = state.get_bvh_mut(index.into()) {
+            bvh.bvh
+                .clear_and_rebuild(indices_and_aabbs.into_iter(), dilation_factor);
+        }
+    });
+    SyncReturn(())
+}
+
 pub fn bvh_flatten(index: RawIndex) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
     state_mut(|state| {
         let bvh = state.get_bvh(index.into()).expect("BVH not found");
