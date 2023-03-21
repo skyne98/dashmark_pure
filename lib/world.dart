@@ -231,8 +231,8 @@ class World {
 
       // Get the Flat BVH
       // final start = DateTime.now().millisecondsSinceEpoch;
-      final bvh = FlatBvh.fromBytes(api.bvhFlatten(index: _bvhIndex));
-      drawFlatBVH(_bvhIndex, bvh, canvas);
+      // final bvh = FlatBvh.fromBytes(api.bvhFlatten(index: _bvhIndex));
+      // drawFlatBVH(_bvhIndex, bvh, canvas);
       // final end = DateTime.now().millisecondsSinceEpoch;
       // final time = end - start;
       // debugPrint('BVH flatten time: $time ms');

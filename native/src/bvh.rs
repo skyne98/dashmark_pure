@@ -138,7 +138,6 @@ impl Default for FlatBvh {
 
 impl FlatBvh {
     pub fn new(bvh: &Qbvh<IndexWrapper>) -> FlatBvh {
-        let start = std::time::Instant::now();
         let nodes = bvh.raw_nodes();
         if nodes.is_empty() {
             return FlatBvh::default();
@@ -187,7 +186,6 @@ impl FlatBvh {
                 }
             }
         }
-        println!("Flattened bvh in {:?}", start.elapsed());
 
         flat_bvh
     }

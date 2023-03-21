@@ -87,7 +87,7 @@ impl Wire2Api<Vec<Box<Shape>>> for JsValue {
         self.dyn_into::<JsArray>()
             .unwrap()
             .iter()
-            .map(Wire2Api::wire2api)
+            .map(Wire2Api::<Shape>::wire2api)
             .collect()
     }
 }
