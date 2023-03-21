@@ -1,35 +1,36 @@
 // import 'dart:html';
+import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
+import 'package:dashmark_pure/batch.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:vector_math/vector_math.dart' show Matrix4, Vector2;
+import 'package:vector_math/vector_math_64.dart' show Matrix4, Vector2;
 import 'bvh.dart';
 import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
 
 class World {
+  static const double desiredSize = 64.0;
+
   Vector2 size = Vector2(0.0, 0.0);
   double lastDt = 0.0;
 
   Image? dashImage;
   FragmentProgram? fragmentProgram;
   FragmentShader? fragmentShader;
-  double desiredSize = 100.0;
   double scaleToSize = 0.0;
 
   Vector2 _spawnPosition = Vector2(0.0, 0.0);
   int _spawnedThisFrame = 0;
 
-  int _currentId = 0;
+  List<Vector2> _velocity = [];
+  List<Vector2> _position = [];
+  List<double> _rotation = [];
 
-  // Matrices
-  final List<Matrix4> _transforms = [];
-  final List<Vector2> _position = [];
-  final List<Vector2> _velocity = [];
-  Float32List _vertexCoordsCache = Float32List(0);
-  Float32List _textureCoordsCache = Float32List(0);
+  // Batches
+  List<Batch> _batches = [];
 
   // FPS
   final _lastFrameTimes = <double>[];
@@ -43,7 +44,7 @@ class World {
 
   World() {
     debugPrint('World created');
-    rootBundle.load('assets/images/dash.png').then((data) {
+    rootBundle.load('assets/images/dash_128.png').then((data) {
       final asUInt8List = Uint8List.view(data.buffer);
       decodeImageFromList(asUInt8List).then((result) {
         dashImage = result;
@@ -55,7 +56,7 @@ class World {
       debugPrint('Error loading image: $error');
       status = 'Error loading image: $error';
     });
-    FragmentProgram.fromAsset('shaders/sprite.glsl').then((result) {
+    FragmentProgram.fromAsset('shaders/sprite.frag').then((result) {
       fragmentProgram = result;
       fragmentShader = fragmentProgram!.fragmentShader();
       debugPrint('Loaded fragment shader');
@@ -66,24 +67,6 @@ class World {
     });
 
     _bvhIndex = api.createBvh();
-  }
-
-  void addDash(double x, double y, double vx, double vy) {
-    final id = _currentId++;
-
-    final matrix = Matrix4.identity();
-    matrix.translate(x, y);
-    matrix.scale(100.0, 100.0);
-    _transforms.add(matrix);
-    _position.add(Vector2(x, y));
-    _velocity.add(Vector2(vx, vy));
-
-    final entity = api.createEntity();
-    _entityIndices.add(entity);
-    api.entitySetPosition(index: entity, x: x, y: y);
-    api.entitySetOrigin(index: entity, relative: true, x: 0.0, y: 0.0);
-    const shape = Shape.ball(radius: 50.0);
-    api.entitySetShape(index: entity, shape: shape);
   }
 
   void input(double x, double y) {
@@ -99,40 +82,49 @@ class World {
       }
       _spawnedThisFrame += amount;
 
+      HashSet<Batch> touchedBatches = HashSet();
       for (var i = 0; i < amount; i++) {
-        // Create a dash at 0,0 every frame
+        // Find a batch where it fits or create a new one
+        Batch? batch;
+        for (final b in _batches) {
+          if (b.length < Batch.batchSize) {
+            batch = b;
+            break;
+          }
+        }
+        if (batch == null) {
+          batch = Batch();
+          _batches.add(batch);
+          debugPrint('Created new batch (#${_batches.length})');
+        }
+
         final vx = 4 * cos(i * 2 * pi / amount);
         final vy = 4 * sin(i * 2 * pi / amount);
-        addDash(_spawnPosition.x, _spawnPosition.y, vx, vy);
+        final indexInBatch = batch.add(
+            x, y, dashImage!.width.toDouble(), dashImage!.height.toDouble());
+        _position.add(Vector2(x, y));
+        _velocity.add(Vector2(vx, vy));
+        _rotation.add(0.0);
+
+        // Create the entity
+        final entity = api.createEntity();
+        _entityIndices.add(entity);
+        api.entitySetPosition(index: entity, x: x, y: y);
+        api.entitySetOrigin(index: entity, relative: true, x: 0.5, y: 0.5);
+        const shape = Shape.ball(radius: 50.0);
+        api.entitySetShape(index: entity, shape: shape);
+
+        // Record for later expansion
+        touchedBatches.add(batch);
+        if (indexInBatch <
+            (batch.populateTextureAndIndexCacheFrom ?? batch.length)) {
+          batch.populateTextureAndIndexCacheFrom = indexInBatch;
+        }
       }
 
-      // Update the vertex and texture coords cache
-      final length = _transforms.length;
-      _vertexCoordsCache = Float32List(length * 12);
-      _textureCoordsCache = Float32List(length * 12);
-
-      // Update the texture coords cache
-      final dashWidth = dashImage!.width;
-      final dashHeight = dashImage!.height;
-      for (var i = 0; i < length; ++i) {
-        final offset = i * 12;
-        _textureCoordsCache[offset + 0] = 0.0; // top left x
-        _textureCoordsCache[offset + 1] = 0.0; // top left y
-        _textureCoordsCache[offset + 2] = 0.0; // bottom left x
-        _textureCoordsCache[offset + 3] =
-            dashHeight.toDouble(); // bottom left y
-        _textureCoordsCache[offset + 4] =
-            dashWidth.toDouble(); // bottom right x
-        _textureCoordsCache[offset + 5] =
-            dashHeight.toDouble(); // bottom right y
-        _textureCoordsCache[offset + 6] = dashWidth.toDouble(); // top right x
-        _textureCoordsCache[offset + 7] = 0.0; // top right y
-        _textureCoordsCache[offset + 8] = 0.0; // top left x
-        _textureCoordsCache[offset + 9] = 0.0; // top left y
-        _textureCoordsCache[offset + 10] =
-            dashWidth.toDouble(); // bottom right x
-        _textureCoordsCache[offset + 11] =
-            dashHeight.toDouble(); // bottom right y
+      // Expand the batches
+      for (final entry in touchedBatches) {
+        entry.cachesNeedExpanding = true;
       }
     }
   }
@@ -143,8 +135,11 @@ class World {
       // Jump around the dashes
       final length = _velocity.length;
       for (var i = 0; i < length; ++i) {
+        final batch = _batches[i ~/ Batch.batchSize];
+        final indexInBatch = i % Batch.batchSize;
         final velocity = _velocity[i];
         final position = _position[i];
+        final rotation = _rotation[i];
 
         // Move the dash
         position.x += velocity.x;
@@ -170,10 +165,13 @@ class World {
         // Add gravity
         velocity.y += 0.3;
 
-        // Report the new values to appropriate places
-        _transforms[i].setTranslationRaw(position.x, position.y, 0.0);
+        batch.setPositionFrom(indexInBatch, position);
         api.entitySetPosition(
             index: _entityIndices[i], x: position.x, y: position.y);
+
+        // Rotate slightly
+        _rotation[i] = rotation + 3.14 * lastDt;
+        batch.setRotationFrom(indexInBatch, _rotation[i]);
       }
       lastDt = t;
 
@@ -218,22 +216,6 @@ class World {
     }
   }
 
-  void transformVertsInCache(int index, Matrix4 matrix) {
-    final indexX = index;
-    final indexY = index + 1;
-
-    final x = _vertexCoordsCache[indexX];
-    final y = _vertexCoordsCache[indexY];
-
-    _vertexCoordsCache[indexX] = (x * matrix[0]) + (y * matrix[4]) + matrix[12];
-    _vertexCoordsCache[indexY] = (x * matrix[1]) + (y * matrix[5]) + matrix[13];
-  }
-
-  void setVertInCache(int index, double x, double y) {
-    _vertexCoordsCache[index] = x;
-    _vertexCoordsCache[index + 1] = y;
-  }
-
   void render(double t, Canvas canvas) {
     if (dashImage != null && fragmentShader != null) {
       canvas.drawColor(const Color(0xFF000000), BlendMode.srcOver);
@@ -246,39 +228,6 @@ class World {
       // final time = end - start;
       // debugPrint('BVH flatten time: $time ms');
 
-      // Draw the dashes
-      final vertexTopLeft = Vector2(0.0, 0.0);
-      final vertexBottomLeft = Vector2(0.0, 1.0);
-      final vertexBottomRight = Vector2(1.0, 1.0);
-      final vertexTopRight = Vector2(1.0, 0.0);
-
-      final length = _transforms.length;
-      for (var i = 0; i < length; ++i) {
-        final transform = _transforms[i];
-        final index = i * 12;
-
-        final index0 = index;
-        final index1 = index + 2;
-        final index2 = index + 4;
-        final index3 = index + 6;
-        final index4 = index + 8;
-        final index5 = index + 10;
-
-        setVertInCache(index0, vertexTopLeft.x, vertexTopLeft.y);
-        setVertInCache(index1, vertexBottomLeft.x, vertexBottomLeft.y);
-        setVertInCache(index2, vertexBottomRight.x, vertexBottomRight.y);
-        setVertInCache(index3, vertexTopRight.x, vertexTopRight.y);
-        setVertInCache(index4, vertexTopLeft.x, vertexTopLeft.y);
-        setVertInCache(index5, vertexBottomRight.x, vertexBottomRight.y);
-
-        transformVertsInCache(index0, transform);
-        transformVertsInCache(index1, transform);
-        transformVertsInCache(index2, transform);
-        transformVertsInCache(index3, transform);
-        transformVertsInCache(index4, transform);
-        transformVertsInCache(index5, transform);
-      }
-
       // Prepare the shader
       fragmentShader!.setImageSampler(0, dashImage!);
       fragmentShader!.setFloat(0, dashImage!.width.toDouble());
@@ -286,11 +235,10 @@ class World {
       final paint = Paint();
       paint.shader = fragmentShader;
 
-      final vertices = Vertices.raw(VertexMode.triangles, _vertexCoordsCache,
-          textureCoordinates: _textureCoordsCache);
-
-      // Draw the sprite
-      canvas.drawVertices(vertices, BlendMode.srcOver, paint);
+      // Draw the batches
+      for (final batch in _batches) {
+        batch.draw(canvas, paint);
+      }
 
       // Draw status in the middle
       final text = TextSpan(
