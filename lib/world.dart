@@ -1,7 +1,8 @@
 import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
-import 'package:dashmark_pure/batch.dart';
+import 'batch.dart';
+import 'buffer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
@@ -163,14 +164,25 @@ class World {
         velocity.y += 0.3;
 
         batch.setPositionFrom(indexInBatch, position);
-        api.entitySetPosition(
-            index: _entityIndices[i], x: position.x, y: position.y);
 
         // Rotate slightly
         _rotation[i] = rotation + 3.14 * lastDt;
         batch.setRotationFrom(indexInBatch, _rotation[i]);
       }
       lastDt = t;
+
+      // Send all positions to the native world
+      final encoder = ByteBufferEncoder();
+      RawIndexByteBufferExtensions.encodeArray(
+        encoder,
+        _entityIndices,
+      );
+      Vector2ByteBufferExtensions.encodeArray(
+        encoder,
+        _position,
+      );
+      final positionsBuffer = encoder.build();
+      api.entitiesSetPosition(data: positionsBuffer);
 
       // FPS
       _lastFrameTimes.add(t);
@@ -219,8 +231,8 @@ class World {
 
       // Get the Flat BVH
       // final start = DateTime.now().millisecondsSinceEpoch;
-      // final bvh = FlatBvh.fromBytes(api.bvhFlatten(index: _bvhIndex));
-      // drawFlatBVH(_bvhIndex, bvh, canvas);
+      final bvh = FlatBvh.fromBytes(api.bvhFlatten(index: _bvhIndex));
+      drawFlatBVH(_bvhIndex, bvh, canvas);
       // final end = DateTime.now().millisecondsSinceEpoch;
       // final time = end - start;
       // debugPrint('BVH flatten time: $time ms');

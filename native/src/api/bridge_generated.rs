@@ -77,6 +77,21 @@ fn wire_entity_set_position_impl(
         },
     )
 }
+fn wire_entities_set_position_impl(
+    data: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "entities_set_position",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_data = data.wire2api();
+            Ok(entities_set_position(api_data))
+        },
+    )
+}
 fn wire_entity_set_origin_impl(
     index: impl Wire2Api<RawIndex> + UnwindSafe,
     relative: impl Wire2Api<bool> + UnwindSafe,
@@ -213,6 +228,7 @@ where
         (!self.is_null()).then(|| self.wire2api())
     }
 }
+
 impl Wire2Api<bool> for bool {
     fn wire2api(self) -> bool {
         self
@@ -230,6 +246,12 @@ impl Wire2Api<u64> for u64 {
         self
     }
 }
+impl Wire2Api<u8> for u8 {
+    fn wire2api(self) -> u8 {
+        self
+    }
+}
+
 impl Wire2Api<usize> for usize {
     fn wire2api(self) -> usize {
         self

@@ -19,6 +19,11 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
 // Section: api2wire
 
   @protected
+  Uint8List api2wire_ZeroCopyBuffer_Uint8List(Uint8List raw) {
+    return api2wire_uint_8_list(raw);
+  }
+
+  @protected
   List<dynamic> api2wire_box_autoadd_raw_index(RawIndex raw) {
     return api2wire_raw_index(raw);
   }
@@ -85,6 +90,11 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
     return castNativeBigInt(raw);
   }
 
+  @protected
+  Uint8List api2wire_uint_8_list(Uint8List raw) {
+    return raw;
+  }
+
 // Section: finalizer
 }
 
@@ -106,6 +116,8 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* void */ wire_entity_set_position(
       List<dynamic> index, double x, double y);
+
+  external dynamic /* void */ wire_entities_set_position(Uint8List data);
 
   external dynamic /* void */ wire_entity_set_origin(
       List<dynamic> index, bool relative, double x, double y);
@@ -143,6 +155,9 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   dynamic /* void */ wire_entity_set_position(
           List<dynamic> index, double x, double y) =>
       wasmModule.wire_entity_set_position(index, x, y);
+
+  dynamic /* void */ wire_entities_set_position(Uint8List data) =>
+      wasmModule.wire_entities_set_position(data);
 
   dynamic /* void */ wire_entity_set_origin(
           List<dynamic> index, bool relative, double x, double y) =>

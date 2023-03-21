@@ -22,6 +22,11 @@ pub fn wire_entity_set_position(index: JsValue, x: f64, y: f64) -> support::Wire
 }
 
 #[wasm_bindgen]
+pub fn wire_entities_set_position(data: Box<[u8]>) -> support::WireSyncReturn {
+    wire_entities_set_position_impl(data)
+}
+
+#[wasm_bindgen]
 pub fn wire_entity_set_origin(
     index: JsValue,
     relative: bool,
@@ -71,12 +76,18 @@ pub fn wire_bvh_flatten(index: JsValue) -> support::WireSyncReturn {
 
 // Section: impl Wire2Api
 
+impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for Box<[u8]> {
+    fn wire2api(self) -> ZeroCopyBuffer<Vec<u8>> {
+        ZeroCopyBuffer(self.wire2api())
+    }
+}
+
 impl Wire2Api<Vec<Box<Shape>>> for JsValue {
     fn wire2api(self) -> Vec<Box<Shape>> {
         self.dyn_into::<JsArray>()
             .unwrap()
             .iter()
-            .map(Wire2Api::<Shape>::wire2api)
+            .map(Wire2Api::wire2api)
             .collect()
     }
 }
@@ -144,8 +155,19 @@ impl Wire2Api<ShapeTransform> for JsValue {
     }
 }
 
+impl Wire2Api<Vec<u8>> for Box<[u8]> {
+    fn wire2api(self) -> Vec<u8> {
+        self.into_vec()
+    }
+}
+
 // Section: impl Wire2Api for JsValue
 
+impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for JsValue {
+    fn wire2api(self) -> ZeroCopyBuffer<Vec<u8>> {
+        ZeroCopyBuffer(self.wire2api())
+    }
+}
 impl Wire2Api<bool> for JsValue {
     fn wire2api(self) -> bool {
         self.is_truthy()
@@ -164,6 +186,16 @@ impl Wire2Api<f64> for JsValue {
 impl Wire2Api<u64> for JsValue {
     fn wire2api(self) -> u64 {
         ::std::convert::TryInto::try_into(self.dyn_into::<js_sys::BigInt>().unwrap()).unwrap()
+    }
+}
+impl Wire2Api<u8> for JsValue {
+    fn wire2api(self) -> u8 {
+        self.unchecked_into_f64() as _
+    }
+}
+impl Wire2Api<Vec<u8>> for JsValue {
+    fn wire2api(self) -> Vec<u8> {
+        self.unchecked_into::<js_sys::Uint8Array>().to_vec().into()
     }
 }
 impl Wire2Api<usize> for JsValue {

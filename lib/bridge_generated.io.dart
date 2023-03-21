@@ -16,6 +16,12 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
 // Section: api2wire
 
   @protected
+  ffi.Pointer<wire_uint_8_list> api2wire_ZeroCopyBuffer_Uint8List(
+      Uint8List raw) {
+    return api2wire_uint_8_list(raw);
+  }
+
+  @protected
   ffi.Pointer<wire_RawIndex> api2wire_box_autoadd_raw_index(RawIndex raw) {
     final ptr = inner.new_box_autoadd_raw_index_0();
     _api_fill_to_wire_raw_index(raw, ptr.ref);
@@ -68,6 +74,13 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
   @protected
   int api2wire_u64(int raw) {
     return raw;
+  }
+
+  @protected
+  ffi.Pointer<wire_uint_8_list> api2wire_uint_8_list(Uint8List raw) {
+    final ans = inner.new_uint_8_list_0(raw.length);
+    ans.ref.ptr.asTypedList(raw.length).setAll(0, raw);
+    return ans;
   }
 
 // Section: finalizer
@@ -278,6 +291,21 @@ class NativeWire implements FlutterRustBridgeWireBase {
           WireSyncReturn Function(
               ffi.Pointer<wire_RawIndex>, double, double)>();
 
+  WireSyncReturn wire_entities_set_position(
+    ffi.Pointer<wire_uint_8_list> data,
+  ) {
+    return _wire_entities_set_position(
+      data,
+    );
+  }
+
+  late final _wire_entities_set_positionPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_uint_8_list>)>>('wire_entities_set_position');
+  late final _wire_entities_set_position = _wire_entities_set_positionPtr
+      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_uint_8_list>)>();
+
   WireSyncReturn wire_entity_set_origin(
     ffi.Pointer<wire_RawIndex> index,
     bool relative,
@@ -473,6 +501,21 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _new_list_shape_transform_0 = _new_list_shape_transform_0Ptr
       .asFunction<ffi.Pointer<wire_list_shape_transform> Function(int)>();
 
+  ffi.Pointer<wire_uint_8_list> new_uint_8_list_0(
+    int len,
+  ) {
+    return _new_uint_8_list_0(
+      len,
+    );
+  }
+
+  late final _new_uint_8_list_0Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_uint_8_list> Function(
+              ffi.Int32)>>('new_uint_8_list_0');
+  late final _new_uint_8_list_0 = _new_uint_8_list_0Ptr
+      .asFunction<ffi.Pointer<wire_uint_8_list> Function(int)>();
+
   ffi.Pointer<ShapeKind> inflate_Shape_Ball() {
     return _inflate_Shape_Ball();
   }
@@ -516,6 +559,13 @@ class wire_RawIndex extends ffi.Struct {
 
   @ffi.Uint64()
   external int field1;
+}
+
+class wire_uint_8_list extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint8> ptr;
+
+  @ffi.Int32()
+  external int len;
 }
 
 class wire_Shape_Ball extends ffi.Struct {

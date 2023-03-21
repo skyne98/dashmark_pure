@@ -26,6 +26,13 @@ pub extern "C" fn wire_entity_set_position(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_entities_set_position(
+    data: *mut wire_uint_8_list,
+) -> support::WireSyncReturn {
+    wire_entities_set_position_impl(data)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_entity_set_origin(
     index: *mut wire_RawIndex,
     relative: bool,
@@ -119,9 +126,24 @@ pub extern "C" fn new_list_shape_transform_0(len: i32) -> *mut wire_list_shape_t
     support::new_leak_box_ptr(wrap)
 }
 
+#[no_mangle]
+pub extern "C" fn new_uint_8_list_0(len: i32) -> *mut wire_uint_8_list {
+    let ans = wire_uint_8_list {
+        ptr: support::new_leak_vec_ptr(Default::default(), len),
+        len,
+    };
+    support::new_leak_box_ptr(ans)
+}
+
 // Section: related functions
 
 // Section: impl Wire2Api
+
+impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for *mut wire_uint_8_list {
+    fn wire2api(self) -> ZeroCopyBuffer<Vec<u8>> {
+        ZeroCopyBuffer(self.wire2api())
+    }
+}
 
 impl Wire2Api<RawIndex> for *mut wire_RawIndex {
     fn wire2api(self) -> RawIndex {
@@ -208,6 +230,15 @@ impl Wire2Api<ShapeTransform> for wire_ShapeTransform {
     }
 }
 
+impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
+    fn wire2api(self) -> Vec<u8> {
+        unsafe {
+            let wrap = support::box_from_leak_ptr(self);
+            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
+        }
+    }
+}
+
 // Section: wire structs
 
 #[repr(C)]
@@ -246,6 +277,13 @@ pub struct wire_ShapeTransform {
     rotation: f64,
     absolute_origin_x: f64,
     absolute_origin_y: f64,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct wire_uint_8_list {
+    ptr: *mut u8,
+    len: i32,
 }
 
 #[repr(C)]

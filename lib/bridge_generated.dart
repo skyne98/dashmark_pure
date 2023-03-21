@@ -38,6 +38,10 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kEntitySetPositionConstMeta;
 
+  void entitiesSetPosition({required Uint8List data, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionConstMeta;
+
   void entitySetOrigin(
       {required RawIndex index,
       required bool relative,
@@ -194,6 +198,23 @@ class NativeImpl implements Native {
       const FlutterRustBridgeTaskConstMeta(
         debugName: "entity_set_position",
         argNames: ["index", "x", "y"],
+      );
+
+  void entitiesSetPosition({required Uint8List data, dynamic hint}) {
+    var arg0 = _platform.api2wire_ZeroCopyBuffer_Uint8List(data);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_entities_set_position(arg0),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kEntitiesSetPositionConstMeta,
+      argValues: [data],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "entities_set_position",
+        argNames: ["data"],
       );
 
   void entitySetOrigin(
@@ -387,6 +408,11 @@ bool api2wire_bool(bool raw) {
 
 @protected
 double api2wire_f64(double raw) {
+  return raw;
+}
+
+@protected
+int api2wire_u8(int raw) {
   return raw;
 }
 
