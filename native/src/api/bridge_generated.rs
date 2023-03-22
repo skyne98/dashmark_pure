@@ -77,18 +77,20 @@ fn wire_entity_set_position_impl(
         },
     )
 }
-fn wire_entities_set_position_impl(
-    data: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+fn wire_entities_set_position_raw_impl(
+    indices: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+    positions: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
-            debug_name: "entities_set_position",
+            debug_name: "entities_set_position_raw",
             port: None,
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_data = data.wire2api();
-            Ok(entities_set_position(api_data))
+            let api_indices = indices.wire2api();
+            let api_positions = positions.wire2api();
+            Ok(entities_set_position_raw(api_indices, api_positions))
         },
     )
 }
@@ -127,6 +129,23 @@ fn wire_entity_set_rotation_impl(
             let api_index = index.wire2api();
             let api_rotation = rotation.wire2api();
             Ok(entity_set_rotation(api_index, api_rotation))
+        },
+    )
+}
+fn wire_entities_set_rotation_raw_impl(
+    indices: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+    rotations: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "entities_set_rotation_raw",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_indices = indices.wire2api();
+            let api_rotations = rotations.wire2api();
+            Ok(entities_set_rotation_raw(api_indices, api_rotations))
         },
     )
 }

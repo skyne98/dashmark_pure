@@ -6,6 +6,7 @@ mod api;
 mod bvh;
 mod entity;
 mod index;
+mod typed_data;
 
 fn main() {
     const iterations: u32 = 1000000;

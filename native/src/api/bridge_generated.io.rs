@@ -26,10 +26,11 @@ pub extern "C" fn wire_entity_set_position(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_entities_set_position(
-    data: *mut wire_uint_8_list,
+pub extern "C" fn wire_entities_set_position_raw(
+    indices: *mut wire_uint_8_list,
+    positions: *mut wire_uint_8_list,
 ) -> support::WireSyncReturn {
-    wire_entities_set_position_impl(data)
+    wire_entities_set_position_raw_impl(indices, positions)
 }
 
 #[no_mangle]
@@ -48,6 +49,14 @@ pub extern "C" fn wire_entity_set_rotation(
     rotation: f64,
 ) -> support::WireSyncReturn {
     wire_entity_set_rotation_impl(index, rotation)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_entities_set_rotation_raw(
+    indices: *mut wire_uint_8_list,
+    rotations: *mut wire_uint_8_list,
+) -> support::WireSyncReturn {
+    wire_entities_set_rotation_raw_impl(indices, rotations)
 }
 
 #[no_mangle]

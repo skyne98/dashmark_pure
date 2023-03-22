@@ -38,9 +38,10 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kEntitySetPositionConstMeta;
 
-  void entitiesSetPosition({required Uint8List data, dynamic hint});
+  void entitiesSetPositionRaw(
+      {required Uint8List indices, required Uint8List positions, dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionConstMeta;
+  FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionRawConstMeta;
 
   void entitySetOrigin(
       {required RawIndex index,
@@ -55,6 +56,11 @@ abstract class Native {
       {required RawIndex index, required double rotation, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kEntitySetRotationConstMeta;
+
+  void entitiesSetRotationRaw(
+      {required Uint8List indices, required Uint8List rotations, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kEntitiesSetRotationRawConstMeta;
 
   void entitySetShape(
       {required RawIndex index, required Shape shape, dynamic hint});
@@ -208,21 +214,25 @@ class NativeImpl implements Native {
         argNames: ["index", "x", "y"],
       );
 
-  void entitiesSetPosition({required Uint8List data, dynamic hint}) {
-    var arg0 = _platform.api2wire_ZeroCopyBuffer_Uint8List(data);
+  void entitiesSetPositionRaw(
+      {required Uint8List indices,
+      required Uint8List positions,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_ZeroCopyBuffer_Uint8List(indices);
+    var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(positions);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_entities_set_position(arg0),
+      callFfi: () => _platform.inner.wire_entities_set_position_raw(arg0, arg1),
       parseSuccessData: _wire2api_unit,
-      constMeta: kEntitiesSetPositionConstMeta,
-      argValues: [data],
+      constMeta: kEntitiesSetPositionRawConstMeta,
+      argValues: [indices, positions],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionRawConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "entities_set_position",
-        argNames: ["data"],
+        debugName: "entities_set_position_raw",
+        argNames: ["indices", "positions"],
       );
 
   void entitySetOrigin(
@@ -268,6 +278,27 @@ class NativeImpl implements Native {
       const FlutterRustBridgeTaskConstMeta(
         debugName: "entity_set_rotation",
         argNames: ["index", "rotation"],
+      );
+
+  void entitiesSetRotationRaw(
+      {required Uint8List indices,
+      required Uint8List rotations,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_ZeroCopyBuffer_Uint8List(indices);
+    var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(rotations);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_entities_set_rotation_raw(arg0, arg1),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kEntitiesSetRotationRawConstMeta,
+      argValues: [indices, rotations],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kEntitiesSetRotationRawConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "entities_set_rotation_raw",
+        argNames: ["indices", "rotations"],
       );
 
   void entitySetShape(

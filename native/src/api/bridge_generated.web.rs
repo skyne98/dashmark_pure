@@ -22,8 +22,11 @@ pub fn wire_entity_set_position(index: JsValue, x: f64, y: f64) -> support::Wire
 }
 
 #[wasm_bindgen]
-pub fn wire_entities_set_position(data: Box<[u8]>) -> support::WireSyncReturn {
-    wire_entities_set_position_impl(data)
+pub fn wire_entities_set_position_raw(
+    indices: Box<[u8]>,
+    positions: Box<[u8]>,
+) -> support::WireSyncReturn {
+    wire_entities_set_position_raw_impl(indices, positions)
 }
 
 #[wasm_bindgen]
@@ -39,6 +42,14 @@ pub fn wire_entity_set_origin(
 #[wasm_bindgen]
 pub fn wire_entity_set_rotation(index: JsValue, rotation: f64) -> support::WireSyncReturn {
     wire_entity_set_rotation_impl(index, rotation)
+}
+
+#[wasm_bindgen]
+pub fn wire_entities_set_rotation_raw(
+    indices: Box<[u8]>,
+    rotations: Box<[u8]>,
+) -> support::WireSyncReturn {
+    wire_entities_set_rotation_raw_impl(indices, rotations)
 }
 
 #[wasm_bindgen]

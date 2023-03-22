@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:dashmark_pure/matrix.dart';
+import 'package:dashmark_pure/typed_array/f64.dart';
 import 'package:dashmark_pure/world.dart';
 import 'package:vector_math/vector_math_64.dart';
 
@@ -18,9 +19,9 @@ class Batch {
   // Matrices
   final List<Affine> _transforms = [];
   final List<Affine> _globalTransforms = [];
-  final List<Vector2> _position = [];
-  final List<double> _rotation = [];
-  final List<Vector2> _size = [];
+  final Vector2Buffer _position = Vector2Buffer();
+  final Float64Buffer _rotation = Float64Buffer();
+  final Vector2Buffer _size = Vector2Buffer();
   Float32List _vertexCoordsCache = Float32List(0);
   Float32List _textureCoordsCache = Float32List(0);
   Uint16List _indicesCache = Uint16List(0);
@@ -32,9 +33,8 @@ class Batch {
 
   int get length => _transforms.length;
 
-  Vector2 getPosition(int id) => _position[id];
-  void setPositionFrom(int id, Vector2 position) {
-    _position[id] = position;
+  void setPositionFrom(int id, double x, double y) {
+    _position.setXY(id, x, y);
   }
 
   void setRotationFrom(int id, double rotation) {
@@ -48,9 +48,9 @@ class Batch {
         x, y, 0, World.desiredSize, World.desiredSize, 0.5, 0.5);
     _transforms.add(matrix);
     _globalTransforms.add(Affine.identity());
-    _position.add(Vector2(x, y));
+    _position.addXY(x, y);
     _rotation.add(0.3);
-    _size.add(Vector2(width, height));
+    _size.addXY(width, height);
     return id;
   }
 
@@ -89,9 +89,8 @@ class Batch {
 
   void populateTextureAndIndexCache(int from, int to) {
     for (var i = from; i < to; ++i) {
-      final size = _size[i];
-      final sizeX = size.x;
-      final sizeY = size.y;
+      final sizeX = _size.getX(i);
+      final sizeY = _size.getY(i);
 
       final index = i * 8;
 
@@ -150,12 +149,13 @@ class Batch {
     for (var i = 0; i < length; ++i) {
       // Update the matrix
       final transform = _transforms[i];
-      final position = _position[i];
       final rotation = _rotation[i];
 
       final multipliedTransform = _globalTransforms[i];
-      transform.setTransform(position.x, position.y, rotation,
-          World.desiredSize, World.desiredSize, 0.5, 0.5);
+      final positionX = _position.getX(i);
+      final positionY = _position.getY(i);
+      transform.setTransform(positionX, positionY, rotation, World.desiredSize,
+          World.desiredSize, 0.5, 0.5);
 
       final index = i * 8;
       final index0 = index;

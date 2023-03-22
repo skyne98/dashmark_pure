@@ -1,6 +1,9 @@
 import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
+import 'package:dashmark_pure/typed_array/f64.dart';
+import 'package:dashmark_pure/typed_array/u64.dart';
+
 import 'batch.dart';
 import 'buffer.dart';
 import 'package:flutter/foundation.dart';
@@ -9,7 +12,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:vector_math/vector_math_64.dart' show Matrix4, Vector2;
 import 'bvh.dart';
-import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
+import 'ffi_export.dart';
 
 class World {
   static const double desiredSize = 64.0;
@@ -24,9 +27,9 @@ class World {
 
   int _spawnedThisFrame = 0;
 
-  final List<Vector2> _velocity = [];
-  final List<Vector2> _position = [];
-  final List<double> _rotation = [];
+  final Vector2Buffer _velocity = Vector2Buffer();
+  final Vector2Buffer _position = Vector2Buffer();
+  final Float64Buffer _rotation = Float64Buffer();
 
   // Batches
   final List<Batch> _batches = [];
@@ -38,7 +41,7 @@ class World {
   String status = 'Status';
 
   // Native communication
-  final List<RawIndex> _entityIndices = [];
+  final RawIndexBuffer _entityIndices = RawIndexBuffer();
   late RawIndex _bvhIndex;
 
   World() {
@@ -100,16 +103,16 @@ class World {
         final vy = 4 * sin(i * 2 * pi / amount);
         final indexInBatch = batch.add(
             x, y, dashImage!.width.toDouble(), dashImage!.height.toDouble());
-        _position.add(Vector2(x, y));
-        _velocity.add(Vector2(vx, vy));
+        _position.addXY(x, y);
+        _velocity.addXY(vx, vy);
         _rotation.add(0.0);
 
         // Create the entity
         final entity = api.createEntity();
-        _entityIndices.add(entity);
+        _entityIndices.addRawIndex(entity);
         api.entitySetPosition(index: entity, x: x, y: y);
         api.entitySetOrigin(index: entity, relative: true, x: 0.5, y: 0.5);
-        const shape = Shape.ball(radius: 50.0);
+        const shape = Shape.ball(radius: World.desiredSize / 2);
         api.entitySetShape(index: entity, shape: shape);
 
         // Record for later expansion
@@ -131,39 +134,39 @@ class World {
     _spawnedThisFrame = 0;
     if (dashImage != null && fragmentShader != null) {
       // Jump around the dashes
-      final length = _velocity.length;
+      final length = _velocity.vectorsLength;
       for (var i = 0; i < length; ++i) {
         final batch = _batches[i ~/ Batch.batchSize];
         final indexInBatch = i % Batch.batchSize;
-        final velocity = _velocity[i];
-        final position = _position[i];
         final rotation = _rotation[i];
 
         // Move the dash
-        position.x += velocity.x;
-        position.y += velocity.y;
+        final newPosX = _position.getX(i) + _velocity.getX(i); // * lastDt;
+        final newPosY = _position.getY(i) + _velocity.getY(i); // * lastDt;
+        _position.setXY(i, newPosX, newPosY);
 
         // Bounce off walls
-        if (position.x < 0) {
-          position.x = 0;
-          velocity.x = -velocity.x;
-        } else if (position.x > size.x) {
-          position.x = size.x;
-          velocity.x = -velocity.x;
+        if (_position.getX(i) < 0) {
+          _position.setX(i, 0);
+          _velocity.setX(i, -_velocity.getX(i));
+        } else if (_position.getX(i) > size.x) {
+          _position.setX(i, size.x);
+          _velocity.setX(i, -_velocity.getX(i));
         }
 
-        if (position.y < 0) {
-          position.y = 0;
-          velocity.y = -velocity.y;
-        } else if (position.y > size.y) {
-          position.y = size.y;
-          velocity.y = -velocity.y;
+        if (_position.getY(i) < 0) {
+          _position.setY(i, 0);
+          _velocity.setY(i, -_velocity.getY(i));
+        } else if (_position.getY(i) > size.y) {
+          _position.setY(i, size.y);
+          _velocity.setY(i, -_velocity.getY(i));
         }
 
         // Add gravity
-        velocity.y += 0.3;
+        _velocity.setY(i, _velocity.getY(i) + 0.3);
 
-        batch.setPositionFrom(indexInBatch, position);
+        batch.setPositionFrom(
+            indexInBatch, _position.getX(i), _position.getY(i));
 
         // Rotate slightly
         _rotation[i] = rotation + 3.14 * lastDt;
@@ -172,17 +175,13 @@ class World {
       lastDt = t;
 
       // Send all positions to the native world
-      final encoder = ByteBufferEncoder();
-      RawIndexByteBufferExtensions.encodeArray(
-        encoder,
-        _entityIndices,
-      );
-      Vector2ByteBufferExtensions.encodeArray(
-        encoder,
-        _position,
-      );
-      final positionsBuffer = encoder.build();
-      api.entitiesSetPosition(data: positionsBuffer);
+      api.entitiesSetPositionRaw(
+          indices: _entityIndices.toUint8List(),
+          positions: _position.toUint8List());
+      // Send all rotations to the native world
+      api.entitiesSetRotationRaw(
+          indices: _entityIndices.toUint8List(),
+          rotations: _rotation.toUint8List());
 
       // FPS
       _lastFrameTimes.add(t);
@@ -216,13 +215,10 @@ class World {
 
       // Calculate the BVH
       // final start = DateTime.now().millisecondsSinceEpoch;
-      final entitiesBuilder = ByteBufferEncoder();
-      RawIndexByteBufferExtensions.encodeArray(
-        entitiesBuilder,
-        _entityIndices,
-      );
       api.bvhClearAndRebuildRaw(
-          index: _bvhIndex, data: entitiesBuilder.build(), dilationFactor: 0.0);
+          index: _bvhIndex,
+          data: _entityIndices.toUint8List(),
+          dilationFactor: 0.0);
       // final end = DateTime.now().millisecondsSinceEpoch;
       // final bvhTime = end - start;
       // debugPrint('BVH time: $bvhTime ms');

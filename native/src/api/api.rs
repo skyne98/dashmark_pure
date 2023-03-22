@@ -1,6 +1,5 @@
 use flutter_rust_bridge::{SyncReturn, ZeroCopyBuffer};
 pub use generational_arena::Arena;
-use generational_arena::Index;
 use rapier2d_f64::na::Vector2;
 use std::cell::RefCell;
 pub use std::{
@@ -10,9 +9,10 @@ pub use std::{
 
 use crate::{
     api::state::State,
-    bvh::{Bvh, FlatBvh},
+    bvh::Bvh,
     entity::{Entity, EntityShape, Origin},
     index::{IndexWrapper, RawIndex},
+    typed_data::{bytes_to_indices, bytes_to_vector2s},
 };
 
 use crate::api::shape::Shape;
@@ -61,33 +61,13 @@ pub fn entity_set_position(index: RawIndex, x: f64, y: f64) -> SyncReturn<()> {
     SyncReturn(())
 }
 
-pub fn entities_set_position(data: ZeroCopyBuffer<Vec<u8>>) -> SyncReturn<()> {
+pub fn entities_set_position_raw(
+    indices: ZeroCopyBuffer<Vec<u8>>,
+    positions: ZeroCopyBuffer<Vec<u8>>,
+) -> SyncReturn<()> {
     state_mut(|state| {
-        let data = data.0.as_slice();
-        // Read first 8 bytes as the length of the indices array
-        let indices_len = u64::from_ne_bytes(data[0..8].try_into().unwrap()) as u64;
-        // Now read the indices data (8 bytes per index, 8 bytes per generation)
-        // Memory map a region of the data to read the indices
-        let indices_data = unsafe {
-            std::slice::from_raw_parts(data.as_ptr().add(8) as *const u64, indices_len as usize * 2)
-        };
-        let indices = indices_data
-            .chunks_exact(2)
-            .map(|chunk| Index::from_raw_parts(chunk[0] as usize, chunk[1]))
-            .collect::<Vec<_>>();
-
-        // Skip the next 8 bytes to get to the positions data
-        let positions_data = unsafe {
-            std::slice::from_raw_parts(
-                data.as_ptr().add(8 + indices_len as usize * 16 + 8) as *const f64,
-                indices_len as usize * 2,
-            )
-        };
-        let positions = positions_data
-            .chunks_exact(2)
-            .map(|chunk| [chunk[0], chunk[1]])
-            .collect::<Vec<_>>();
-
+        let indices = bytes_to_indices(indices.0.as_slice());
+        let positions = bytes_to_vector2s(positions.0.as_slice());
         for (index, position) in indices.iter().zip(positions.iter()) {
             if let Some(entity) = state.get_entity_mut(*index) {
                 entity.set_position(Vector2::new(position[0], position[1]));
@@ -114,6 +94,22 @@ pub fn entity_set_rotation(index: RawIndex, rotation: f64) -> SyncReturn<()> {
     state_mut(|state| {
         if let Some(entity) = state.get_entity_mut(index.into()) {
             entity.set_rotation(rotation);
+        }
+    });
+    SyncReturn(())
+}
+
+pub fn entities_set_rotation_raw(
+    indices: ZeroCopyBuffer<Vec<u8>>,
+    rotations: ZeroCopyBuffer<Vec<u8>>,
+) -> SyncReturn<()> {
+    state_mut(|state| {
+        let indices = bytes_to_indices(indices.0.as_slice());
+        let rotations = bytes_to_vector2s(rotations.0.as_slice());
+        for (index, rotation) in indices.iter().zip(rotations.iter()) {
+            if let Some(entity) = state.get_entity_mut(*index) {
+                entity.set_rotation(rotation[0]);
+            }
         }
     });
     SyncReturn(())
@@ -175,19 +171,7 @@ pub fn bvh_clear_and_rebuild_raw(
     dilation_factor: f64,
 ) -> SyncReturn<()> {
     state_mut(|state| {
-        let data = data.0.as_slice();
-        // Read first 8 bytes as the length of the indices array
-        let indices_len = u64::from_ne_bytes(data[0..8].try_into().unwrap()) as u64;
-        // Now read the indices data (8 bytes per index, 8 bytes per generation)
-        // Memory map a region of the data to read the indices
-        let indices_data = unsafe {
-            std::slice::from_raw_parts(data.as_ptr().add(8) as *const u64, indices_len as usize * 2)
-        };
-        let indices = indices_data
-            .chunks_exact(2)
-            .map(|chunk| Index::from_raw_parts(chunk[0] as usize, chunk[1]))
-            .collect::<Vec<_>>();
-
+        let indices = bytes_to_indices(data.0.as_slice());
         let mut indices_and_aabbs = Vec::with_capacity(indices.len());
         for entity_index in indices {
             if let Some(entity) = state.get_entity_mut(entity_index) {

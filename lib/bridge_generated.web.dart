@@ -117,13 +117,17 @@ class NativeWasmModule implements WasmModule {
   external dynamic /* void */ wire_entity_set_position(
       List<dynamic> index, double x, double y);
 
-  external dynamic /* void */ wire_entities_set_position(Uint8List data);
+  external dynamic /* void */ wire_entities_set_position_raw(
+      Uint8List indices, Uint8List positions);
 
   external dynamic /* void */ wire_entity_set_origin(
       List<dynamic> index, bool relative, double x, double y);
 
   external dynamic /* void */ wire_entity_set_rotation(
       List<dynamic> index, double rotation);
+
+  external dynamic /* void */ wire_entities_set_rotation_raw(
+      Uint8List indices, Uint8List rotations);
 
   external dynamic /* void */ wire_entity_set_shape(
       List<dynamic> index, List<dynamic> shape);
@@ -159,8 +163,9 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
           List<dynamic> index, double x, double y) =>
       wasmModule.wire_entity_set_position(index, x, y);
 
-  dynamic /* void */ wire_entities_set_position(Uint8List data) =>
-      wasmModule.wire_entities_set_position(data);
+  dynamic /* void */ wire_entities_set_position_raw(
+          Uint8List indices, Uint8List positions) =>
+      wasmModule.wire_entities_set_position_raw(indices, positions);
 
   dynamic /* void */ wire_entity_set_origin(
           List<dynamic> index, bool relative, double x, double y) =>
@@ -169,6 +174,10 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   dynamic /* void */ wire_entity_set_rotation(
           List<dynamic> index, double rotation) =>
       wasmModule.wire_entity_set_rotation(index, rotation);
+
+  dynamic /* void */ wire_entities_set_rotation_raw(
+          Uint8List indices, Uint8List rotations) =>
+      wasmModule.wire_entities_set_rotation_raw(indices, rotations);
 
   dynamic /* void */ wire_entity_set_shape(
           List<dynamic> index, List<dynamic> shape) =>

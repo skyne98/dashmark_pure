@@ -291,20 +291,25 @@ class NativeWire implements FlutterRustBridgeWireBase {
           WireSyncReturn Function(
               ffi.Pointer<wire_RawIndex>, double, double)>();
 
-  WireSyncReturn wire_entities_set_position(
-    ffi.Pointer<wire_uint_8_list> data,
+  WireSyncReturn wire_entities_set_position_raw(
+    ffi.Pointer<wire_uint_8_list> indices,
+    ffi.Pointer<wire_uint_8_list> positions,
   ) {
-    return _wire_entities_set_position(
-      data,
+    return _wire_entities_set_position_raw(
+      indices,
+      positions,
     );
   }
 
-  late final _wire_entities_set_positionPtr = _lookup<
-      ffi.NativeFunction<
+  late final _wire_entities_set_position_rawPtr = _lookup<
+          ffi.NativeFunction<
+              WireSyncReturn Function(ffi.Pointer<wire_uint_8_list>,
+                  ffi.Pointer<wire_uint_8_list>)>>(
+      'wire_entities_set_position_raw');
+  late final _wire_entities_set_position_raw =
+      _wire_entities_set_position_rawPtr.asFunction<
           WireSyncReturn Function(
-              ffi.Pointer<wire_uint_8_list>)>>('wire_entities_set_position');
-  late final _wire_entities_set_position = _wire_entities_set_positionPtr
-      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_uint_8_list>)>();
+              ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
 
   WireSyncReturn wire_entity_set_origin(
     ffi.Pointer<wire_RawIndex> index,
@@ -345,6 +350,26 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_entity_set_rotation =
       _wire_entity_set_rotationPtr.asFunction<
           WireSyncReturn Function(ffi.Pointer<wire_RawIndex>, double)>();
+
+  WireSyncReturn wire_entities_set_rotation_raw(
+    ffi.Pointer<wire_uint_8_list> indices,
+    ffi.Pointer<wire_uint_8_list> rotations,
+  ) {
+    return _wire_entities_set_rotation_raw(
+      indices,
+      rotations,
+    );
+  }
+
+  late final _wire_entities_set_rotation_rawPtr = _lookup<
+          ffi.NativeFunction<
+              WireSyncReturn Function(ffi.Pointer<wire_uint_8_list>,
+                  ffi.Pointer<wire_uint_8_list>)>>(
+      'wire_entities_set_rotation_raw');
+  late final _wire_entities_set_rotation_raw =
+      _wire_entities_set_rotation_rawPtr.asFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
 
   WireSyncReturn wire_entity_set_shape(
     ffi.Pointer<wire_RawIndex> index,
