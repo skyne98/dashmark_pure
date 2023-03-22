@@ -83,7 +83,6 @@ class World {
       }
       _spawnedThisFrame += amount;
 
-      HashSet<Batch> touchedBatches = HashSet();
       for (var i = 0; i < amount; i++) {
         // Find a batch where it fits or create a new one
         Batch? batch;
@@ -101,7 +100,7 @@ class World {
 
         final vx = 4 * cos(i * 2 * pi / amount);
         final vy = 4 * sin(i * 2 * pi / amount);
-        final indexInBatch = batch.add(
+        batch.add(
             x, y, dashImage!.width.toDouble(), dashImage!.height.toDouble());
         _position.addXY(x, y);
         _velocity.addXY(vx, vy);
@@ -114,18 +113,6 @@ class World {
         api.entitySetOrigin(index: entity, relative: true, x: 0.5, y: 0.5);
         const shape = Shape.ball(radius: World.desiredSize / 2);
         api.entitySetShape(index: entity, shape: shape);
-
-        // Record for later expansion
-        touchedBatches.add(batch);
-        if (indexInBatch <
-            (batch.populateTextureAndIndexCacheFrom ?? batch.length)) {
-          batch.populateTextureAndIndexCacheFrom = indexInBatch;
-        }
-      }
-
-      // Expand the batches
-      for (final entry in touchedBatches) {
-        entry.cachesNeedExpanding = true;
       }
     }
   }

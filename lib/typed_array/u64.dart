@@ -98,8 +98,8 @@ class Uint64Buffer with ListMixin<int> {
     return ByteData.view(_buffer.inner.buffer);
   }
 
-  Float64List toFloat64List() {
-    return Float64List.view(_buffer.inner.buffer, 0, _count);
+  Uint64List toUint64List() {
+    return Uint64List.view(_buffer.inner.buffer, 0, _count);
   }
 
   Uint8List toUint8List() {
