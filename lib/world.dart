@@ -45,80 +45,13 @@ class World {
   World() {
     debugPrint('World created');
     rootBundle.load('assets/images/dash_128.png').then((data) {
-      // final asUInt8List = Uint8List.view(data.buffer);
-      // decodeImageFromList(asUInt8List).then((result) {
-      //   dashImage = result;
-      //   scaleToSize = desiredSize / dashImage!.width;
-      //   debugPrint('Loaded image ${dashImage!.width}x${dashImage!.height}');
-      //   status = 'Loaded image ${dashImage!.width}x${dashImage!.height}';
-      // });
-
-      // Instead, will will procedurally create an image using a PictureRecorder, a Picture, and a Canvas.
-      // First, create a 1x1 pixel image to use in `drawRawAtlas` for each pixel in the image.
-      final start = DateTime.now().millisecondsSinceEpoch;
-      var pictureRecorder = PictureRecorder();
-      var canvas = Canvas(pictureRecorder);
-      var paint = Paint();
-
-      // Draw a single pixel
-      paint.color = Colors.white;
-      canvas.drawRect(const Rect.fromLTWH(0, 0, 1, 1), paint);
-      final pixelPicture = pictureRecorder.endRecording();
-      final pixelImage = pixelPicture.toImageSync(1, 1);
-
-      // Draw a grid of pixels
-      pictureRecorder = PictureRecorder();
-      canvas = Canvas(pictureRecorder);
-
-      int size = 512;
-      int numVertices = size * size;
-
-      Float32List rstBuffer = Float32List(numVertices * 4);
-      Float32List rectBuffer = Float32List(numVertices * 4);
-      Int32List colorBuffer = Int32List(numVertices);
-
-      int index = 0;
-      for (var x = 0; x < size; x++) {
-        for (var y = 0; y < size; y++) {
-          int colorA = 255;
-          int colorR = 255;
-          int colorG = (y / size * 255).toInt();
-          int colorB = (x / size * 255).toInt();
-
-          // Set RSTransform data (scos, ssin, tx, ty)
-          rstBuffer[index * 4] = 1.0; // scos
-          rstBuffer[index * 4 + 1] = 0.0; // ssin
-          rstBuffer[index * 4 + 2] = x.toDouble(); // tx
-          rstBuffer[index * 4 + 3] = y.toDouble(); // ty
-
-          // Set Rect data (left, top, right, bottom)
-          rectBuffer[index * 4] = 0.0; // left
-          rectBuffer[index * 4 + 1] = 0.0; // top
-          rectBuffer[index * 4 + 2] = 1.0; // right
-          rectBuffer[index * 4 + 3] = 1.0; // bottom
-
-          // Set Color data (a, r, g, b)
-          colorBuffer[index] =
-              Color.fromARGB(colorA, colorR, colorG, colorB).value; // color
-
-          index++;
-        }
-      }
-      var end = DateTime.now().millisecondsSinceEpoch;
-      debugPrint('Time to create buffers: ${end - start}ms');
-
-      canvas.drawRawAtlas(pixelImage, rstBuffer, rectBuffer, colorBuffer,
-          BlendMode.dst, null, paint);
-      end = DateTime.now().millisecondsSinceEpoch;
-      debugPrint('Time to record commands: ${end - start}ms');
-
-      final picture = pictureRecorder.endRecording();
-      final image = picture.toImageSync(size, size);
-      end = DateTime.now().millisecondsSinceEpoch;
-      debugPrint('Time to create image: ${end - start}ms');
-
-      dashImage = image;
-      scaleToSize = desiredSize / dashImage!.width;
+      final asUInt8List = Uint8List.view(data.buffer);
+      decodeImageFromList(asUInt8List).then((result) {
+        dashImage = result;
+        scaleToSize = desiredSize / dashImage!.width;
+        debugPrint('Loaded image ${dashImage!.width}x${dashImage!.height}');
+        status = 'Loaded image ${dashImage!.width}x${dashImage!.height}';
+      });
     }).catchError((error, stackTrace) {
       debugPrint('Error loading image: $error');
       status = 'Error loading image: $error';
