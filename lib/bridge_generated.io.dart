@@ -15,125 +15,9 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
 
 // Section: api2wire
 
-  @protected
-  ffi.Pointer<wire_uint_8_list> api2wire_ZeroCopyBuffer_Uint8List(
-      Uint8List raw) {
-    return api2wire_uint_8_list(raw);
-  }
-
-  @protected
-  ffi.Pointer<wire_RawIndex> api2wire_box_autoadd_raw_index(RawIndex raw) {
-    final ptr = inner.new_box_autoadd_raw_index_0();
-    _api_fill_to_wire_raw_index(raw, ptr.ref);
-    return ptr;
-  }
-
-  @protected
-  ffi.Pointer<wire_Shape> api2wire_box_autoadd_shape(Shape raw) {
-    final ptr = inner.new_box_autoadd_shape_0();
-    _api_fill_to_wire_shape(raw, ptr.ref);
-    return ptr;
-  }
-
-  @protected
-  ffi.Pointer<wire_Shape> api2wire_box_shape(Shape raw) {
-    final ptr = inner.new_box_shape_0();
-    _api_fill_to_wire_shape(raw, ptr.ref);
-    return ptr;
-  }
-
-  @protected
-  ffi.Pointer<wire_list_box_shape> api2wire_list_box_shape(List<Shape> raw) {
-    final ans = inner.new_list_box_shape_0(raw.length);
-    for (var i = 0; i < raw.length; ++i) {
-      _api_fill_to_wire_box_shape(
-          raw[i], ans.ref.ptr[i] as ffi.Pointer<wire_Shape>);
-    }
-    return ans;
-  }
-
-  @protected
-  ffi.Pointer<wire_list_raw_index> api2wire_list_raw_index(List<RawIndex> raw) {
-    final ans = inner.new_list_raw_index_0(raw.length);
-    for (var i = 0; i < raw.length; ++i) {
-      _api_fill_to_wire_raw_index(raw[i], ans.ref.ptr[i]);
-    }
-    return ans;
-  }
-
-  @protected
-  ffi.Pointer<wire_list_shape_transform> api2wire_list_shape_transform(
-      List<ShapeTransform> raw) {
-    final ans = inner.new_list_shape_transform_0(raw.length);
-    for (var i = 0; i < raw.length; ++i) {
-      _api_fill_to_wire_shape_transform(raw[i], ans.ref.ptr[i]);
-    }
-    return ans;
-  }
-
-  @protected
-  int api2wire_u64(int raw) {
-    return raw;
-  }
-
-  @protected
-  ffi.Pointer<wire_uint_8_list> api2wire_uint_8_list(Uint8List raw) {
-    final ans = inner.new_uint_8_list_0(raw.length);
-    ans.ref.ptr.asTypedList(raw.length).setAll(0, raw);
-    return ans;
-  }
-
 // Section: finalizer
 
 // Section: api_fill_to_wire
-
-  void _api_fill_to_wire_box_autoadd_raw_index(
-      RawIndex apiObj, ffi.Pointer<wire_RawIndex> wireObj) {
-    _api_fill_to_wire_raw_index(apiObj, wireObj.ref);
-  }
-
-  void _api_fill_to_wire_box_autoadd_shape(
-      Shape apiObj, ffi.Pointer<wire_Shape> wireObj) {
-    _api_fill_to_wire_shape(apiObj, wireObj.ref);
-  }
-
-  void _api_fill_to_wire_box_shape(
-      Shape apiObj, ffi.Pointer<wire_Shape> wireObj) {
-    _api_fill_to_wire_shape(apiObj, wireObj.ref);
-  }
-
-  void _api_fill_to_wire_raw_index(RawIndex apiObj, wire_RawIndex wireObj) {
-    wireObj.field0 = api2wire_usize(apiObj.field0);
-    wireObj.field1 = api2wire_u64(apiObj.field1);
-  }
-
-  void _api_fill_to_wire_shape(Shape apiObj, wire_Shape wireObj) {
-    if (apiObj is Shape_Ball) {
-      var pre_radius = api2wire_f64(apiObj.radius);
-      wireObj.tag = 0;
-      wireObj.kind = inner.inflate_Shape_Ball();
-      wireObj.kind.ref.Ball.ref.radius = pre_radius;
-      return;
-    }
-    if (apiObj is Shape_Compound) {
-      var pre_children = api2wire_list_box_shape(apiObj.children);
-      var pre_transforms = api2wire_list_shape_transform(apiObj.transforms);
-      wireObj.tag = 1;
-      wireObj.kind = inner.inflate_Shape_Compound();
-      wireObj.kind.ref.Compound.ref.children = pre_children;
-      wireObj.kind.ref.Compound.ref.transforms = pre_transforms;
-      return;
-    }
-  }
-
-  void _api_fill_to_wire_shape_transform(
-      ShapeTransform apiObj, wire_ShapeTransform wireObj) {
-    wireObj.position_x = api2wire_f64(apiObj.positionX);
-    wireObj.position_y = api2wire_f64(apiObj.positionY);
-    wireObj.rotation = api2wire_f64(apiObj.rotation);
-    wireObj.absolute_origin_x = api2wire_f64(apiObj.absoluteOriginX);
-    wireObj.absolute_origin_y = api2wire_f64(apiObj.absoluteOriginY);
-  }
 }
 
 // ignore_for_file: camel_case_types, non_constant_identifier_names, avoid_positional_boolean_parameters, annotate_overrides, constant_identifier_names
@@ -245,344 +129,55 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_say_hello =
       _wire_say_helloPtr.asFunction<void Function(int)>();
 
-  WireSyncReturn wire_create_entity() {
-    return _wire_create_entity();
+  WireSyncReturn wire_move_state_to_ui_thread() {
+    return _wire_move_state_to_ui_thread();
   }
 
-  late final _wire_create_entityPtr =
+  late final _wire_move_state_to_ui_threadPtr =
       _lookup<ffi.NativeFunction<WireSyncReturn Function()>>(
-          'wire_create_entity');
-  late final _wire_create_entity =
-      _wire_create_entityPtr.asFunction<WireSyncReturn Function()>();
+          'wire_move_state_to_ui_thread');
+  late final _wire_move_state_to_ui_thread =
+      _wire_move_state_to_ui_threadPtr.asFunction<WireSyncReturn Function()>();
 
-  WireSyncReturn wire_drop_entity(
-    ffi.Pointer<wire_RawIndex> index,
+  WireSyncReturn wire_request_draw() {
+    return _wire_request_draw();
+  }
+
+  late final _wire_request_drawPtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function()>>(
+          'wire_request_draw');
+  late final _wire_request_draw =
+      _wire_request_drawPtr.asFunction<WireSyncReturn Function()>();
+
+  WireSyncReturn wire_request_resize(
+    int width,
+    int height,
   ) {
-    return _wire_drop_entity(
-      index,
+    return _wire_request_resize(
+      width,
+      height,
     );
   }
 
-  late final _wire_drop_entityPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_RawIndex>)>>('wire_drop_entity');
-  late final _wire_drop_entity = _wire_drop_entityPtr
-      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_RawIndex>)>();
+  late final _wire_request_resizePtr = _lookup<
+          ffi.NativeFunction<WireSyncReturn Function(ffi.Uint32, ffi.Uint32)>>(
+      'wire_request_resize');
+  late final _wire_request_resize =
+      _wire_request_resizePtr.asFunction<WireSyncReturn Function(int, int)>();
 
-  WireSyncReturn wire_entity_set_position(
-    ffi.Pointer<wire_RawIndex> index,
-    double x,
-    double y,
+  WireSyncReturn wire_set_current_time(
+    double time,
   ) {
-    return _wire_entity_set_position(
-      index,
-      x,
-      y,
+    return _wire_set_current_time(
+      time,
     );
   }
 
-  late final _wire_entity_set_positionPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>, ffi.Double,
-              ffi.Double)>>('wire_entity_set_position');
-  late final _wire_entity_set_position =
-      _wire_entity_set_positionPtr.asFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_RawIndex>, double, double)>();
-
-  WireSyncReturn wire_entities_set_position_raw(
-    ffi.Pointer<wire_uint_8_list> indices,
-    ffi.Pointer<wire_uint_8_list> positions,
-  ) {
-    return _wire_entities_set_position_raw(
-      indices,
-      positions,
-    );
-  }
-
-  late final _wire_entities_set_position_rawPtr = _lookup<
-          ffi.NativeFunction<
-              WireSyncReturn Function(ffi.Pointer<wire_uint_8_list>,
-                  ffi.Pointer<wire_uint_8_list>)>>(
-      'wire_entities_set_position_raw');
-  late final _wire_entities_set_position_raw =
-      _wire_entities_set_position_rawPtr.asFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
-
-  WireSyncReturn wire_entity_set_origin(
-    ffi.Pointer<wire_RawIndex> index,
-    bool relative,
-    double x,
-    double y,
-  ) {
-    return _wire_entity_set_origin(
-      index,
-      relative,
-      x,
-      y,
-    );
-  }
-
-  late final _wire_entity_set_originPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>, ffi.Bool,
-              ffi.Double, ffi.Double)>>('wire_entity_set_origin');
-  late final _wire_entity_set_origin = _wire_entity_set_originPtr.asFunction<
-      WireSyncReturn Function(
-          ffi.Pointer<wire_RawIndex>, bool, double, double)>();
-
-  WireSyncReturn wire_entity_set_rotation(
-    ffi.Pointer<wire_RawIndex> index,
-    double rotation,
-  ) {
-    return _wire_entity_set_rotation(
-      index,
-      rotation,
-    );
-  }
-
-  late final _wire_entity_set_rotationPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
-              ffi.Double)>>('wire_entity_set_rotation');
-  late final _wire_entity_set_rotation =
-      _wire_entity_set_rotationPtr.asFunction<
-          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>, double)>();
-
-  WireSyncReturn wire_entities_set_rotation_raw(
-    ffi.Pointer<wire_uint_8_list> indices,
-    ffi.Pointer<wire_uint_8_list> rotations,
-  ) {
-    return _wire_entities_set_rotation_raw(
-      indices,
-      rotations,
-    );
-  }
-
-  late final _wire_entities_set_rotation_rawPtr = _lookup<
-          ffi.NativeFunction<
-              WireSyncReturn Function(ffi.Pointer<wire_uint_8_list>,
-                  ffi.Pointer<wire_uint_8_list>)>>(
-      'wire_entities_set_rotation_raw');
-  late final _wire_entities_set_rotation_raw =
-      _wire_entities_set_rotation_rawPtr.asFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
-
-  WireSyncReturn wire_entity_set_shape(
-    ffi.Pointer<wire_RawIndex> index,
-    ffi.Pointer<wire_Shape> shape,
-  ) {
-    return _wire_entity_set_shape(
-      index,
-      shape,
-    );
-  }
-
-  late final _wire_entity_set_shapePtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
-              ffi.Pointer<wire_Shape>)>>('wire_entity_set_shape');
-  late final _wire_entity_set_shape = _wire_entity_set_shapePtr.asFunction<
-      WireSyncReturn Function(
-          ffi.Pointer<wire_RawIndex>, ffi.Pointer<wire_Shape>)>();
-
-  WireSyncReturn wire_create_bvh() {
-    return _wire_create_bvh();
-  }
-
-  late final _wire_create_bvhPtr =
-      _lookup<ffi.NativeFunction<WireSyncReturn Function()>>('wire_create_bvh');
-  late final _wire_create_bvh =
-      _wire_create_bvhPtr.asFunction<WireSyncReturn Function()>();
-
-  WireSyncReturn wire_drop_bvh(
-    ffi.Pointer<wire_RawIndex> index,
-  ) {
-    return _wire_drop_bvh(
-      index,
-    );
-  }
-
-  late final _wire_drop_bvhPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_RawIndex>)>>('wire_drop_bvh');
-  late final _wire_drop_bvh = _wire_drop_bvhPtr
-      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_RawIndex>)>();
-
-  WireSyncReturn wire_bvh_clear_and_rebuild(
-    ffi.Pointer<wire_RawIndex> index,
-    ffi.Pointer<wire_list_raw_index> entities,
-    double dilation_factor,
-  ) {
-    return _wire_bvh_clear_and_rebuild(
-      index,
-      entities,
-      dilation_factor,
-    );
-  }
-
-  late final _wire_bvh_clear_and_rebuildPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_RawIndex>,
-              ffi.Pointer<wire_list_raw_index>,
-              ffi.Double)>>('wire_bvh_clear_and_rebuild');
-  late final _wire_bvh_clear_and_rebuild =
-      _wire_bvh_clear_and_rebuildPtr.asFunction<
-          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
-              ffi.Pointer<wire_list_raw_index>, double)>();
-
-  WireSyncReturn wire_bvh_clear_and_rebuild_raw(
-    ffi.Pointer<wire_RawIndex> index,
-    ffi.Pointer<wire_uint_8_list> data,
-    double dilation_factor,
-  ) {
-    return _wire_bvh_clear_and_rebuild_raw(
-      index,
-      data,
-      dilation_factor,
-    );
-  }
-
-  late final _wire_bvh_clear_and_rebuild_rawPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_RawIndex>,
-              ffi.Pointer<wire_uint_8_list>,
-              ffi.Double)>>('wire_bvh_clear_and_rebuild_raw');
-  late final _wire_bvh_clear_and_rebuild_raw =
-      _wire_bvh_clear_and_rebuild_rawPtr.asFunction<
-          WireSyncReturn Function(ffi.Pointer<wire_RawIndex>,
-              ffi.Pointer<wire_uint_8_list>, double)>();
-
-  WireSyncReturn wire_bvh_flatten(
-    ffi.Pointer<wire_RawIndex> index,
-  ) {
-    return _wire_bvh_flatten(
-      index,
-    );
-  }
-
-  late final _wire_bvh_flattenPtr = _lookup<
-      ffi.NativeFunction<
-          WireSyncReturn Function(
-              ffi.Pointer<wire_RawIndex>)>>('wire_bvh_flatten');
-  late final _wire_bvh_flatten = _wire_bvh_flattenPtr
-      .asFunction<WireSyncReturn Function(ffi.Pointer<wire_RawIndex>)>();
-
-  ffi.Pointer<wire_RawIndex> new_box_autoadd_raw_index_0() {
-    return _new_box_autoadd_raw_index_0();
-  }
-
-  late final _new_box_autoadd_raw_index_0Ptr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_RawIndex> Function()>>(
-          'new_box_autoadd_raw_index_0');
-  late final _new_box_autoadd_raw_index_0 = _new_box_autoadd_raw_index_0Ptr
-      .asFunction<ffi.Pointer<wire_RawIndex> Function()>();
-
-  ffi.Pointer<wire_Shape> new_box_autoadd_shape_0() {
-    return _new_box_autoadd_shape_0();
-  }
-
-  late final _new_box_autoadd_shape_0Ptr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_Shape> Function()>>(
-          'new_box_autoadd_shape_0');
-  late final _new_box_autoadd_shape_0 = _new_box_autoadd_shape_0Ptr
-      .asFunction<ffi.Pointer<wire_Shape> Function()>();
-
-  ffi.Pointer<wire_Shape> new_box_shape_0() {
-    return _new_box_shape_0();
-  }
-
-  late final _new_box_shape_0Ptr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_Shape> Function()>>(
-          'new_box_shape_0');
-  late final _new_box_shape_0 =
-      _new_box_shape_0Ptr.asFunction<ffi.Pointer<wire_Shape> Function()>();
-
-  ffi.Pointer<wire_list_box_shape> new_list_box_shape_0(
-    int len,
-  ) {
-    return _new_list_box_shape_0(
-      len,
-    );
-  }
-
-  late final _new_list_box_shape_0Ptr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<wire_list_box_shape> Function(
-              ffi.Int32)>>('new_list_box_shape_0');
-  late final _new_list_box_shape_0 = _new_list_box_shape_0Ptr
-      .asFunction<ffi.Pointer<wire_list_box_shape> Function(int)>();
-
-  ffi.Pointer<wire_list_raw_index> new_list_raw_index_0(
-    int len,
-  ) {
-    return _new_list_raw_index_0(
-      len,
-    );
-  }
-
-  late final _new_list_raw_index_0Ptr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<wire_list_raw_index> Function(
-              ffi.Int32)>>('new_list_raw_index_0');
-  late final _new_list_raw_index_0 = _new_list_raw_index_0Ptr
-      .asFunction<ffi.Pointer<wire_list_raw_index> Function(int)>();
-
-  ffi.Pointer<wire_list_shape_transform> new_list_shape_transform_0(
-    int len,
-  ) {
-    return _new_list_shape_transform_0(
-      len,
-    );
-  }
-
-  late final _new_list_shape_transform_0Ptr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<wire_list_shape_transform> Function(
-              ffi.Int32)>>('new_list_shape_transform_0');
-  late final _new_list_shape_transform_0 = _new_list_shape_transform_0Ptr
-      .asFunction<ffi.Pointer<wire_list_shape_transform> Function(int)>();
-
-  ffi.Pointer<wire_uint_8_list> new_uint_8_list_0(
-    int len,
-  ) {
-    return _new_uint_8_list_0(
-      len,
-    );
-  }
-
-  late final _new_uint_8_list_0Ptr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<wire_uint_8_list> Function(
-              ffi.Int32)>>('new_uint_8_list_0');
-  late final _new_uint_8_list_0 = _new_uint_8_list_0Ptr
-      .asFunction<ffi.Pointer<wire_uint_8_list> Function(int)>();
-
-  ffi.Pointer<ShapeKind> inflate_Shape_Ball() {
-    return _inflate_Shape_Ball();
-  }
-
-  late final _inflate_Shape_BallPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ShapeKind> Function()>>(
-          'inflate_Shape_Ball');
-  late final _inflate_Shape_Ball =
-      _inflate_Shape_BallPtr.asFunction<ffi.Pointer<ShapeKind> Function()>();
-
-  ffi.Pointer<ShapeKind> inflate_Shape_Compound() {
-    return _inflate_Shape_Compound();
-  }
-
-  late final _inflate_Shape_CompoundPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ShapeKind> Function()>>(
-          'inflate_Shape_Compound');
-  late final _inflate_Shape_Compound = _inflate_Shape_CompoundPtr
-      .asFunction<ffi.Pointer<ShapeKind> Function()>();
+  late final _wire_set_current_timePtr =
+      _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Double)>>(
+          'wire_set_current_time');
+  late final _wire_set_current_time =
+      _wire_set_current_timePtr.asFunction<WireSyncReturn Function(double)>();
 
   void free_WireSyncReturn(
     WireSyncReturn ptr,
@@ -597,86 +192,28 @@ class NativeWire implements FlutterRustBridgeWireBase {
           'free_WireSyncReturn');
   late final _free_WireSyncReturn =
       _free_WireSyncReturnPtr.asFunction<void Function(WireSyncReturn)>();
+
+  void Java_com_example_dashmark_1pure_RustBridge_nativeInitTexture(
+    int env,
+    int JClass,
+    int surface_texture,
+  ) {
+    return _Java_com_example_dashmark_1pure_RustBridge_nativeInitTexture(
+      env,
+      JClass,
+      surface_texture,
+    );
+  }
+
+  late final _Java_com_example_dashmark_1pure_RustBridge_nativeInitTexturePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int, ffi.Int, ffi.Int)>>(
+          'Java_com_example_dashmark_1pure_RustBridge_nativeInitTexture');
+  late final _Java_com_example_dashmark_1pure_RustBridge_nativeInitTexture =
+      _Java_com_example_dashmark_1pure_RustBridge_nativeInitTexturePtr
+          .asFunction<void Function(int, int, int)>();
 }
 
 class _Dart_Handle extends ffi.Opaque {}
-
-class wire_RawIndex extends ffi.Struct {
-  @ffi.UintPtr()
-  external int field0;
-
-  @ffi.Uint64()
-  external int field1;
-}
-
-class wire_uint_8_list extends ffi.Struct {
-  external ffi.Pointer<ffi.Uint8> ptr;
-
-  @ffi.Int32()
-  external int len;
-}
-
-class wire_Shape_Ball extends ffi.Struct {
-  @ffi.Double()
-  external double radius;
-}
-
-class wire_list_box_shape extends ffi.Struct {
-  external ffi.Pointer<wire_Shape> ptr;
-
-  @ffi.Int32()
-  external int len;
-}
-
-class wire_Shape extends ffi.Struct {
-  @ffi.Int32()
-  external int tag;
-
-  external ffi.Pointer<ShapeKind> kind;
-}
-
-class ShapeKind extends ffi.Union {
-  external ffi.Pointer<wire_Shape_Ball> Ball;
-
-  external ffi.Pointer<wire_Shape_Compound> Compound;
-}
-
-class wire_Shape_Compound extends ffi.Struct {
-  external ffi.Pointer<wire_list_box_shape> children;
-
-  external ffi.Pointer<wire_list_shape_transform> transforms;
-}
-
-class wire_list_shape_transform extends ffi.Struct {
-  external ffi.Pointer<wire_ShapeTransform> ptr;
-
-  @ffi.Int32()
-  external int len;
-}
-
-class wire_ShapeTransform extends ffi.Struct {
-  @ffi.Double()
-  external double position_x;
-
-  @ffi.Double()
-  external double position_y;
-
-  @ffi.Double()
-  external double rotation;
-
-  @ffi.Double()
-  external double absolute_origin_x;
-
-  @ffi.Double()
-  external double absolute_origin_y;
-}
-
-class wire_list_raw_index extends ffi.Struct {
-  external ffi.Pointer<wire_RawIndex> ptr;
-
-  @ffi.Int32()
-  external int len;
-}
 
 typedef DartPostCObjectFnType = ffi.Pointer<
     ffi.NativeFunction<ffi.Bool Function(DartPort, ffi.Pointer<ffi.Void>)>>;

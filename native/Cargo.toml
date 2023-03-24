@@ -10,7 +10,17 @@ fastrand = "1.9.0"
 flutter_rust_bridge = { version = "1" }
 generational-arena = { version = "0.2.8", features = ["std"] }
 rapier2d-f64 = { version = "0.17.2", features = ["simd-stable", "dim2"] }
+raw-window-handle = "0.5.1"
 smallvec = "1.10.0"
+tokio = { version = "1.26.0", features = ["full"] }
+wgpu = "0.15.1"
+log = "0.4.17"
+
+[target.'cfg(target_os="android")'.dependencies]
+jni = "0.21.1"
+ndk = { version = "0.7.0", features = ["api-level-28", "api-level-23"] }
+ndk-context = "0.1.1"
+android_logger = "0.13.1"
 
 [lib]
 crate-type = ["staticlib", "cdylib"]

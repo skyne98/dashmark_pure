@@ -18,83 +18,6 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
 
 // Section: api2wire
 
-  @protected
-  Uint8List api2wire_ZeroCopyBuffer_Uint8List(Uint8List raw) {
-    return api2wire_uint_8_list(raw);
-  }
-
-  @protected
-  List<dynamic> api2wire_box_autoadd_raw_index(RawIndex raw) {
-    return api2wire_raw_index(raw);
-  }
-
-  @protected
-  List<dynamic> api2wire_box_autoadd_shape(Shape raw) {
-    return api2wire_shape(raw);
-  }
-
-  @protected
-  List<dynamic> api2wire_box_shape(Shape raw) {
-    return api2wire_shape(raw);
-  }
-
-  @protected
-  List<dynamic> api2wire_list_box_shape(List<Shape> raw) {
-    return raw.map(api2wire_box_shape).toList();
-  }
-
-  @protected
-  List<dynamic> api2wire_list_raw_index(List<RawIndex> raw) {
-    return raw.map(api2wire_raw_index).toList();
-  }
-
-  @protected
-  List<dynamic> api2wire_list_shape_transform(List<ShapeTransform> raw) {
-    return raw.map(api2wire_shape_transform).toList();
-  }
-
-  @protected
-  List<dynamic> api2wire_raw_index(RawIndex raw) {
-    return [api2wire_usize(raw.field0), api2wire_u64(raw.field1)];
-  }
-
-  @protected
-  List<dynamic> api2wire_shape(Shape raw) {
-    if (raw is Shape_Ball) {
-      return [0, api2wire_f64(raw.radius)];
-    }
-    if (raw is Shape_Compound) {
-      return [
-        1,
-        api2wire_list_box_shape(raw.children),
-        api2wire_list_shape_transform(raw.transforms)
-      ];
-    }
-
-    throw Exception('unreachable');
-  }
-
-  @protected
-  List<dynamic> api2wire_shape_transform(ShapeTransform raw) {
-    return [
-      api2wire_f64(raw.positionX),
-      api2wire_f64(raw.positionY),
-      api2wire_f64(raw.rotation),
-      api2wire_f64(raw.absoluteOriginX),
-      api2wire_f64(raw.absoluteOriginY)
-    ];
-  }
-
-  @protected
-  Object api2wire_u64(int raw) {
-    return castNativeBigInt(raw);
-  }
-
-  @protected
-  Uint8List api2wire_uint_8_list(Uint8List raw) {
-    return raw;
-  }
-
 // Section: finalizer
 }
 
@@ -110,39 +33,13 @@ class NativeWasmModule implements WasmModule {
   external NativeWasmModule bind(dynamic thisArg, String moduleName);
   external dynamic /* void */ wire_say_hello(NativePortType port_);
 
-  external dynamic /* List<dynamic> */ wire_create_entity();
+  external dynamic /* void */ wire_move_state_to_ui_thread();
 
-  external dynamic /* void */ wire_drop_entity(List<dynamic> index);
+  external dynamic /* void */ wire_request_draw();
 
-  external dynamic /* void */ wire_entity_set_position(
-      List<dynamic> index, double x, double y);
+  external dynamic /* void */ wire_request_resize(int width, int height);
 
-  external dynamic /* void */ wire_entities_set_position_raw(
-      Uint8List indices, Uint8List positions);
-
-  external dynamic /* void */ wire_entity_set_origin(
-      List<dynamic> index, bool relative, double x, double y);
-
-  external dynamic /* void */ wire_entity_set_rotation(
-      List<dynamic> index, double rotation);
-
-  external dynamic /* void */ wire_entities_set_rotation_raw(
-      Uint8List indices, Uint8List rotations);
-
-  external dynamic /* void */ wire_entity_set_shape(
-      List<dynamic> index, List<dynamic> shape);
-
-  external dynamic /* List<dynamic> */ wire_create_bvh();
-
-  external dynamic /* void */ wire_drop_bvh(List<dynamic> index);
-
-  external dynamic /* void */ wire_bvh_clear_and_rebuild(
-      List<dynamic> index, List<dynamic> entities, double dilation_factor);
-
-  external dynamic /* void */ wire_bvh_clear_and_rebuild_raw(
-      List<dynamic> index, Uint8List data, double dilation_factor);
-
-  external dynamic /* Uint8List */ wire_bvh_flatten(List<dynamic> index);
+  external dynamic /* void */ wire_set_current_time(double time);
 }
 
 // Section: WASM wire connector
@@ -153,49 +50,14 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
 
   void wire_say_hello(NativePortType port_) => wasmModule.wire_say_hello(port_);
 
-  dynamic /* List<dynamic> */ wire_create_entity() =>
-      wasmModule.wire_create_entity();
+  dynamic /* void */ wire_move_state_to_ui_thread() =>
+      wasmModule.wire_move_state_to_ui_thread();
 
-  dynamic /* void */ wire_drop_entity(List<dynamic> index) =>
-      wasmModule.wire_drop_entity(index);
+  dynamic /* void */ wire_request_draw() => wasmModule.wire_request_draw();
 
-  dynamic /* void */ wire_entity_set_position(
-          List<dynamic> index, double x, double y) =>
-      wasmModule.wire_entity_set_position(index, x, y);
+  dynamic /* void */ wire_request_resize(int width, int height) =>
+      wasmModule.wire_request_resize(width, height);
 
-  dynamic /* void */ wire_entities_set_position_raw(
-          Uint8List indices, Uint8List positions) =>
-      wasmModule.wire_entities_set_position_raw(indices, positions);
-
-  dynamic /* void */ wire_entity_set_origin(
-          List<dynamic> index, bool relative, double x, double y) =>
-      wasmModule.wire_entity_set_origin(index, relative, x, y);
-
-  dynamic /* void */ wire_entity_set_rotation(
-          List<dynamic> index, double rotation) =>
-      wasmModule.wire_entity_set_rotation(index, rotation);
-
-  dynamic /* void */ wire_entities_set_rotation_raw(
-          Uint8List indices, Uint8List rotations) =>
-      wasmModule.wire_entities_set_rotation_raw(indices, rotations);
-
-  dynamic /* void */ wire_entity_set_shape(
-          List<dynamic> index, List<dynamic> shape) =>
-      wasmModule.wire_entity_set_shape(index, shape);
-
-  dynamic /* List<dynamic> */ wire_create_bvh() => wasmModule.wire_create_bvh();
-
-  dynamic /* void */ wire_drop_bvh(List<dynamic> index) =>
-      wasmModule.wire_drop_bvh(index);
-
-  dynamic /* void */ wire_bvh_clear_and_rebuild(List<dynamic> index,
-          List<dynamic> entities, double dilation_factor) =>
-      wasmModule.wire_bvh_clear_and_rebuild(index, entities, dilation_factor);
-
-  dynamic /* void */ wire_bvh_clear_and_rebuild_raw(
-          List<dynamic> index, Uint8List data, double dilation_factor) =>
-      wasmModule.wire_bvh_clear_and_rebuild_raw(index, data, dilation_factor);
-
-  dynamic /* Uint8List */ wire_bvh_flatten(List<dynamic> index) =>
-      wasmModule.wire_bvh_flatten(index);
+  dynamic /* void */ wire_set_current_time(double time) =>
+      wasmModule.wire_set_current_time(time);
 }

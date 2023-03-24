@@ -6,6 +6,8 @@ mod api;
 mod bvh;
 mod entity;
 mod index;
+mod render;
+mod state;
 mod typed_data;
 
 fn main() {

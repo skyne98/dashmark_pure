@@ -1,7 +1,8 @@
 import 'package:dashmark_pure/painter.dart';
 import 'package:dashmark_pure/world.dart';
 import 'package:flutter/material.dart';
-import 'ffi.dart' if (dart.library.html) 'ffi_web.dart';
+import 'ffi_export.dart';
+import 'package:flutter/services.dart' as services;
 
 main() {
   api.sayHello().then((_) {
@@ -24,6 +25,9 @@ class MyPage extends StatefulWidget {
 }
 
 class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
+  int? textureId;
+  services.MethodChannel? channel;
+
   late AnimationController _controller;
   late Animation<double> _animation;
   late World world;
@@ -40,6 +44,7 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("====> build");
     return Scaffold(
       body: GestureDetector(
         onTapDown: pointerUpdate,
@@ -53,10 +58,14 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
             var dt = curr - previous;
             previous = curr;
 
-            return CustomPaint(
-              size: MediaQuery.of(context).size,
-              painter: MyGame(world, pointerX, pointerY, dt),
-            );
+            return textureId != null
+                ? CustomPaint(
+                    size: MediaQuery.of(context).size,
+                    painter: MyGame(world, pointerX, pointerY, dt),
+                    child: Center(
+                      child: Texture(textureId: textureId!),
+                    ))
+                : const Text("Loading...");
           },
         ),
       ),
@@ -65,11 +74,21 @@ class _MyPageState extends State<MyPage> with SingleTickerProviderStateMixin {
 
   @override
   void initState() {
+    super.initState();
     previous = currentTime;
     _controller =
         AnimationController(vsync: this, duration: const Duration(seconds: 1))
           ..repeat();
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+
+    channel = const services.MethodChannel('sturdykeep.com/channel');
+    // Initialize the texture here
+    channel!.invokeMethod('initTexture').then((value) {
+      setState(() {
+        textureId = value;
+        api.moveStateToUiThread();
+      });
+    });
   }
 
   void pointerUpdate(details) {

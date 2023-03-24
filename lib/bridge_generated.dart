@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:meta/meta.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
-import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 
 import 'dart:convert';
 import 'dart:async';
@@ -15,122 +14,26 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'bridge_generated.io.dart'
     if (dart.library.html) 'bridge_generated.web.dart';
 
-part 'bridge_generated.freezed.dart';
-
 abstract class Native {
-  Future<String> sayHello({dynamic hint});
+  Future<void> sayHello({dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kSayHelloConstMeta;
 
-  RawIndex createEntity({dynamic hint});
+  void moveStateToUiThread({dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kCreateEntityConstMeta;
+  FlutterRustBridgeTaskConstMeta get kMoveStateToUiThreadConstMeta;
 
-  void dropEntity({required RawIndex index, dynamic hint});
+  void requestDraw({dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kDropEntityConstMeta;
+  FlutterRustBridgeTaskConstMeta get kRequestDrawConstMeta;
 
-  void entitySetPosition(
-      {required RawIndex index,
-      required double x,
-      required double y,
-      dynamic hint});
+  void requestResize({required int width, required int height, dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kEntitySetPositionConstMeta;
+  FlutterRustBridgeTaskConstMeta get kRequestResizeConstMeta;
 
-  void entitiesSetPositionRaw(
-      {required Uint8List indices, required Uint8List positions, dynamic hint});
+  void setCurrentTime({required double time, dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionRawConstMeta;
-
-  void entitySetOrigin(
-      {required RawIndex index,
-      required bool relative,
-      required double x,
-      required double y,
-      dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kEntitySetOriginConstMeta;
-
-  void entitySetRotation(
-      {required RawIndex index, required double rotation, dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kEntitySetRotationConstMeta;
-
-  void entitiesSetRotationRaw(
-      {required Uint8List indices, required Uint8List rotations, dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kEntitiesSetRotationRawConstMeta;
-
-  void entitySetShape(
-      {required RawIndex index, required Shape shape, dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kEntitySetShapeConstMeta;
-
-  RawIndex createBvh({dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kCreateBvhConstMeta;
-
-  void dropBvh({required RawIndex index, dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kDropBvhConstMeta;
-
-  void bvhClearAndRebuild(
-      {required RawIndex index,
-      required List<RawIndex> entities,
-      required double dilationFactor,
-      dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kBvhClearAndRebuildConstMeta;
-
-  void bvhClearAndRebuildRaw(
-      {required RawIndex index,
-      required Uint8List data,
-      required double dilationFactor,
-      dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kBvhClearAndRebuildRawConstMeta;
-
-  Uint8List bvhFlatten({required RawIndex index, dynamic hint});
-
-  FlutterRustBridgeTaskConstMeta get kBvhFlattenConstMeta;
-}
-
-class RawIndex {
-  final int field0;
-  final int field1;
-
-  const RawIndex({
-    required this.field0,
-    required this.field1,
-  });
-}
-
-@freezed
-class Shape with _$Shape {
-  const factory Shape.ball({
-    required double radius,
-  }) = Shape_Ball;
-  const factory Shape.compound({
-    required List<Shape> children,
-    required List<ShapeTransform> transforms,
-  }) = Shape_Compound;
-}
-
-class ShapeTransform {
-  final double positionX;
-  final double positionY;
-  final double rotation;
-  final double absoluteOriginX;
-  final double absoluteOriginY;
-
-  const ShapeTransform({
-    required this.positionX,
-    required this.positionY,
-    required this.rotation,
-    required this.absoluteOriginX,
-    required this.absoluteOriginY,
-  });
+  FlutterRustBridgeTaskConstMeta get kSetCurrentTimeConstMeta;
 }
 
 class NativeImpl implements Native {
@@ -142,10 +45,10 @@ class NativeImpl implements Native {
   factory NativeImpl.wasm(FutureOr<WasmModule> module) =>
       NativeImpl(module as ExternalLibrary);
   NativeImpl.raw(this._platform);
-  Future<String> sayHello({dynamic hint}) {
+  Future<void> sayHello({dynamic hint}) {
     return _platform.executeNormal(FlutterRustBridgeTask(
       callFfi: (port_) => _platform.inner.wire_say_hello(port_),
-      parseSuccessData: _wire2api_String,
+      parseSuccessData: _wire2api_unit,
       constMeta: kSayHelloConstMeta,
       argValues: [],
       hint: hint,
@@ -158,264 +61,71 @@ class NativeImpl implements Native {
         argNames: [],
       );
 
-  RawIndex createEntity({dynamic hint}) {
+  void moveStateToUiThread({dynamic hint}) {
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_create_entity(),
-      parseSuccessData: _wire2api_raw_index,
-      constMeta: kCreateEntityConstMeta,
+      callFfi: () => _platform.inner.wire_move_state_to_ui_thread(),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kMoveStateToUiThreadConstMeta,
       argValues: [],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kCreateEntityConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kMoveStateToUiThreadConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "create_entity",
+        debugName: "move_state_to_ui_thread",
         argNames: [],
       );
 
-  void dropEntity({required RawIndex index, dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
+  void requestDraw({dynamic hint}) {
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_drop_entity(arg0),
+      callFfi: () => _platform.inner.wire_request_draw(),
       parseSuccessData: _wire2api_unit,
-      constMeta: kDropEntityConstMeta,
-      argValues: [index],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kDropEntityConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "drop_entity",
-        argNames: ["index"],
-      );
-
-  void entitySetPosition(
-      {required RawIndex index,
-      required double x,
-      required double y,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
-    var arg1 = api2wire_f64(x);
-    var arg2 = api2wire_f64(y);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_entity_set_position(arg0, arg1, arg2),
-      parseSuccessData: _wire2api_unit,
-      constMeta: kEntitySetPositionConstMeta,
-      argValues: [index, x, y],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kEntitySetPositionConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "entity_set_position",
-        argNames: ["index", "x", "y"],
-      );
-
-  void entitiesSetPositionRaw(
-      {required Uint8List indices,
-      required Uint8List positions,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_ZeroCopyBuffer_Uint8List(indices);
-    var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(positions);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_entities_set_position_raw(arg0, arg1),
-      parseSuccessData: _wire2api_unit,
-      constMeta: kEntitiesSetPositionRawConstMeta,
-      argValues: [indices, positions],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionRawConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "entities_set_position_raw",
-        argNames: ["indices", "positions"],
-      );
-
-  void entitySetOrigin(
-      {required RawIndex index,
-      required bool relative,
-      required double x,
-      required double y,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
-    var arg1 = relative;
-    var arg2 = api2wire_f64(x);
-    var arg3 = api2wire_f64(y);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () =>
-          _platform.inner.wire_entity_set_origin(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_unit,
-      constMeta: kEntitySetOriginConstMeta,
-      argValues: [index, relative, x, y],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kEntitySetOriginConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "entity_set_origin",
-        argNames: ["index", "relative", "x", "y"],
-      );
-
-  void entitySetRotation(
-      {required RawIndex index, required double rotation, dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
-    var arg1 = api2wire_f64(rotation);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_entity_set_rotation(arg0, arg1),
-      parseSuccessData: _wire2api_unit,
-      constMeta: kEntitySetRotationConstMeta,
-      argValues: [index, rotation],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kEntitySetRotationConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "entity_set_rotation",
-        argNames: ["index", "rotation"],
-      );
-
-  void entitiesSetRotationRaw(
-      {required Uint8List indices,
-      required Uint8List rotations,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_ZeroCopyBuffer_Uint8List(indices);
-    var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(rotations);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_entities_set_rotation_raw(arg0, arg1),
-      parseSuccessData: _wire2api_unit,
-      constMeta: kEntitiesSetRotationRawConstMeta,
-      argValues: [indices, rotations],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kEntitiesSetRotationRawConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "entities_set_rotation_raw",
-        argNames: ["indices", "rotations"],
-      );
-
-  void entitySetShape(
-      {required RawIndex index, required Shape shape, dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
-    var arg1 = _platform.api2wire_box_autoadd_shape(shape);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_entity_set_shape(arg0, arg1),
-      parseSuccessData: _wire2api_unit,
-      constMeta: kEntitySetShapeConstMeta,
-      argValues: [index, shape],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kEntitySetShapeConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "entity_set_shape",
-        argNames: ["index", "shape"],
-      );
-
-  RawIndex createBvh({dynamic hint}) {
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_create_bvh(),
-      parseSuccessData: _wire2api_raw_index,
-      constMeta: kCreateBvhConstMeta,
+      constMeta: kRequestDrawConstMeta,
       argValues: [],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kCreateBvhConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kRequestDrawConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "create_bvh",
+        debugName: "request_draw",
         argNames: [],
       );
 
-  void dropBvh({required RawIndex index, dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
+  void requestResize({required int width, required int height, dynamic hint}) {
+    var arg0 = api2wire_u32(width);
+    var arg1 = api2wire_u32(height);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_drop_bvh(arg0),
+      callFfi: () => _platform.inner.wire_request_resize(arg0, arg1),
       parseSuccessData: _wire2api_unit,
-      constMeta: kDropBvhConstMeta,
-      argValues: [index],
+      constMeta: kRequestResizeConstMeta,
+      argValues: [width, height],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kDropBvhConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kRequestResizeConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "drop_bvh",
-        argNames: ["index"],
+        debugName: "request_resize",
+        argNames: ["width", "height"],
       );
 
-  void bvhClearAndRebuild(
-      {required RawIndex index,
-      required List<RawIndex> entities,
-      required double dilationFactor,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
-    var arg1 = _platform.api2wire_list_raw_index(entities);
-    var arg2 = api2wire_f64(dilationFactor);
+  void setCurrentTime({required double time, dynamic hint}) {
+    var arg0 = api2wire_f64(time);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () =>
-          _platform.inner.wire_bvh_clear_and_rebuild(arg0, arg1, arg2),
+      callFfi: () => _platform.inner.wire_set_current_time(arg0),
       parseSuccessData: _wire2api_unit,
-      constMeta: kBvhClearAndRebuildConstMeta,
-      argValues: [index, entities, dilationFactor],
+      constMeta: kSetCurrentTimeConstMeta,
+      argValues: [time],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kBvhClearAndRebuildConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kSetCurrentTimeConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "bvh_clear_and_rebuild",
-        argNames: ["index", "entities", "dilationFactor"],
-      );
-
-  void bvhClearAndRebuildRaw(
-      {required RawIndex index,
-      required Uint8List data,
-      required double dilationFactor,
-      dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
-    var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(data);
-    var arg2 = api2wire_f64(dilationFactor);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () =>
-          _platform.inner.wire_bvh_clear_and_rebuild_raw(arg0, arg1, arg2),
-      parseSuccessData: _wire2api_unit,
-      constMeta: kBvhClearAndRebuildRawConstMeta,
-      argValues: [index, data, dilationFactor],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kBvhClearAndRebuildRawConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "bvh_clear_and_rebuild_raw",
-        argNames: ["index", "data", "dilationFactor"],
-      );
-
-  Uint8List bvhFlatten({required RawIndex index, dynamic hint}) {
-    var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
-    return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_bvh_flatten(arg0),
-      parseSuccessData: _wire2api_ZeroCopyBuffer_Uint8List,
-      constMeta: kBvhFlattenConstMeta,
-      argValues: [index],
-      hint: hint,
-    ));
-  }
-
-  FlutterRustBridgeTaskConstMeta get kBvhFlattenConstMeta =>
-      const FlutterRustBridgeTaskConstMeta(
-        debugName: "bvh_flatten",
-        argNames: ["index"],
+        debugName: "set_current_time",
+        argNames: ["time"],
       );
 
   void dispose() {
@@ -423,51 +133,12 @@ class NativeImpl implements Native {
   }
 // Section: wire2api
 
-  String _wire2api_String(dynamic raw) {
-    return raw as String;
-  }
-
-  Uint8List _wire2api_ZeroCopyBuffer_Uint8List(dynamic raw) {
-    return raw as Uint8List;
-  }
-
-  RawIndex _wire2api_raw_index(dynamic raw) {
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return RawIndex(
-      field0: _wire2api_usize(arr[0]),
-      field1: _wire2api_u64(arr[1]),
-    );
-  }
-
-  int _wire2api_u64(dynamic raw) {
-    return castInt(raw);
-  }
-
-  int _wire2api_u8(dynamic raw) {
-    return raw as int;
-  }
-
-  Uint8List _wire2api_uint_8_list(dynamic raw) {
-    return raw as Uint8List;
-  }
-
   void _wire2api_unit(dynamic raw) {
     return;
-  }
-
-  int _wire2api_usize(dynamic raw) {
-    return castInt(raw);
   }
 }
 
 // Section: api2wire
-
-@protected
-bool api2wire_bool(bool raw) {
-  return raw;
-}
 
 @protected
 double api2wire_f64(double raw) {
@@ -475,12 +146,7 @@ double api2wire_f64(double raw) {
 }
 
 @protected
-int api2wire_u8(int raw) {
-  return raw;
-}
-
-@protected
-int api2wire_usize(int raw) {
+int api2wire_u32(int raw) {
   return raw;
 }
 // Section: finalizer

@@ -237,37 +237,3 @@ extension Vector2ByteBufferExtensions on Vector2 {
     return array;
   }
 }
-
-extension RawIndexByteBufferExtensions on RawIndex {
-  void encode(ByteBufferEncoder encoder) {
-    encoder.writeU64(field0);
-    encoder.writeU64(field1);
-  }
-
-  static void encodeArray(ByteBufferEncoder encoder, List<RawIndex> array) {
-    encoder.writeU64(array.length);
-    for (final element in array) {
-      element.encode(encoder);
-    }
-  }
-
-  static RawIndex decode(ByteBufferDecoder decoder) {
-    final index = decoder.readU64();
-    final generation = decoder.readU64();
-    return RawIndex(field0: index, field1: generation);
-  }
-
-  static void decodeArray(ByteBufferDecoder decoder, List<RawIndex> array) {
-    final length = decoder.readU64();
-    for (var i = 0; i < length; i++) {
-      array[i] = decode(decoder);
-    }
-  }
-
-  static void decodeArrayInto(ByteBufferDecoder decoder, List<RawIndex> array) {
-    final length = decoder.readU64();
-    for (var i = 0; i < length; i++) {
-      array[i] = decode(decoder);
-    }
-  }
-}
