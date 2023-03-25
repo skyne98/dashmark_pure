@@ -105,7 +105,7 @@ pub fn init_wgpu<S: HasRawDisplayHandle + HasRawWindowHandle>(surface: S) -> Res
             format: swapchain_format,
             width: size[0],
             height: size[1],
-            present_mode: wgpu::PresentMode::Fifo,
+            present_mode: wgpu::PresentMode::Mailbox,
             alpha_mode: swapchain_capabilities.alpha_modes[0],
             view_formats: vec![],
         };
@@ -221,7 +221,7 @@ pub fn render_frame() -> Result<()> {
         queue.submit(Some(encoder.finish()));
         info!("Presenting frame");
         frame.present();
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        // std::thread::sleep(std::time::Duration::from_millis(2000));
 
         info!("Done drawing one frame");
 
