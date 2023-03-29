@@ -7,6 +7,11 @@ pub fn wire_say_hello(port_: MessagePort) {
 }
 
 #[wasm_bindgen]
+pub fn wire_update(dt: f64) -> support::WireSyncReturn {
+    wire_update_impl(dt)
+}
+
+#[wasm_bindgen]
 pub fn wire_create_entity() -> support::WireSyncReturn {
     wire_create_entity_impl()
 }
@@ -58,36 +63,8 @@ pub fn wire_entity_set_shape(index: JsValue, shape: JsValue) -> support::WireSyn
 }
 
 #[wasm_bindgen]
-pub fn wire_create_bvh() -> support::WireSyncReturn {
-    wire_create_bvh_impl()
-}
-
-#[wasm_bindgen]
-pub fn wire_drop_bvh(index: JsValue) -> support::WireSyncReturn {
-    wire_drop_bvh_impl(index)
-}
-
-#[wasm_bindgen]
-pub fn wire_bvh_clear_and_rebuild(
-    index: JsValue,
-    entities: JsValue,
-    dilation_factor: f64,
-) -> support::WireSyncReturn {
-    wire_bvh_clear_and_rebuild_impl(index, entities, dilation_factor)
-}
-
-#[wasm_bindgen]
-pub fn wire_bvh_clear_and_rebuild_raw(
-    index: JsValue,
-    data: Box<[u8]>,
-    dilation_factor: f64,
-) -> support::WireSyncReturn {
-    wire_bvh_clear_and_rebuild_raw_impl(index, data, dilation_factor)
-}
-
-#[wasm_bindgen]
-pub fn wire_bvh_flatten(index: JsValue) -> support::WireSyncReturn {
-    wire_bvh_flatten_impl(index)
+pub fn wire_query_aabb(x: f64, y: f64, width: f64, height: f64) -> support::WireSyncReturn {
+    wire_query_aabb_impl(x, y, width, height)
 }
 
 // Section: allocate functions
@@ -102,17 +79,8 @@ impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for Box<[u8]> {
     }
 }
 
-impl Wire2Api<Vec<Box<Shape>>> for JsValue {
-    fn wire2api(self) -> Vec<Box<Shape>> {
-        self.dyn_into::<JsArray>()
-            .unwrap()
-            .iter()
-            .map(Wire2Api::<Shape>::wire2api)
-            .collect()
-    }
-}
-impl Wire2Api<Vec<RawIndex>> for JsValue {
-    fn wire2api(self) -> Vec<RawIndex> {
+impl Wire2Api<Vec<Shape>> for JsValue {
+    fn wire2api(self) -> Vec<Shape> {
         self.dyn_into::<JsArray>()
             .unwrap()
             .iter()
@@ -191,11 +159,6 @@ impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for JsValue {
 impl Wire2Api<bool> for JsValue {
     fn wire2api(self) -> bool {
         self.is_truthy()
-    }
-}
-impl Wire2Api<Box<Shape>> for JsValue {
-    fn wire2api(self) -> Box<Shape> {
-        Box::new(self.wire2api())
     }
 }
 impl Wire2Api<f64> for JsValue {

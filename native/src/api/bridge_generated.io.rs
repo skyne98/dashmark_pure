@@ -7,6 +7,11 @@ pub extern "C" fn wire_say_hello(port_: i64) {
 }
 
 #[no_mangle]
+pub extern "C" fn wire_update(dt: f64) -> support::WireSyncReturn {
+    wire_update_impl(dt)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_create_entity() -> support::WireSyncReturn {
     wire_create_entity_impl()
 }
@@ -68,36 +73,13 @@ pub extern "C" fn wire_entity_set_shape(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_create_bvh() -> support::WireSyncReturn {
-    wire_create_bvh_impl()
-}
-
-#[no_mangle]
-pub extern "C" fn wire_drop_bvh(index: *mut wire_RawIndex) -> support::WireSyncReturn {
-    wire_drop_bvh_impl(index)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_bvh_clear_and_rebuild(
-    index: *mut wire_RawIndex,
-    entities: *mut wire_list_raw_index,
-    dilation_factor: f64,
+pub extern "C" fn wire_query_aabb(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
 ) -> support::WireSyncReturn {
-    wire_bvh_clear_and_rebuild_impl(index, entities, dilation_factor)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_bvh_clear_and_rebuild_raw(
-    index: *mut wire_RawIndex,
-    data: *mut wire_uint_8_list,
-    dilation_factor: f64,
-) -> support::WireSyncReturn {
-    wire_bvh_clear_and_rebuild_raw_impl(index, data, dilation_factor)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_bvh_flatten(index: *mut wire_RawIndex) -> support::WireSyncReturn {
-    wire_bvh_flatten_impl(index)
+    wire_query_aabb_impl(x, y, width, height)
 }
 
 // Section: allocate functions
@@ -113,23 +95,9 @@ pub extern "C" fn new_box_autoadd_shape_0() -> *mut wire_Shape {
 }
 
 #[no_mangle]
-pub extern "C" fn new_box_shape_0() -> *mut wire_Shape {
-    support::new_leak_box_ptr(wire_Shape::new_with_null_ptr())
-}
-
-#[no_mangle]
-pub extern "C" fn new_list_box_shape_0(len: i32) -> *mut wire_list_box_shape {
-    let wrap = wire_list_box_shape {
+pub extern "C" fn new_list_shape_0(len: i32) -> *mut wire_list_shape {
+    let wrap = wire_list_shape {
         ptr: support::new_leak_vec_ptr(<wire_Shape>::new_with_null_ptr(), len),
-        len,
-    };
-    support::new_leak_box_ptr(wrap)
-}
-
-#[no_mangle]
-pub extern "C" fn new_list_raw_index_0(len: i32) -> *mut wire_list_raw_index {
-    let wrap = wire_list_raw_index {
-        ptr: support::new_leak_vec_ptr(<wire_RawIndex>::new_with_null_ptr(), len),
         len,
     };
     support::new_leak_box_ptr(wrap)
@@ -175,24 +143,9 @@ impl Wire2Api<Shape> for *mut wire_Shape {
         Wire2Api::<Shape>::wire2api(*wrap).into()
     }
 }
-impl Wire2Api<Box<Shape>> for *mut wire_Shape {
-    fn wire2api(self) -> Box<Shape> {
-        let wrap = unsafe { support::box_from_leak_ptr(self) };
-        Wire2Api::<Shape>::wire2api(*wrap).into()
-    }
-}
 
-impl Wire2Api<Vec<Box<Shape>>> for *mut wire_list_box_shape {
-    fn wire2api(self) -> Vec<Box<Shape>> {
-        let vec = unsafe {
-            let wrap = support::box_from_leak_ptr(self);
-            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
-        };
-        vec.into_iter().map(Wire2Api::wire2api).collect()
-    }
-}
-impl Wire2Api<Vec<RawIndex>> for *mut wire_list_raw_index {
-    fn wire2api(self) -> Vec<RawIndex> {
+impl Wire2Api<Vec<Shape>> for *mut wire_list_shape {
+    fn wire2api(self) -> Vec<Shape> {
         let vec = unsafe {
             let wrap = support::box_from_leak_ptr(self);
             support::vec_from_leak_ptr(wrap.ptr, wrap.len)
@@ -261,15 +214,8 @@ impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
 
 #[repr(C)]
 #[derive(Clone)]
-pub struct wire_list_box_shape {
+pub struct wire_list_shape {
     ptr: *mut wire_Shape,
-    len: i32,
-}
-
-#[repr(C)]
-#[derive(Clone)]
-pub struct wire_list_raw_index {
-    ptr: *mut wire_RawIndex,
     len: i32,
 }
 
@@ -326,7 +272,7 @@ pub struct wire_Shape_Ball {
 #[repr(C)]
 #[derive(Clone)]
 pub struct wire_Shape_Compound {
-    children: *mut wire_list_box_shape,
+    children: *mut wire_list_shape,
     transforms: *mut wire_list_shape_transform,
 }
 

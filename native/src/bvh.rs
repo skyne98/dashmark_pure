@@ -10,25 +10,18 @@ use crate::{entity::Entity, index::IndexWrapper};
 
 // Bvh
 pub struct Bvh {
-    pub index: Index,
     pub bvh: Qbvh<IndexWrapper>,
 }
 
 impl Default for Bvh {
     fn default() -> Self {
-        Self {
-            bvh: Qbvh::new(),
-            index: Index::from_raw_parts(0, 0),
-        }
+        Self { bvh: Qbvh::new() }
     }
 }
 
 impl Bvh {
-    pub fn new(index: Index) -> Self {
-        Self {
-            bvh: Qbvh::new(),
-            index,
-        }
+    pub fn new() -> Self {
+        Self { bvh: Qbvh::new() }
     }
 
     pub fn from_entities<'a, I>(entities: I) -> Self
@@ -46,19 +39,7 @@ impl Bvh {
             ));
         }
         bvh.clear_and_rebuild(aabbs.into_iter(), 0.0);
-        Bvh {
-            bvh: bvh,
-            index: Index::from_raw_parts(0, 0),
-        }
-    }
-
-    pub fn from_entities_and_index<'a, I>(entities: I, index: Index) -> Self
-    where
-        I: IntoIterator<Item = &'a mut Entity>,
-    {
-        let mut bvh = Self::from_entities(entities);
-        bvh.index = index;
-        bvh
+        Bvh { bvh: bvh }
     }
 
     // Updates
@@ -71,7 +52,7 @@ impl Bvh {
 
     pub fn refit<'a, F>(&'a mut self, aabb_builder: F)
     where
-        F: Fn(Index) -> Option<&'a Aabb>,
+        F: Fn(Index) -> Option<Aabb>,
     {
         let mut workspace = QbvhUpdateWorkspace::default();
         self.refit_in_workspace(&mut workspace, aabb_builder);
@@ -81,7 +62,7 @@ impl Bvh {
         workspace: &mut QbvhUpdateWorkspace,
         aabb_builder: F,
     ) where
-        F: Fn(Index) -> Option<&'a Aabb>,
+        F: Fn(Index) -> Option<Aabb>,
     {
         let for_removal = RefCell::new(Vec::new());
         self.bvh.refit(0.0, workspace, |index| {
@@ -380,7 +361,7 @@ mod test_bvh {
         bvh.refit(move |index| {
             assert_eq!(index.into_raw_parts().0, 0);
             assert_eq!(index.into_raw_parts().1, 0);
-            Some(entity_aabb)
+            Some(entity_aabb.clone())
         });
 
         // Check the data hasn't changed without an update
@@ -410,7 +391,7 @@ mod test_bvh {
         bvh.refit(move |index| {
             assert_eq!(index.into_raw_parts().0, 0);
             assert_eq!(index.into_raw_parts().1, 0);
-            Some(entity_aabb)
+            Some(entity_aabb.clone())
         });
 
         // Check the data has changed

@@ -40,7 +40,6 @@ class World {
 
   // Native communication
   final RawIndexBuffer _entityIndices = RawIndexBuffer();
-  late RawIndex _bvhIndex;
 
   World() {
     debugPrint('World created');
@@ -65,8 +64,6 @@ class World {
       debugPrint('Error loading fragment shader: $error');
       status = 'Error loading fragment shader: $error';
     });
-
-    _bvhIndex = api.createBvh();
   }
 
   void input(double x, double y) {
@@ -168,6 +165,22 @@ class World {
           indices: _entityIndices.toUint8List(),
           rotations: _rotation.toUint8List());
 
+      // Call the native world update
+      api.update(dt: t);
+
+      // Make a test query and print the count of entities
+      final stopwatch = Stopwatch()..start();
+      final center = Vector2(size.x / 2, size.y / 2);
+      final screenThird = Vector2(size.x / 3, size.y / 3);
+      final queryResults = api.queryAabb(
+          x: center.x - screenThird.x / 2,
+          y: center.y - screenThird.y / 2,
+          width: screenThird.x,
+          height: screenThird.y);
+      debugPrint(
+          'Query results: ${queryResults.length} in ${stopwatch.elapsedMilliseconds}ms');
+      stopwatch.stop();
+
       // FPS
       _lastFrameTimes.add(t);
       // keep the list max length
@@ -197,16 +210,6 @@ class World {
       final title =
           'Dashmark - $fpsRounded FPS - $percentileFpsRounded FPS (95%) - $medianFpsRounded FPS (50%) - ${_velocity.length} dashes';
       status = title;
-
-      // Calculate the BVH
-      // final start = DateTime.now().millisecondsSinceEpoch;
-      api.bvhClearAndRebuildRaw(
-          index: _bvhIndex,
-          data: _entityIndices.toUint8List(),
-          dilationFactor: 0.0);
-      // final end = DateTime.now().millisecondsSinceEpoch;
-      // final bvhTime = end - start;
-      // debugPrint('BVH time: $bvhTime ms');
     }
   }
 

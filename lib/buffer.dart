@@ -1,7 +1,7 @@
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'package:vector_math/vector_math_64.dart';
 
-import 'bridge_generated.dart';
+import 'ffi_export.dart';
 
 /* Decoding */
 class ByteBufferDecoder {

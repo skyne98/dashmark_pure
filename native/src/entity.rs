@@ -166,7 +166,7 @@ impl Entity {
 
     pub fn recalculate_transforms(&mut self) {
         let absolute_offset = self.get_absolute_offset();
-        let (local_aabb, size) = self.get_local_aabb_and_size();
+        let (local_aabb, _size) = self.get_local_aabb_and_size();
         // Natural offset - how far shape's AABB's min corner is from the zero
         let natural_offset = Vector2::new(-local_aabb.mins.x, -local_aabb.mins.y);
         self.transform_isometry.translation.vector =

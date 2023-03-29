@@ -1,8 +1,6 @@
 use rapier2d_f64::na::{Point2, UnitComplex, Vector2};
 use rapier2d_f64::parry::math::Isometry;
-use rapier2d_f64::parry::shape::{
-    Ball as ParryBall, Compound as ParryCompound, Shape as ParryShape, SharedShape,
-};
+use rapier2d_f64::parry::shape::{Ball as ParryBall, Compound as ParryCompound, SharedShape};
 
 use crate::entity::EntityShape;
 
@@ -32,7 +30,7 @@ pub enum Shape {
         radius: f64,
     },
     Compound {
-        children: Vec<Box<Shape>>,
+        children: Vec<Shape>,
         transforms: Vec<ShapeTransform>,
     },
 }
@@ -48,7 +46,7 @@ impl Into<Box<dyn EntityShape>> for Shape {
                 let mut shapes = Vec::new();
                 let mut transforms = transforms.into_iter();
                 for child in children {
-                    let child: SharedShape = (*child).into();
+                    let child: SharedShape = child.into();
                     shapes.push((transforms.next().unwrap().into(), child));
                 }
                 Box::new(ParryCompound::new(shapes))
@@ -68,7 +66,7 @@ impl Into<SharedShape> for Shape {
                 let mut shapes = Vec::new();
                 let mut transforms = transforms.into_iter();
                 for child in children {
-                    let child: SharedShape = (*child).into();
+                    let child: SharedShape = child.into();
                     shapes.push((transforms.next().unwrap().into(), child.into()));
                 }
                 SharedShape::new(ParryCompound::new(shapes))
