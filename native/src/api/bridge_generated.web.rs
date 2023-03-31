@@ -67,6 +67,11 @@ pub fn wire_query_aabb(x: f64, y: f64, width: f64, height: f64) -> support::Wire
     wire_query_aabb_impl(x, y, width, height)
 }
 
+#[wasm_bindgen]
+pub fn wire_query_aabb_raw(x: f64, y: f64, width: f64, height: f64) -> support::WireSyncReturn {
+    wire_query_aabb_raw_impl(x, y, width, height)
+}
+
 // Section: allocate functions
 
 // Section: related functions

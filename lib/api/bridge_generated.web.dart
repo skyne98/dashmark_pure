@@ -127,6 +127,9 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* List<dynamic> */ wire_query_aabb(
       double x, double y, double width, double height);
+
+  external dynamic /* Uint8List */ wire_query_aabb_raw(
+      double x, double y, double width, double height);
 }
 
 // Section: WASM wire connector
@@ -172,4 +175,8 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
   dynamic /* List<dynamic> */ wire_query_aabb(
           double x, double y, double width, double height) =>
       wasmModule.wire_query_aabb(x, y, width, height);
+
+  dynamic /* Uint8List */ wire_query_aabb_raw(
+          double x, double y, double width, double height) =>
+      wasmModule.wire_query_aabb_raw(x, y, width, height);
 }

@@ -17,6 +17,11 @@ class Uint64Buffer with ListMixin<int> {
     _buffer = Uint64List(0);
   }
 
+  Uint64Buffer.fromBytes(Uint8List bytes) {
+    _buffer = Uint64List.view(bytes.buffer);
+    _count = bytes.length ~/ 8;
+  }
+
   Uint64Buffer.fromList(List<int> list) {
     _buffer = Uint64List(list.length);
     _buffer.setAll(0, list.map((e) => BigInt.from(e)));
@@ -111,6 +116,11 @@ class RawIndexBuffer extends Uint64Buffer {
   int get indicesLength => _count;
 
   RawIndexBuffer() : super();
+
+  RawIndexBuffer.fromBytes(Uint8List bytes) : super() {
+    _buffer = Uint64List.view(bytes.buffer);
+    _count = bytes.length ~/ 8;
+  }
 
   RawIndexBuffer.fromList(List<int> list) : super() {
     _buffer = Uint64List(list.length);

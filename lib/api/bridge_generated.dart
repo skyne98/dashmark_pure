@@ -81,6 +81,15 @@ abstract class Native {
       dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kQueryAabbConstMeta;
+
+  Uint8List queryAabbRaw(
+      {required double x,
+      required double y,
+      required double width,
+      required double height,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kQueryAabbRawConstMeta;
 }
 
 class RawIndex {
@@ -349,6 +358,32 @@ class NativeImpl implements Native {
         argNames: ["x", "y", "width", "height"],
       );
 
+  Uint8List queryAabbRaw(
+      {required double x,
+      required double y,
+      required double width,
+      required double height,
+      dynamic hint}) {
+    var arg0 = api2wire_f64(x);
+    var arg1 = api2wire_f64(y);
+    var arg2 = api2wire_f64(width);
+    var arg3 = api2wire_f64(height);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () =>
+          _platform.inner.wire_query_aabb_raw(arg0, arg1, arg2, arg3),
+      parseSuccessData: _wire2api_ZeroCopyBuffer_Uint8List,
+      constMeta: kQueryAabbRawConstMeta,
+      argValues: [x, y, width, height],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kQueryAabbRawConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "query_aabb_raw",
+        argNames: ["x", "y", "width", "height"],
+      );
+
   void dispose() {
     _platform.dispose();
   }
@@ -356,6 +391,10 @@ class NativeImpl implements Native {
 
   String _wire2api_String(dynamic raw) {
     return raw as String;
+  }
+
+  Uint8List _wire2api_ZeroCopyBuffer_Uint8List(dynamic raw) {
+    return raw as Uint8List;
   }
 
   List<RawIndex> _wire2api_list_raw_index(dynamic raw) {

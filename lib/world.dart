@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:ui';
+import 'package:dashmark_pure/buffer.dart';
 import 'package:dashmark_pure/typed_array/f64.dart';
 import 'package:dashmark_pure/typed_array/u64.dart';
 
@@ -172,13 +173,13 @@ class World {
       final stopwatch = Stopwatch()..start();
       final center = Vector2(size.x / 2, size.y / 2);
       final screenThird = Vector2(size.x / 3, size.y / 3);
-      final queryResults = api.queryAabb(
+      final queryResults = RawIndexBuffer.fromBytes(api.queryAabbRaw(
           x: center.x - screenThird.x / 2,
           y: center.y - screenThird.y / 2,
           width: screenThird.x,
-          height: screenThird.y);
+          height: screenThird.y));
       debugPrint(
-          'Query results: ${queryResults.length} in ${stopwatch.elapsedMilliseconds}ms');
+          'Query results: ${queryResults.indicesLength} in ${stopwatch.elapsedMilliseconds}ms');
       stopwatch.stop();
 
       // FPS

@@ -403,6 +403,27 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_query_aabb = _wire_query_aabbPtr
       .asFunction<WireSyncReturn Function(double, double, double, double)>();
 
+  WireSyncReturn wire_query_aabb_raw(
+    double x,
+    double y,
+    double width,
+    double height,
+  ) {
+    return _wire_query_aabb_raw(
+      x,
+      y,
+      width,
+      height,
+    );
+  }
+
+  late final _wire_query_aabb_rawPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(ffi.Double, ffi.Double, ffi.Double,
+              ffi.Double)>>('wire_query_aabb_raw');
+  late final _wire_query_aabb_raw = _wire_query_aabb_rawPtr
+      .asFunction<WireSyncReturn Function(double, double, double, double)>();
+
   ffi.Pointer<wire_RawIndex> new_box_autoadd_raw_index_0() {
     return _new_box_autoadd_raw_index_0();
   }

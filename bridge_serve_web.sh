@@ -1,1 +1,1 @@
-dart run flutter_rust_bridge:serve --release
+dart run flutter_rust_bridge:serve "$@"

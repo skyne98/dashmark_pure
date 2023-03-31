@@ -11,7 +11,7 @@ use crate::{
     entity::{EntityShape, Origin},
     index::RawIndex,
     state::State,
-    typed_data::{bytes_to_indices, bytes_to_vector2s},
+    typed_data::{bytes_to_indices, bytes_to_vector2s, indices_to_bytes},
 };
 
 // For initialization
@@ -135,4 +135,21 @@ pub fn query_aabb(x: f64, y: f64, width: f64, height: f64) -> SyncReturn<Vec<Raw
     });
     let result = result.into_iter().map(|index| index.into()).collect();
     SyncReturn(result)
+}
+
+pub fn query_aabb_raw(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+    let result = State::acquire(|state| {
+        let aabb = rapier2d_f64::parry::bounding_volume::Aabb::new(
+            Point2::new(x, y),
+            Point2::new(x + width, y + height),
+        );
+        state.broadphase.borrow().query_aabb(&aabb)
+    });
+    let result_bytes = indices_to_bytes(&result[..]);
+    SyncReturn(ZeroCopyBuffer(result_bytes))
 }

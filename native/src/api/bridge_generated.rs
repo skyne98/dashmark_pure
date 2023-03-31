@@ -200,6 +200,27 @@ fn wire_query_aabb_impl(
         },
     )
 }
+fn wire_query_aabb_raw_impl(
+    x: impl Wire2Api<f64> + UnwindSafe,
+    y: impl Wire2Api<f64> + UnwindSafe,
+    width: impl Wire2Api<f64> + UnwindSafe,
+    height: impl Wire2Api<f64> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "query_aabb_raw",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_x = x.wire2api();
+            let api_y = y.wire2api();
+            let api_width = width.wire2api();
+            let api_height = height.wire2api();
+            Ok(query_aabb_raw(api_x, api_y, api_width, api_height))
+        },
+    )
+}
 // Section: wrapper structs
 
 // Section: static checks

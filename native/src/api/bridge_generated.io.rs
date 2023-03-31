@@ -82,6 +82,16 @@ pub extern "C" fn wire_query_aabb(
     wire_query_aabb_impl(x, y, width, height)
 }
 
+#[no_mangle]
+pub extern "C" fn wire_query_aabb_raw(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> support::WireSyncReturn {
+    wire_query_aabb_raw_impl(x, y, width, height)
+}
+
 // Section: allocate functions
 
 #[no_mangle]
