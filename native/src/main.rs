@@ -1,3 +1,5 @@
+use crate::matrix::Transform;
+use rapier2d_f64::na::Vector2;
 use rapier2d_f64::parry::bounding_volume::Aabb as ParryAabb;
 use rapier2d_f64::parry::na::Point2;
 use rapier2d_f64::parry::partitioning::Qbvh as ParryQbvh;
@@ -59,5 +61,32 @@ fn main() {
     println!(
         "Time for 500 queries 2000 aabbs: {:?}",
         time_for_500_queries_2000_aabbs
+    );
+
+    // Do 1000000 matrix and vector allocations, then do
+    // 1000000 matrix and vector transformations
+    start = std::time::Instant::now();
+    let mut matrices = Vec::with_capacity(iterations as usize);
+    matrices.resize(iterations as usize, Transform::new());
+    println!(
+        "Time to generate iterations matrices: {:?}",
+        start.elapsed()
+    );
+
+    start = std::time::Instant::now();
+    let mut vectors = Vec::with_capacity(iterations as usize);
+    vectors.resize(iterations as usize, Vector2::new(0.0, 0.0));
+    println!("Time to generate iterations vectors: {:?}", start.elapsed());
+
+    start = std::time::Instant::now();
+    let mut results = Vec::with_capacity(iterations as usize);
+    for _ in 0..iterations {
+        let matrix = matrices.pop().unwrap();
+        let vector = vectors.pop().unwrap();
+        results.push(matrix.transform_vector(&vector));
+    }
+    println!(
+        "Time to do iterations matrix and vector transformations: {:?}",
+        start.elapsed()
     );
 }

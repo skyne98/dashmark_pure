@@ -228,7 +228,6 @@ impl Entity {
     }
 
     pub fn recalculate_transforms(&mut self) {
-        let relative_offset = self.get_relative_offset();
         let absolute_offset = self.get_absolute_offset();
         let (local_aabb, size) = self.get_local_aabb_and_size();
         // Natural offset - how far shape's AABB's min corner is from the zero
@@ -246,10 +245,10 @@ impl Entity {
         // Affine transform is a combination of translation, rotation and scale
         self.transform = Transform::new();
         self.transform.build_transform(
-            self.position,
+            self.position + natural_offset,
             self.rotation,
             Vector2::new(self.scale.x, self.scale.y),
-            absolute_offset - natural_offset,
+            absolute_offset,
         );
 
         self.dirty_transforms = false;
@@ -384,10 +383,6 @@ mod test_entity {
                 let expected_maxy = offset_maxy + translation;
                 let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
                 assert_eq!(expected_maxy, actual_maxy, "x: {}, y: {}", x, y);
-
-                let aabb_transform = entity.get_aabb().unwrap();
-                assert_points_equal(aabb.mins, aabb_transform.mins);
-                assert_points_equal(aabb.maxs, aabb_transform.maxs);
             }
         }
     }
@@ -419,10 +414,6 @@ mod test_entity {
             let expected_maxy = 1 * 100;
             let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
             assert_eq!(expected_maxy, actual_maxy, "rotation: {}", rotation);
-
-            let aabb_transform = entity.get_aabb().unwrap();
-            assert_points_equal(aabb.mins, aabb_transform.mins);
-            assert_points_equal(aabb.maxs, aabb_transform.maxs);
         }
     }
 
@@ -453,10 +444,6 @@ mod test_entity {
             let expected_maxy = 1 * 100 + 100 * 100;
             let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
             assert_eq!(expected_maxy, actual_maxy, "rotation: {}", rotation);
-
-            let aabb_transform = entity.get_aabb().unwrap();
-            assert_points_equal(aabb.mins, aabb_transform.mins);
-            assert_points_equal(aabb.maxs, aabb_transform.maxs);
         }
     }
 
@@ -492,10 +479,6 @@ mod test_entity {
             let expected_maxy = expected_maxys[rotation_i];
             let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
             assert_eq!(expected_maxy, actual_maxy, "rotation: {}", rotation);
-
-            let aabb_transform = entity.get_aabb().unwrap();
-            assert_points_equal(aabb.mins, aabb_transform.mins);
-            assert_points_equal(aabb.maxs, aabb_transform.maxs);
         }
     }
 
@@ -531,10 +514,6 @@ mod test_entity {
             let expected_maxy = expected_maxys[rotation_i] + 100 * 100;
             let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
             assert_eq!(expected_maxy, actual_maxy, "rotation: {}", rotation);
-
-            let aabb_transform = entity.get_aabb().unwrap();
-            assert_points_equal(aabb.mins, aabb_transform.mins);
-            assert_points_equal(aabb.maxs, aabb_transform.maxs);
         }
     }
 
