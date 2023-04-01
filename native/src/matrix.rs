@@ -1,36 +1,94 @@
-use rapier2d_f64::na::{Matrix3, Point2, Vector2};
+use rapier2d_f64::na::{Matrix2x3, Point2, Scalar, Vector2};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Transform {
-    matrix: Matrix3<f64>,
+    matrix: Matrix2x3<f64>,
 }
 
 impl Transform {
     pub fn new() -> Self {
         Self {
-            matrix: Matrix3::identity(),
+            matrix: Matrix2x3::identity(),
         }
     }
 
+    pub fn multiply_transforms(
+        transform1: &Matrix2x3<f64>,
+        transform2: &Matrix2x3<f64>,
+    ) -> Matrix2x3<f64> {
+        let m11 = transform1[(0, 0)] * transform2[(0, 0)] + transform1[(0, 1)] * transform2[(1, 0)];
+        let m12 = transform1[(0, 0)] * transform2[(0, 1)] + transform1[(0, 1)] * transform2[(1, 1)];
+        let m21 = transform1[(1, 0)] * transform2[(0, 0)] + transform1[(1, 1)] * transform2[(1, 0)];
+        let m22 = transform1[(1, 0)] * transform2[(0, 1)] + transform1[(1, 1)] * transform2[(1, 1)];
+        let m31 = transform1[(0, 0)] * transform2[(0, 2)]
+            + transform1[(0, 1)] * transform2[(1, 2)]
+            + transform1[(0, 2)];
+        let m32 = transform1[(1, 0)] * transform2[(0, 2)]
+            + transform1[(1, 1)] * transform2[(1, 2)]
+            + transform1[(1, 2)];
+
+        Matrix2x3::new(m11, m12, m31, m21, m22, m32)
+    }
+
+    pub fn multiply_by_matrix(&mut self, matrix: &Matrix2x3<f64>) {
+        let transform1 = self.matrix;
+        let transform2 = matrix;
+        let m11 = transform1[(0, 0)] * transform2[(0, 0)] + transform1[(0, 1)] * transform2[(1, 0)];
+        let m12 = transform1[(0, 0)] * transform2[(0, 1)] + transform1[(0, 1)] * transform2[(1, 1)];
+        let m21 = transform1[(1, 0)] * transform2[(0, 0)] + transform1[(1, 1)] * transform2[(1, 0)];
+        let m22 = transform1[(1, 0)] * transform2[(0, 1)] + transform1[(1, 1)] * transform2[(1, 1)];
+        let m31 = transform1[(0, 0)] * transform2[(0, 2)]
+            + transform1[(0, 1)] * transform2[(1, 2)]
+            + transform1[(0, 2)];
+        let m32 = transform1[(1, 0)] * transform2[(0, 2)]
+            + transform1[(1, 1)] * transform2[(1, 2)]
+            + transform1[(1, 2)];
+
+        self.matrix[(0, 0)] = m11;
+        self.matrix[(0, 1)] = m12;
+        self.matrix[(0, 2)] = m31;
+        self.matrix[(1, 0)] = m21;
+        self.matrix[(1, 1)] = m22;
+        self.matrix[(1, 2)] = m32;
+    }
+
+    pub fn multiply_by(&mut self, other: &Transform) {
+        self.multiply_by_matrix(&other.matrix);
+    }
+
     pub fn translate(&mut self, translation: Vector2<f64>) {
-        let transform = Matrix3::new_translation(&translation);
-        self.matrix *= transform;
+        let new_matrix = Matrix2x3::new(1.0, 0.0, translation.x, 0.0, 1.0, translation.y);
+        self.multiply_by_matrix(&new_matrix);
     }
 
     pub fn rotate_deg(&mut self, angle_degrees: f64) {
         let angle_radians = angle_degrees.to_radians();
-        let rotation_matrix = Matrix3::new_rotation(angle_radians);
-        self.matrix *= rotation_matrix;
+        let rotation_matrix = Matrix2x3::new(
+            angle_radians.cos(),
+            -angle_radians.sin(),
+            0.0,
+            angle_radians.sin(),
+            angle_radians.cos(),
+            0.0,
+        );
+        self.multiply_by_matrix(&rotation_matrix);
     }
 
     pub fn rotate(&mut self, angle_radians: f64) {
-        let rotation_matrix = Matrix3::new_rotation(angle_radians);
-        self.matrix *= rotation_matrix;
+        let rotation_matrix = Matrix2x3::new(
+            angle_radians.cos(),
+            -angle_radians.sin(),
+            0.0,
+            angle_radians.sin(),
+            angle_radians.cos(),
+            0.0,
+        );
+        self.multiply_by_matrix(&rotation_matrix);
     }
 
     pub fn scale(&mut self, sx: f64, sy: f64) {
-        let scale_matrix = Matrix3::new_nonuniform_scaling(&Vector2::new(sx, sy));
-        self.matrix *= scale_matrix;
+        let scale_matrix = Matrix2x3::new(sx, 0.0, 0.0, 0.0, sy, 0.0);
+        self.multiply_by_matrix(&scale_matrix);
     }
 
     pub fn build_transform(
@@ -40,39 +98,69 @@ impl Transform {
         scale: Vector2<f64>,
         origin: Vector2<f64>,
     ) {
-        let rotation_matrix = Matrix3::new_rotation(angle);
-        let scale_matrix = Matrix3::new_nonuniform_scaling(&scale);
-        let origin_matrix = Matrix3::new_translation(&-origin);
-        let translation_matrix = Matrix3::new_translation(&translation);
-        self.matrix = translation_matrix * rotation_matrix * scale_matrix * origin_matrix;
+        let rotation_matrix = Matrix2x3::new(
+            angle.cos(),
+            -angle.sin(),
+            0.0,
+            angle.sin(),
+            angle.cos(),
+            0.0,
+        );
+        let scale_matrix = Matrix2x3::new(scale.x, 0.0, 0.0, 0.0, scale.y, 0.0);
+        let origin_matrix = Matrix2x3::new(1.0, 0.0, -origin.x, 0.0, 1.0, -origin.y);
+        let translation_matrix = Matrix2x3::new(1.0, 0.0, translation.x, 0.0, 1.0, translation.y);
+        self.matrix = Matrix2x3::identity();
+        self.multiply_by_matrix(&translation_matrix);
+        self.multiply_by_matrix(&rotation_matrix);
+        self.multiply_by_matrix(&scale_matrix);
+        self.multiply_by_matrix(&origin_matrix);
+    }
+
+    pub fn transform_point_mut(&self, point: &mut Point2<f64>) {
+        let x = point.x;
+        let y = point.y;
+        point.x = self.matrix[(0, 0)] * x + self.matrix[(0, 1)] * y + self.matrix[(0, 2)];
+        point.y = self.matrix[(1, 0)] * x + self.matrix[(1, 1)] * y + self.matrix[(1, 2)];
     }
 
     pub fn transform_point(&self, point: &Point2<f64>) -> Point2<f64> {
-        self.matrix.transform_point(point)
+        let mut result = *point;
+        self.transform_point_mut(&mut result);
+        result
+    }
+
+    pub fn transform_vector_mut(&self, vector: &mut Vector2<f64>) {
+        let x = vector.x;
+        let y = vector.y;
+        vector.x = self.matrix[(0, 0)] * x + self.matrix[(0, 1)] * y;
+        vector.y = self.matrix[(1, 0)] * x + self.matrix[(1, 1)] * y;
     }
 
     pub fn transform_vector(&self, vector: &Vector2<f64>) -> Vector2<f64> {
-        self.matrix.transform_vector(vector)
-    }
-
-    pub fn multiply(&self, other: &Transform) -> Transform {
-        Transform {
-            matrix: self.matrix * other.matrix,
-        }
-    }
-
-    pub fn multiply_by(&mut self, other: &Transform) {
-        self.matrix *= other.matrix;
+        let mut result = *vector;
+        self.transform_vector_mut(&mut result);
+        result
     }
 
     pub fn try_inverse(&self) -> Option<Transform> {
-        self.matrix
-            .try_inverse()
-            .map(|inverse| Transform { matrix: inverse })
-    }
-
-    pub fn try_inverse_mut(&mut self) -> bool {
-        self.matrix.try_inverse_mut()
+        let det =
+            self.matrix[(0, 0)] * self.matrix[(1, 1)] - self.matrix[(1, 0)] * self.matrix[(0, 1)];
+        if det == 0.0 {
+            return None;
+        }
+        let inv_det = 1.0 / det;
+        let m11 = self.matrix[(1, 1)] * inv_det;
+        let m12 = -self.matrix[(0, 1)] * inv_det;
+        let m21 = -self.matrix[(1, 0)] * inv_det;
+        let m22 = self.matrix[(0, 0)] * inv_det;
+        let origin_x = -self.matrix[(0, 2)];
+        let origin_y = -self.matrix[(1, 2)];
+        let m31 = m11 * origin_x + m12 * origin_y;
+        let m32 = m21 * origin_x + m22 * origin_y;
+        let inverse_matrix = Matrix2x3::new(m11, m12, m31, m21, m22, m32);
+        Some(Transform {
+            matrix: inverse_matrix,
+        })
     }
 }
 
