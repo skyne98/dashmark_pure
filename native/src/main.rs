@@ -6,6 +6,7 @@ mod api;
 mod bvh;
 mod entity;
 mod index;
+mod matrix;
 mod state;
 mod typed_data;
 

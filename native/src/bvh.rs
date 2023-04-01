@@ -33,7 +33,7 @@ impl Bvh {
         for entity in entities {
             aabbs.push((
                 IndexWrapper(entity.index),
-                entity.get_aabb().expect(
+                entity.get_aabb_iso().expect(
                     "Entity has no AABB, a shape is required for an entity to be in the BVH.",
                 ),
             ));
@@ -295,7 +295,7 @@ mod test_bvh {
         assert!(root_node.is_leaf() == false);
         assert!(recursive_build_node.is_leaf());
         let root_aabb = root_node.simd_aabb.extract(0);
-        let entity_aabb = entity.get_aabb().unwrap();
+        let entity_aabb = entity.get_aabb_iso().unwrap();
         assert_eq!(root_aabb.mins, entity_aabb.mins);
         assert_eq!(root_aabb.maxs, entity_aabb.maxs);
     }
@@ -355,7 +355,7 @@ mod test_bvh {
 
         // Move the entity
         entity.set_position(Vector2::new(1.0, 1.0));
-        let entity_aabb = &entity.get_aabb().unwrap();
+        let entity_aabb = &entity.get_aabb_iso().unwrap();
 
         // Refit the bvh
         bvh.refit(move |index| {

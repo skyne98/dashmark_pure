@@ -63,7 +63,7 @@ impl BroadphaseStack {
                 .iter()
                 .map(|index| {
                     let mut entity = entities.get_entity_mut(*index).expect("Entity not found");
-                    let aabb = entity.get_aabb().expect("Entity has no AABB");
+                    let aabb = entity.get_aabb_iso().expect("Entity has no AABB");
                     (IndexWrapper::from(*index), aabb)
                 })
                 .collect::<Vec<_>>();
