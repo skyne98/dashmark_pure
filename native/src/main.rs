@@ -1,4 +1,4 @@
-use crate::matrix::Transform;
+use crate::matrix::{bulk_transform_vectors_mut, Transform};
 use rapier2d_f64::na::Vector2;
 use rapier2d_f64::parry::bounding_volume::Aabb as ParryAabb;
 use rapier2d_f64::parry::na::Point2;
@@ -87,6 +87,14 @@ fn main() {
     }
     println!(
         "Time to do iterations matrix and vector transformations: {:?}",
+        start.elapsed()
+    );
+
+    start = std::time::Instant::now();
+    let matrix = Transform::new();
+    bulk_transform_vectors_mut(&matrix.matrix, &mut vectors);
+    println!(
+        "Time to do iterations bulk matrix and vector transformations: {:?}",
         start.elapsed()
     );
 }

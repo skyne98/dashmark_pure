@@ -11,6 +11,7 @@ fastrand = "1.9.0"
 flutter_rust_bridge = { version = "1" }
 generational-arena = { version = "0.2.8", features = ["std"] }
 rapier2d-f64 = { version = "0.17.2", features = ["simd-stable", "dim2"] }
+simba = { version = "0.8.0", features = ["std", "packed_simd"] }
 smallvec = "1.10.0"
 
 [lib]
