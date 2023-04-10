@@ -44,7 +44,7 @@ impl Bvh {
         for index in indices {
             let entity = entity_manager.get_entity(*index).unwrap();
             bvh.bvh.pre_update_or_insert(IndexWrapper(*index));
-            let transform = transform_manager.get_transform(*index).unwrap();
+            let transform = transform_manager.transform(*index).unwrap();
             let aabb = entity.get_global_aabb(&transform);
             let aabb = aabb.expect("Entity has no AABB");
             index_and_aabb.push((IndexWrapper::from(index), aabb));

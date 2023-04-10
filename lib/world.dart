@@ -1,8 +1,10 @@
 import 'dart:math';
 import 'dart:ui';
+import 'package:dashmark_pure/api/vertices.dart';
 import 'package:dashmark_pure/typed_array/f64.dart';
 import 'package:dashmark_pure/typed_array/u64.dart';
 
+import 'api/entity.dart';
 import 'batch.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
@@ -104,7 +106,7 @@ class World {
         // Create the entity
         final entity = api.createEntity();
         _entityIndices.addRawIndex(entity);
-        api.entitySetPosition(index: entity, x: x, y: y);
+        entitySetPosition(entity, x, y);
         api.entitySetOrigin(index: entity, relative: true, x: 0.5, y: 0.5);
         const shape = Shape.ball(radius: World.desiredSize / 2);
         api.entitySetShape(index: entity, shape: shape);
@@ -233,6 +235,8 @@ class World {
       paint.shader = fragmentShader;
 
       // Draw the batches
+      var verts = transformedVertices();
+      debugPrint('Verts: ${verts.length} (${verts.length / 2})');
       for (final batch in _batches) {
         batch.draw(canvas, paint);
       }

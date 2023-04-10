@@ -28,7 +28,17 @@ impl BroadphaseStack {
     }
 
     pub fn is_building(&self) -> bool {
-        self.buffer_bvh.is_none() && self.buffer_receiver.is_some()
+        let bvh_none = self.buffer_bvh.is_none();
+        let receiver_some = self.buffer_receiver.is_some();
+
+        if bvh_none && receiver_some == false {
+            panic!("BroadphaseStack is in an inconsistent state.");
+        }
+        if bvh_none == false && receiver_some {
+            panic!("BroadphaseStack is in an inconsistent state.");
+        }
+
+        bvh_none && receiver_some
     }
 
     pub fn index_added(&mut self, index: Index) {
@@ -64,7 +74,7 @@ impl BroadphaseStack {
                 .map(|index| {
                     let entity = entities.get_entity(*index).expect("Entity not found");
                     let transform = transforms
-                        .get_transform(*index)
+                        .transform(*index)
                         .expect("Entity has no transform");
                     let aabb = entity
                         .get_global_aabb(&transform)

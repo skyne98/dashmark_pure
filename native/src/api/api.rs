@@ -33,6 +33,7 @@ pub fn create_entity() -> SyncReturn<RawIndex> {
         let index = state.entities.borrow_mut().create_entity();
         state.broadphase.borrow_mut().index_added(index);
         state.vertices.borrow_mut().index_added(index);
+        state.transforms.borrow_mut().index_added(index);
         index
     });
     SyncReturn(index.into())
@@ -44,6 +45,7 @@ pub fn drop_entity(index: RawIndex) -> SyncReturn<()> {
         if let Some(entity) = entity {
             state.broadphase.borrow_mut().index_removed(entity.index);
             state.vertices.borrow_mut().index_removed(entity.index);
+            state.transforms.borrow_mut().index_removed(entity.index);
         }
     });
     SyncReturn(())
@@ -57,7 +59,7 @@ pub fn entities_set_position_raw(
         let indices = bytes_to_indices(indices.0.as_slice());
         let positions = bytes_to_vector2s(positions.0.as_slice());
         for (index, position) in indices.iter().zip(positions.iter()) {
-            if let Some(mut transform) = state.transforms.borrow_mut().get_transform_mut(*index) {
+            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_position(*position);
                 state.broadphase.borrow_mut().index_updated(*index);
             }
@@ -68,11 +70,7 @@ pub fn entities_set_position_raw(
 
 pub fn entity_set_origin(index: RawIndex, relative: bool, x: f64, y: f64) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        if let Some(mut trasform) = state
-            .transforms
-            .borrow_mut()
-            .get_transform_mut(index.into())
-        {
+        if let Some(mut trasform) = state.transforms.borrow_mut().transform_mut(index.into()) {
             if let Some(entity) = state.entities.borrow_mut().get_entity_mut(index.into()) {
                 if relative {
                     trasform.set_origin_relative(Vector2::new(x, y));
@@ -96,7 +94,7 @@ pub fn entities_set_rotation_raw(
         let indices = bytes_to_indices(indices.0.as_slice());
         let rotations = bytes_to_vector2s(rotations.0.as_slice());
         for (index, rotation) in indices.iter().zip(rotations.iter()) {
-            if let Some(mut transform) = state.transforms.borrow_mut().get_transform_mut(*index) {
+            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_rotation(rotation.x);
                 state.broadphase.borrow_mut().index_updated(*index);
             }
@@ -169,16 +167,16 @@ pub fn transformed_vertices() -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
         let entities = state.entities.borrow();
         let vertices = state.vertices.borrow();
         let transform = state.transforms.borrow();
-        let entities_len = entities.len();
+        let entities_len = entities.len() as u64;
         let entities_iter = entities.iter();
         buffer.extend_from_slice(value_to_bytes(&entities_len));
 
         for (index, _) in entities_iter {
-            let transform = transform.get_transform(index).unwrap();
+            let transform = transform.transform(index).unwrap();
             let vertices = vertices.get(index).expect("Entity has no vertices");
-            let vertices_len = vertices.len();
+            let vertices_len = vertices.len() as u64;
             buffer.extend_from_slice(value_to_bytes(&vertices_len));
-            let mut transformed_vertices = Vec::with_capacity(vertices_len);
+            let mut transformed_vertices = Vec::with_capacity(vertices_len as usize);
             transformed_vertices.copy_from_slice(vertices);
             bulk_transform_vectors_mut(&transform.matrix(), &mut transformed_vertices);
 
