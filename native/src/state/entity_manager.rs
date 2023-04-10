@@ -1,13 +1,8 @@
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    rc::Rc,
-};
+use std::cell::{Ref, RefCell, RefMut};
 
 use generational_arena::{Arena, Index};
 
 use crate::entity::Entity;
-
-use super::State;
 
 pub struct EntityManager {
     entities: Arena<RefCell<Entity>>,
@@ -34,6 +29,10 @@ impl EntityManager {
 
     pub fn index_iter(&self) -> Vec<Index> {
         self.entities.iter().map(|(i, _)| i).collect()
+    }
+
+    pub fn len(&self) -> usize {
+        self.entities.len()
     }
 
     pub fn create_entity(&mut self) -> Index {

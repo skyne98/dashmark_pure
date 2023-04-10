@@ -22,11 +22,6 @@ pub fn wire_drop_entity(index: JsValue) -> support::WireSyncReturn {
 }
 
 #[wasm_bindgen]
-pub fn wire_entity_set_position(index: JsValue, x: f64, y: f64) -> support::WireSyncReturn {
-    wire_entity_set_position_impl(index, x, y)
-}
-
-#[wasm_bindgen]
 pub fn wire_entities_set_position_raw(
     indices: Box<[u8]>,
     positions: Box<[u8]>,
@@ -45,11 +40,6 @@ pub fn wire_entity_set_origin(
 }
 
 #[wasm_bindgen]
-pub fn wire_entity_set_rotation(index: JsValue, rotation: f64) -> support::WireSyncReturn {
-    wire_entity_set_rotation_impl(index, rotation)
-}
-
-#[wasm_bindgen]
 pub fn wire_entities_set_rotation_raw(
     indices: Box<[u8]>,
     rotations: Box<[u8]>,
@@ -63,6 +53,14 @@ pub fn wire_entity_set_shape(index: JsValue, shape: JsValue) -> support::WireSyn
 }
 
 #[wasm_bindgen]
+pub fn wire_entity_set_vertices_raw(
+    index: JsValue,
+    vertices: Box<[u8]>,
+) -> support::WireSyncReturn {
+    wire_entity_set_vertices_raw_impl(index, vertices)
+}
+
+#[wasm_bindgen]
 pub fn wire_query_aabb(x: f64, y: f64, width: f64, height: f64) -> support::WireSyncReturn {
     wire_query_aabb_impl(x, y, width, height)
 }
@@ -70,6 +68,11 @@ pub fn wire_query_aabb(x: f64, y: f64, width: f64, height: f64) -> support::Wire
 #[wasm_bindgen]
 pub fn wire_query_aabb_raw(x: f64, y: f64, width: f64, height: f64) -> support::WireSyncReturn {
     wire_query_aabb_raw_impl(x, y, width, height)
+}
+
+#[wasm_bindgen]
+pub fn wire_transformed_vertices() -> support::WireSyncReturn {
+    wire_transformed_vertices_impl()
 }
 
 // Section: allocate functions

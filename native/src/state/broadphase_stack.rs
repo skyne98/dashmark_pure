@@ -3,11 +3,11 @@ use std::sync::mpsc::Receiver;
 #[cfg(target_arch = "wasm32")]
 use flutter_rust_bridge::JsValue;
 use generational_arena::Index;
-use rapier2d_f64::{parry::partitioning::QbvhUpdateWorkspace, prelude::Aabb};
+use rapier2d_f64::prelude::Aabb;
 
 use crate::{bvh::Bvh, index::IndexWrapper};
 
-use super::entity_manager::EntityManager;
+use super::{entity_manager::EntityManager, transform_manager::TransformManager};
 
 pub struct BroadphaseStack {
     current_bvh: Bvh,
@@ -31,26 +31,26 @@ impl BroadphaseStack {
         self.buffer_bvh.is_none() && self.buffer_receiver.is_some()
     }
 
-    pub fn entity_added(&mut self, index: Index) {
+    pub fn index_added(&mut self, index: Index) {
         self.current_bvh
             .bvh
             .pre_update_or_insert(IndexWrapper::from(index));
         self.needs_rebuild = true;
     }
 
-    pub fn entity_removed(&mut self, index: Index) {
+    pub fn index_removed(&mut self, index: Index) {
         self.current_bvh.bvh.remove(IndexWrapper::from(index));
         self.needs_rebuild = true;
     }
 
-    pub fn entity_updated(&mut self, index: Index) {
+    pub fn index_updated(&mut self, index: Index) {
         self.current_bvh
             .bvh
             .pre_update_or_insert(IndexWrapper::from(index));
         self.needs_rebuild = true;
     }
 
-    pub fn do_maintenance(&mut self, entities: &EntityManager) {
+    pub fn do_maintenance(&mut self, entities: &EntityManager, transforms: &TransformManager) {
         // Dispatching the rebuild task
         if self.needs_rebuild && self.is_building() == false {
             self.needs_rebuild = false;
@@ -62,8 +62,13 @@ impl BroadphaseStack {
             let new_entities_with_aabbs = new_entities
                 .iter()
                 .map(|index| {
-                    let mut entity = entities.get_entity_mut(*index).expect("Entity not found");
-                    let aabb = entity.get_aabb_iso().expect("Entity has no AABB");
+                    let entity = entities.get_entity(*index).expect("Entity not found");
+                    let transform = transforms
+                        .get_transform(*index)
+                        .expect("Entity has no transform");
+                    let aabb = entity
+                        .get_global_aabb(&transform)
+                        .expect("Entity has no AABB");
                     (IndexWrapper::from(*index), aabb)
                 })
                 .collect::<Vec<_>>();

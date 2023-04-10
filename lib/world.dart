@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'dart:ui';
-import 'package:dashmark_pure/buffer.dart';
 import 'package:dashmark_pure/typed_array/f64.dart';
 import 'package:dashmark_pure/typed_array/u64.dart';
 

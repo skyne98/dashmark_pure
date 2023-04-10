@@ -8,7 +8,7 @@ use rapier2d_f64::{
     prelude::Aabb,
 };
 
-use crate::{matrix::Transform, state::entity_manager::EntityManager};
+use crate::{matrix::TransformMatrix, state::entity_manager::EntityManager, transform::Transform};
 
 // Shape
 pub trait EntityShape: Shape {}
@@ -26,26 +26,9 @@ impl dyn EntityShape {
     }
 }
 
-// Transform components
-#[derive(Debug)]
-pub enum Origin {
-    Relative(Vector2<f64>),
-    Absolute(Vector2<f64>),
-}
-
 pub struct Entity {
     pub index: Index,
     parent: Option<Index>,
-
-    // Transform
-    origin: Origin,
-    position: Vector2<f64>,
-    scale: Vector2<f64>,
-    rotation: f64,
-    // ...other transform components
-    transform_isometry: Isometry2<f64>,
-    transform: Transform,
-    dirty_transforms: bool,
 
     // Coliisions
     pub shape: Option<Box<dyn EntityShape>>,
@@ -56,13 +39,6 @@ impl Debug for Entity {
         f.debug_struct("Entity")
             .field("index", &self.index)
             .field("parent", &self.parent)
-            .field("origin", &self.origin)
-            .field("position", &self.position)
-            .field("scale", &self.scale)
-            .field("rotation", &self.rotation)
-            .field("transform_isometry", &self.transform_isometry)
-            .field("transform", &self.transform)
-            .field("dirty_transforms", &self.dirty_transforms)
             .field(
                 "shape",
                 &self.shape.as_ref().map(|_| "Some(Shape)".to_string()),
@@ -76,13 +52,6 @@ impl Default for Entity {
         Self {
             index: Index::from_raw_parts(usize::MAX, u64::MAX),
             parent: None,
-            origin: Origin::Absolute(Vector2::new(0.0, 0.0)),
-            position: Default::default(),
-            scale: Vector2::new(1.0, 1.0),
-            rotation: Default::default(),
-            transform_isometry: Default::default(),
-            transform: Default::default(),
-            dirty_transforms: true,
             shape: None,
         }
     }
@@ -98,7 +67,6 @@ impl Entity {
 
     pub fn set_parent(&mut self, parent: Option<Index>) {
         self.parent = parent;
-        self.dirty_transforms = true;
     }
 
     pub fn get_parent(&self) -> Option<Index> {
@@ -130,54 +98,40 @@ impl Entity {
         }
     }
 
-    pub fn get_absolute_offset(&self) -> Vector2<f64> {
-        let size = self.get_size();
-        match self.origin {
-            Origin::Relative(offset) => Vector2::new(offset.x * size.x, offset.y * size.y),
-            Origin::Absolute(offset) => offset,
+    pub fn get_shape_natural_offset(&self) -> Vector2<f64> {
+        match self.get_local_aabb() {
+            Some(aabb) => Vector2::new(-aabb.mins.x, -aabb.mins.y),
+            None => Vector2::new(0.0, 0.0),
         }
     }
 
-    pub fn get_relative_offset(&self) -> Vector2<f64> {
-        let size = self.get_size();
-        match self.origin {
-            Origin::Relative(offset) => offset,
-            Origin::Absolute(offset) => Vector2::new(offset.x / size.x, offset.y / size.y),
-        }
+    pub fn get_shape(&self) -> Option<&dyn EntityShape> {
+        self.shape.as_ref().map(|shape| shape.as_ref())
     }
 
-    pub fn get_aabb_iso(&mut self) -> Option<Aabb> {
-        let transform_iso = self.get_transform_isometry();
-        let shape = self.shape.as_ref();
-        shape.map(|shape| shape.compute_aabb(&transform_iso))
+    pub fn set_shape<S: EntityShape>(&mut self, shape: S) {
+        self.shape = Some(Box::new(shape));
     }
 
-    pub fn get_aabb(&mut self) -> Option<Aabb> {
-        let aabb = self.get_local_aabb();
-        let transform = self.borrow_transform();
-        aabb.map(|mut aabb| {
-            aabb.mins = transform.transform_point(&aabb.mins);
-            aabb.maxs = transform.transform_point(&aabb.maxs);
-            aabb
-        })
+    pub fn set_shape_box(&mut self, shape: Box<dyn EntityShape>) {
+        self.shape = Some(shape);
     }
 
-    pub fn get_transform_isometry(&mut self) -> Isometry2<f64> {
-        if self.dirty_transforms {
-            self.recalculate_transforms();
-        }
-        self.transform_isometry
-    }
-
-    pub fn borrow_transform(&mut self) -> &Transform {
-        if self.dirty_transforms {
-            self.recalculate_transforms();
-        }
-        &self.transform
+    pub fn set_shape_none(&mut self) {
+        self.shape = None;
     }
 
     pub fn get_local_aabb(&self) -> Option<Aabb> {
         self.shape.as_ref().map(|shape| shape.compute_local_aabb())
+    }
+
+    pub fn get_global_aabb(&self, transform: &Transform) -> Option<Aabb> {
+        let natural_offset = self.get_shape_natural_offset();
+        let size = self.get_size();
+        let mut transform_iso = transform.isometry(size).clone();
+        transform_iso.translation.vector += natural_offset;
+        let shape = self.shape.as_ref();
+        shape.map(|shape| shape.compute_aabb(&transform_iso))
     }
 
     pub fn get_local_aabb_and_size(&self) -> (Aabb, Vector2<f64>) {
@@ -192,73 +146,14 @@ impl Entity {
             ),
         }
     }
-
-    pub fn get_shape(&self) -> Option<&dyn EntityShape> {
-        self.shape.as_ref().map(|shape| shape.as_ref())
-    }
-
-    pub fn set_origin(&mut self, origin: Origin) {
-        self.origin = origin;
-        self.dirty_transforms = true;
-    }
-
-    pub fn set_position(&mut self, position: Vector2<f64>) {
-        self.position = position;
-        self.dirty_transforms = true;
-    }
-
-    pub fn set_rotation(&mut self, rotation: f64) {
-        self.rotation = rotation;
-        self.dirty_transforms = true;
-    }
-
-    pub fn set_shape<S: EntityShape>(&mut self, shape: S) {
-        self.shape = Some(Box::new(shape));
-        self.dirty_transforms = true;
-    }
-
-    pub fn set_shape_from_box(&mut self, shape: Box<dyn EntityShape>) {
-        self.shape = Some(shape);
-        self.dirty_transforms = true;
-    }
-
-    pub fn set_shape_to_none(&mut self) {
-        self.shape = None;
-        self.dirty_transforms = true;
-    }
-
-    pub fn recalculate_transforms(&mut self) {
-        let absolute_offset = self.get_absolute_offset();
-        let (local_aabb, size) = self.get_local_aabb_and_size();
-        // Natural offset - how far shape's AABB's min corner is from the zero
-        let natural_offset = Vector2::new(-local_aabb.mins.x, -local_aabb.mins.y);
-
-        // Isometry is a combination of translation and rotation
-        self.transform_isometry.translation.vector =
-            self.position - absolute_offset + natural_offset;
-        self.transform_isometry.rotation = UnitComplex::new(0.0);
-        self.transform_isometry.append_rotation_wrt_point_mut(
-            &UnitComplex::new(self.rotation),
-            &Point2::from(self.position),
-        );
-
-        // Affine transform is a combination of translation, rotation and scale
-        self.transform = Transform::new();
-        self.transform.build_transform(
-            self.position + natural_offset,
-            self.rotation,
-            Vector2::new(self.scale.x, self.scale.y),
-            absolute_offset,
-        );
-
-        self.dirty_transforms = false;
-    }
 }
 
 // ===== Tests =====
 #[cfg(test)]
 mod test_entity {
     use rapier2d_f64::prelude::SharedShape;
+
+    use crate::transform::Origin;
 
     use super::*;
 
@@ -270,17 +165,15 @@ mod test_entity {
     #[test]
     fn entity() {
         let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-        entity.set_origin(Origin::Absolute(Vector2::new(0.0, 0.0)));
-        entity.set_position(Vector2::new(0.0, 0.0));
-        entity.set_rotation(0.0);
+        let mut transform = Transform::default();
+        transform.set_origin_relative(Vector2::new(0.0, 0.0));
+        transform.set_position(Vector2::new(0.0, 0.0));
+        transform.set_rotation(0.0);
         let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
         entity.set_shape(shape);
-        let aabb = entity.get_aabb_iso().unwrap();
+        let aabb = entity.get_global_aabb(&transform).unwrap();
         assert_points_equal(aabb.mins, Point2::new(0.0, 0.0));
         assert_points_equal(aabb.maxs, Point2::new(2.0, 2.0));
-        let aabb_transform = entity.get_aabb().unwrap();
-        assert_points_equal(aabb.mins, aabb_transform.mins);
-        assert_points_equal(aabb.maxs, aabb_transform.maxs);
     }
 
     #[test]
@@ -290,13 +183,14 @@ mod test_entity {
             for y in 0..11 {
                 let x = x as f64 * 0.1;
                 let y = y as f64 * 0.1;
+                let mut transform = Transform::default();
                 let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-                entity.set_origin(Origin::Relative(Vector2::new(x, y)));
-                entity.set_position(Vector2::new(0.0, 0.0));
-                entity.set_rotation(0.0);
+                transform.set_origin_relative(Vector2::new(x, y));
+                transform.set_position(Vector2::new(0.0, 0.0));
+                transform.set_rotation(0.0);
                 let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
-                let aabb = entity.get_aabb_iso().unwrap();
+                let aabb = entity.get_global_aabb(&transform).unwrap();
                 let expected_minx = ((-x * 2.0) * 100.0).round() as i32;
                 let actual_minx = (aabb.mins.x * 100.0).round() as i32;
                 assert_eq!(expected_minx, actual_minx, "x: {}, y: {}", x, y);
@@ -309,10 +203,6 @@ mod test_entity {
                 let expected_maxy = ((1.0 - y) * 2.0 * 100.0).round() as i32;
                 let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
                 assert_eq!(expected_maxy, actual_maxy, "x: {}, y: {}", x, y);
-
-                let aabb_transform = entity.get_aabb().unwrap();
-                assert_points_equal(aabb.mins, aabb_transform.mins);
-                assert_points_equal(aabb.maxs, aabb_transform.maxs);
             }
         }
     }
@@ -324,13 +214,15 @@ mod test_entity {
             for y in 0..21 {
                 let x = x as f64 * 0.1;
                 let y = y as f64 * 0.1;
+                let mut transform = Transform::default();
                 let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-                entity.set_origin(Origin::Absolute(Vector2::new(x, y)));
-                entity.set_position(Vector2::new(0.0, 0.0));
-                entity.set_rotation(0.0);
+                let absolute_origin = Origin::Absolute(Vector2::new(x, y));
+                transform.set_origin_relative(absolute_origin.to_relative(Vector2::new(2.0, 2.0)));
+                transform.set_position(Vector2::new(0.0, 0.0));
+                transform.set_rotation(0.0);
                 let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
-                let aabb = entity.get_aabb_iso().unwrap();
+                let aabb = entity.get_global_aabb(&transform).unwrap();
                 let expected_minx = (-x * 100.0).round() as i32;
                 let actual_minx = (aabb.mins.x * 100.0).round() as i32;
                 assert_eq!(expected_minx, actual_minx, "x: {}, y: {}", x, y);
@@ -343,10 +235,6 @@ mod test_entity {
                 let expected_maxy = ((2.0 - y) * 100.0).round() as i32;
                 let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
                 assert_eq!(expected_maxy, actual_maxy, "x: {}, y: {}", x, y);
-
-                let aabb_transform = entity.get_aabb().unwrap();
-                assert_points_equal(aabb.mins, aabb_transform.mins);
-                assert_points_equal(aabb.maxs, aabb_transform.maxs);
             }
         }
     }
@@ -358,13 +246,14 @@ mod test_entity {
             for y in 0..11 {
                 let x = x as f64 * 0.1;
                 let y = y as f64 * 0.1;
+                let mut transform = Transform::default();
                 let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-                entity.set_origin(Origin::Relative(Vector2::new(x, y)));
-                entity.set_position(Vector2::new(100.0, 100.0));
-                entity.set_rotation(0.0);
+                transform.set_origin_relative(Vector2::new(x, y));
+                transform.set_position(Vector2::new(100.0, 100.0));
+                transform.set_rotation(0.0);
                 let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
-                let aabb = entity.get_aabb_iso().unwrap();
+                let aabb = entity.get_global_aabb(&transform).unwrap();
                 let translation = 100 * 100;
 
                 let offset_minx = (-x * 2.0 * 100.0).round() as i32;
@@ -394,13 +283,14 @@ mod test_entity {
         // each time
         for rotation in 0..360 {
             let rotation = rotation as f64;
+            let mut transform = Transform::default();
             let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-            entity.set_origin(Origin::Relative(Vector2::new(0.5, 0.5)));
-            entity.set_position(Vector2::new(0.0, 0.0));
-            entity.set_rotation(rotation.to_radians());
+            transform.set_origin_relative(Vector2::new(0.5, 0.5));
+            transform.set_position(Vector2::new(0.0, 0.0));
+            transform.set_rotation(rotation.to_radians());
             let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
-            let aabb = entity.get_aabb_iso().unwrap();
+            let aabb = entity.get_global_aabb(&transform).unwrap();
 
             let expected_minx = -1 * 100;
             let actual_minx = (aabb.mins.x * 100.0).round() as i32;
@@ -424,13 +314,14 @@ mod test_entity {
         // each time
         for rotation in 0..360 {
             let rotation = rotation as f64;
+            let mut transform = Transform::default();
             let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-            entity.set_origin(Origin::Relative(Vector2::new(0.5, 0.5)));
-            entity.set_position(Vector2::new(100.0, 100.0));
-            entity.set_rotation(rotation.to_radians());
+            transform.set_origin_relative(Vector2::new(0.5, 0.5));
+            transform.set_position(Vector2::new(100.0, 100.0));
+            transform.set_rotation(rotation.to_radians());
             let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
-            let aabb = entity.get_aabb_iso().unwrap();
+            let aabb = entity.get_global_aabb(&transform).unwrap();
 
             let expected_minx = -1 * 100 + 100 * 100;
             let actual_minx = (aabb.mins.x * 100.0).round() as i32;
@@ -458,13 +349,13 @@ mod test_entity {
         for rotation_i in 0..4 {
             let rotation = rotation_i as f64 * 90.0;
             let rotation_rad = rotation.to_radians();
+            let mut transform = Transform::default();
             let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-            entity.set_origin(Origin::Relative(Vector2::new(0.0, 0.0)));
-            entity.set_position(Vector2::new(0.0, 0.0));
-            entity.set_rotation(rotation_rad);
+            transform.set_origin_relative(Vector2::new(0.0, 0.0));
+            transform.set_rotation(rotation_rad);
             let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
-            let aabb = entity.get_aabb_iso().unwrap();
+            let aabb = entity.get_global_aabb(&transform).unwrap();
 
             // Each time the AABB will jump around, calculate the expected values for min and max
             let expected_minx = expected_minxs[rotation_i];
@@ -493,13 +384,14 @@ mod test_entity {
         for rotation_i in 0..4 {
             let rotation = rotation_i as f64 * 90.0;
             let rotation_rad = rotation.to_radians();
+            let mut transform = Transform::default();
             let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-            entity.set_origin(Origin::Relative(Vector2::new(1.0, 1.0)));
-            entity.set_position(Vector2::new(100.0, 100.0));
-            entity.set_rotation(rotation_rad);
+            transform.set_origin_relative(Vector2::new(1.0, 1.0));
+            transform.set_position(Vector2::new(100.0, 100.0));
+            transform.set_rotation(rotation_rad);
             let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
-            let aabb = entity.get_aabb_iso().unwrap();
+            let aabb = entity.get_global_aabb(&transform).unwrap();
 
             // Each time the AABB will jump around, calculate the expected values for min and max
             let expected_minx = expected_minxs[rotation_i] + 100 * 100;
@@ -528,13 +420,14 @@ mod test_entity {
         for rotation_i in 0..4 {
             let rotation = rotation_i as f64 * 90.0;
             let rotation_rad = rotation.to_radians();
+            let mut transform = Transform::default();
             let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-            entity.set_origin(Origin::Relative(Vector2::new(1.0, 1.0)));
-            entity.set_position(Vector2::new(0.0, 0.0));
-            entity.set_rotation(rotation_rad);
+            transform.set_origin_relative(Vector2::new(1.0, 1.0));
+            transform.set_position(Vector2::new(0.0, 0.0));
+            transform.set_rotation(rotation_rad);
             let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
-            let aabb = entity.get_aabb_iso().unwrap();
+            let aabb = entity.get_global_aabb(&transform).unwrap();
 
             // Each time the AABB will jump around, calculate the expected values for min and max
             let expected_minx = expected_minxs[rotation_i];
@@ -554,10 +447,11 @@ mod test_entity {
 
     #[test]
     fn compound_shape_works() {
+        let mut transform = Transform::default();
         let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-        entity.set_origin(Origin::Relative(Vector2::new(0.5, 0.5)));
-        entity.set_position(Vector2::new(0.0, 0.0));
-        entity.set_rotation(0.0);
+        transform.set_origin_relative(Vector2::new(0.5, 0.5));
+        transform.set_position(Vector2::new(0.0, 0.0));
+        transform.set_rotation(0.0);
         let shape = rapier2d_f64::parry::shape::Compound::new(vec![
             (
                 Isometry2::new(Vector2::new(0.0, 0.0), 0.0),
@@ -572,17 +466,18 @@ mod test_entity {
 
         let size = entity.get_size();
         assert_eq!(size, Vector2::new(4.0, 4.0));
-        let aabb = entity.get_aabb_iso().unwrap();
+        let aabb = entity.get_global_aabb(&transform).unwrap();
         assert_points_equal(aabb.mins, Vector2::new(-2.0, -2.0).into());
         assert_points_equal(aabb.maxs, Vector2::new(2.0, 2.0).into());
     }
 
     #[test]
     fn compound_shape_with_zero_origin_works() {
+        let mut transform = Transform::default();
         let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-        entity.set_origin(Origin::Relative(Vector2::new(0.0, 0.0)));
-        entity.set_position(Vector2::new(0.0, 0.0));
-        entity.set_rotation(0.0);
+        transform.set_origin_relative(Vector2::new(0.0, 0.0));
+        transform.set_position(Vector2::new(0.0, 0.0));
+        transform.set_rotation(0.0);
         let shape = rapier2d_f64::parry::shape::Compound::new(vec![
             (
                 Isometry2::new(Vector2::new(0.0, 0.0), 0.0),
@@ -597,12 +492,12 @@ mod test_entity {
 
         let size = entity.get_size();
         assert_eq!(size, Vector2::new(4.0, 4.0));
-        let aabb = entity.get_aabb_iso().unwrap();
+        let aabb = entity.get_global_aabb(&transform).unwrap();
         assert_points_equal(aabb.mins, Vector2::new(0.0, 0.0).into());
         assert_points_equal(aabb.maxs, Vector2::new(4.0, 4.0).into());
 
         // Test all internal shapes are at correct positions
-        let isometry = entity.get_transform_isometry();
+        let isometry = transform.isometry(size);
         let compound: &rapier2d_f64::parry::shape::Compound =
             entity.get_shape().unwrap().as_shape().unwrap();
         let shape_aabbs = compound
@@ -627,10 +522,11 @@ mod test_entity {
         for i in 0..4 {
             let rotation = i as f64 * 90.0;
             let rotation_rad = rotation.to_radians();
+            let mut transform = Transform::default();
             let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-            entity.set_origin(Origin::Relative(Vector2::new(0.0, 0.0)));
-            entity.set_position(Vector2::new(0.0, 0.0));
-            entity.set_rotation(rotation_rad);
+            transform.set_origin_relative(Vector2::new(0.0, 0.0));
+            transform.set_position(Vector2::new(0.0, 0.0));
+            transform.set_rotation(rotation_rad);
             let shape = rapier2d_f64::parry::shape::Compound::new(vec![
                 (
                     Isometry2::new(Vector2::new(0.0, 0.0), 0.0),
@@ -645,7 +541,7 @@ mod test_entity {
 
             let size = entity.get_size();
             assert_eq!(size, Vector2::new(4.0, 4.0));
-            let aabb = entity.get_aabb_iso().unwrap();
+            let aabb = entity.get_global_aabb(&transform).unwrap();
 
             // Each time the AABB will jump around, calculate the expected values for min and max
             let expected_minx = expected_minxs[i];

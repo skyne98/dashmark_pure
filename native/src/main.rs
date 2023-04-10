@@ -1,4 +1,4 @@
-use crate::matrix::{bulk_transform_vectors_mut, Transform};
+use crate::matrix::{bulk_transform_vectors_mut, bulk_transform_vectors_mut_n, TransformMatrix};
 use rapier2d_f64::na::Vector2;
 use rapier2d_f64::parry::bounding_volume::Aabb as ParryAabb;
 use rapier2d_f64::parry::na::Point2;
@@ -10,6 +10,7 @@ mod entity;
 mod index;
 mod matrix;
 mod state;
+mod transform;
 mod typed_data;
 
 fn main() {
@@ -67,7 +68,7 @@ fn main() {
     // 1000000 matrix and vector transformations
     start = std::time::Instant::now();
     let mut matrices = Vec::with_capacity(iterations as usize);
-    matrices.resize(iterations as usize, Transform::new());
+    matrices.resize(iterations as usize, TransformMatrix::new());
     println!(
         "Time to generate iterations matrices: {:?}",
         start.elapsed()
@@ -91,10 +92,18 @@ fn main() {
     );
 
     start = std::time::Instant::now();
-    let matrix = Transform::new();
+    let matrix = TransformMatrix::new();
     bulk_transform_vectors_mut(&matrix.matrix, &mut vectors);
     println!(
         "Time to do iterations bulk matrix and vector transformations: {:?}",
+        start.elapsed()
+    );
+
+    let transform_matrices = matrices.iter().map(|m| m.matrix).collect::<Vec<_>>();
+    start = std::time::Instant::now();
+    bulk_transform_vectors_mut_n(&transform_matrices[..], &mut vectors, 1);
+    println!(
+        "Time to do iterations bulk matrix and vector transformations (n=1): {:?}",
         start.elapsed()
     );
 }

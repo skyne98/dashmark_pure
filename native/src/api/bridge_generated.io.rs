@@ -22,15 +22,6 @@ pub extern "C" fn wire_drop_entity(index: *mut wire_RawIndex) -> support::WireSy
 }
 
 #[no_mangle]
-pub extern "C" fn wire_entity_set_position(
-    index: *mut wire_RawIndex,
-    x: f64,
-    y: f64,
-) -> support::WireSyncReturn {
-    wire_entity_set_position_impl(index, x, y)
-}
-
-#[no_mangle]
 pub extern "C" fn wire_entities_set_position_raw(
     indices: *mut wire_uint_8_list,
     positions: *mut wire_uint_8_list,
@@ -49,14 +40,6 @@ pub extern "C" fn wire_entity_set_origin(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_entity_set_rotation(
-    index: *mut wire_RawIndex,
-    rotation: f64,
-) -> support::WireSyncReturn {
-    wire_entity_set_rotation_impl(index, rotation)
-}
-
-#[no_mangle]
 pub extern "C" fn wire_entities_set_rotation_raw(
     indices: *mut wire_uint_8_list,
     rotations: *mut wire_uint_8_list,
@@ -70,6 +53,14 @@ pub extern "C" fn wire_entity_set_shape(
     shape: *mut wire_Shape,
 ) -> support::WireSyncReturn {
     wire_entity_set_shape_impl(index, shape)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_entity_set_vertices_raw(
+    index: *mut wire_RawIndex,
+    vertices: *mut wire_uint_8_list,
+) -> support::WireSyncReturn {
+    wire_entity_set_vertices_raw_impl(index, vertices)
 }
 
 #[no_mangle]
@@ -90,6 +81,11 @@ pub extern "C" fn wire_query_aabb_raw(
     height: f64,
 ) -> support::WireSyncReturn {
     wire_query_aabb_raw_impl(x, y, width, height)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_transformed_vertices() -> support::WireSyncReturn {
+    wire_transformed_vertices_impl()
 }
 
 // Section: allocate functions

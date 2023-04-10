@@ -30,11 +30,27 @@ impl From<Index> for IndexWrapper {
         IndexWrapper(index)
     }
 }
+impl From<&Index> for IndexWrapper {
+    fn from(index: &Index) -> Self {
+        IndexWrapper(*index)
+    }
+}
+impl From<&mut Index> for IndexWrapper {
+    fn from(index: &mut Index) -> Self {
+        IndexWrapper(*index)
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct RawIndex(pub usize, pub u64);
 impl From<Index> for RawIndex {
     fn from(index: Index) -> Self {
+        let (i, g) = index.into_raw_parts();
+        RawIndex(i, g)
+    }
+}
+impl From<&Index> for RawIndex {
+    fn from(index: &Index) -> Self {
         let (i, g) = index.into_raw_parts();
         RawIndex(i, g)
     }

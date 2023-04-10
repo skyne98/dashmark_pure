@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use generational_arena::Index;
 use rapier2d_f64::{
@@ -6,7 +6,14 @@ use rapier2d_f64::{
     prelude::Aabb,
 };
 
-use crate::{entity::Entity, index::IndexWrapper};
+use crate::{
+    entity::Entity,
+    index::IndexWrapper,
+    state::{
+        entity_manager::{self, EntityManager},
+        transform_manager::{self, TransformManager},
+    },
+};
 
 // Bvh
 pub struct Bvh {
@@ -24,22 +31,29 @@ impl Bvh {
         Self { bvh: Qbvh::new() }
     }
 
-    pub fn from_entities<'a, I>(entities: I) -> Self
+    pub fn from_indices<'a, I>(
+        indices: I,
+        entity_manager: &EntityManager,
+        transform_manager: &TransformManager,
+    ) -> Self
     where
-        I: IntoIterator<Item = &'a mut Entity>,
+        I: IntoIterator<Item = &'a Index>,
     {
-        let mut bvh = Qbvh::new();
-        let mut aabbs = Vec::new();
-        for entity in entities {
-            aabbs.push((
-                IndexWrapper(entity.index),
-                entity.get_aabb_iso().expect(
-                    "Entity has no AABB, a shape is required for an entity to be in the BVH.",
-                ),
-            ));
+        let mut bvh = Self::new();
+        let mut index_and_aabb = vec![];
+        for index in indices {
+            let entity = entity_manager.get_entity(*index).unwrap();
+            bvh.bvh.pre_update_or_insert(IndexWrapper(*index));
+            let transform = transform_manager.get_transform(*index).unwrap();
+            let aabb = entity.get_global_aabb(&transform);
+            let aabb = aabb.expect("Entity has no AABB");
+            index_and_aabb.push((IndexWrapper::from(index), aabb));
         }
-        bvh.clear_and_rebuild(aabbs.into_iter(), 0.0);
-        Bvh { bvh: bvh }
+
+        // Rebuild
+        bvh.bvh.clear_and_rebuild(index_and_aabb.into_iter(), 0.0);
+
+        bvh
     }
 
     // Updates
@@ -261,159 +275,5 @@ impl FlatBvh {
         byte_buffer.extend(is_leafs_buffer);
 
         byte_buffer
-    }
-}
-
-// ===== Tests =====
-#[cfg(test)]
-mod test_bvh {
-    use generational_arena::Index;
-    use rapier2d_f64::{na::Vector2, prelude::Ball};
-
-    use crate::entity::Entity;
-
-    #[test]
-    fn can_build_an_empty_bvh() {
-        let bvh = super::Bvh::from_entities(vec![]);
-        let raw_nodes = bvh.bvh.raw_nodes();
-        assert_eq!(raw_nodes.len(), 2);
-        let root_node = raw_nodes[0];
-        let recursive_build_node = raw_nodes[1];
-        assert!(root_node.is_leaf() == false);
-        assert!(recursive_build_node.is_leaf());
-    }
-
-    #[test]
-    fn bvh_and_entity_have_same_aabb() {
-        let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-        entity.set_shape(Ball::new(2.0));
-        let bvh = super::Bvh::from_entities(vec![&mut entity]);
-        let raw_nodes = bvh.bvh.raw_nodes();
-        assert_eq!(raw_nodes.len(), 2);
-        let root_node = raw_nodes[0];
-        let recursive_build_node = raw_nodes[1];
-        assert!(root_node.is_leaf() == false);
-        assert!(recursive_build_node.is_leaf());
-        let root_aabb = root_node.simd_aabb.extract(0);
-        let entity_aabb = entity.get_aabb_iso().unwrap();
-        assert_eq!(root_aabb.mins, entity_aabb.mins);
-        assert_eq!(root_aabb.maxs, entity_aabb.maxs);
-    }
-
-    #[test]
-    fn bvh_flatten() {
-        let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-        entity.set_shape(Ball::new(2.0));
-        let bvh = super::Bvh::from_entities(vec![&mut entity]);
-        let flat_bvh = bvh.flatten();
-        assert_eq!(flat_bvh.min_x.len(), 2);
-        assert_eq!(flat_bvh.min_y.len(), 2);
-        assert_eq!(flat_bvh.max_x.len(), 2);
-        assert_eq!(flat_bvh.max_y.len(), 2);
-        assert_eq!(flat_bvh.depth.len(), 2);
-        assert_eq!(flat_bvh.is_leaf.len(), 2);
-
-        // Check both nodes have a proper size and depth
-        assert_eq!(flat_bvh.min_x[0], 0.0);
-        assert_eq!(flat_bvh.min_y[0], 0.0);
-        assert_eq!(flat_bvh.max_x[0], 4.0);
-        assert_eq!(flat_bvh.max_y[0], 4.0);
-        assert_eq!(flat_bvh.depth[0], 0);
-
-        assert_eq!(flat_bvh.min_x[1], 0.0);
-        assert_eq!(flat_bvh.min_y[1], 0.0);
-        assert_eq!(flat_bvh.max_x[1], 4.0);
-        assert_eq!(flat_bvh.max_y[1], 4.0);
-        assert_eq!(flat_bvh.depth[1], 1);
-    }
-
-    #[test]
-    fn bvh_simple_refit() {
-        let mut entity = Entity::new(Index::from_raw_parts(0, 0));
-        entity.set_shape(Ball::new(2.0));
-        let mut bvh = super::Bvh::from_entities(vec![&mut entity]);
-        let flat_bvh = bvh.flatten();
-        assert_eq!(flat_bvh.min_x.len(), 2);
-        assert_eq!(flat_bvh.min_y.len(), 2);
-        assert_eq!(flat_bvh.max_x.len(), 2);
-        assert_eq!(flat_bvh.max_y.len(), 2);
-        assert_eq!(flat_bvh.depth.len(), 2);
-        assert_eq!(flat_bvh.is_leaf.len(), 2);
-
-        // Check both nodes have a proper size and depth
-        assert_eq!(flat_bvh.min_x[0], 0.0);
-        assert_eq!(flat_bvh.min_y[0], 0.0);
-        assert_eq!(flat_bvh.max_x[0], 4.0);
-        assert_eq!(flat_bvh.max_y[0], 4.0);
-        assert_eq!(flat_bvh.depth[0], 0);
-
-        assert_eq!(flat_bvh.min_x[1], 0.0);
-        assert_eq!(flat_bvh.min_y[1], 0.0);
-        assert_eq!(flat_bvh.max_x[1], 4.0);
-        assert_eq!(flat_bvh.max_y[1], 4.0);
-        assert_eq!(flat_bvh.depth[1], 1);
-
-        // Move the entity
-        entity.set_position(Vector2::new(1.0, 1.0));
-        let entity_aabb = &entity.get_aabb_iso().unwrap();
-
-        // Refit the bvh
-        bvh.refit(move |index| {
-            assert_eq!(index.into_raw_parts().0, 0);
-            assert_eq!(index.into_raw_parts().1, 0);
-            Some(entity_aabb.clone())
-        });
-
-        // Check the data hasn't changed without an update
-        let flat_bvh = bvh.flatten();
-        assert_eq!(flat_bvh.min_x.len(), 2);
-        assert_eq!(flat_bvh.min_y.len(), 2);
-        assert_eq!(flat_bvh.max_x.len(), 2);
-        assert_eq!(flat_bvh.max_y.len(), 2);
-        assert_eq!(flat_bvh.depth.len(), 2);
-        assert_eq!(flat_bvh.is_leaf.len(), 2);
-
-        // Check both nodes have a proper size and depth
-        assert_eq!(flat_bvh.min_x[0], 0.0);
-        assert_eq!(flat_bvh.min_y[0], 0.0);
-        assert_eq!(flat_bvh.max_x[0], 4.0);
-        assert_eq!(flat_bvh.max_y[0], 4.0);
-        assert_eq!(flat_bvh.depth[0], 0);
-
-        assert_eq!(flat_bvh.min_x[1], 0.0);
-        assert_eq!(flat_bvh.min_y[1], 0.0);
-        assert_eq!(flat_bvh.max_x[1], 4.0);
-        assert_eq!(flat_bvh.max_y[1], 4.0);
-        assert_eq!(flat_bvh.depth[1], 1);
-
-        // Update the bvh
-        bvh.prepare_upsert(&mut entity);
-        bvh.refit(move |index| {
-            assert_eq!(index.into_raw_parts().0, 0);
-            assert_eq!(index.into_raw_parts().1, 0);
-            Some(entity_aabb.clone())
-        });
-
-        // Check the data has changed
-        let flat_bvh = bvh.flatten();
-        assert_eq!(flat_bvh.min_x.len(), 2);
-        assert_eq!(flat_bvh.min_y.len(), 2);
-        assert_eq!(flat_bvh.max_x.len(), 2);
-        assert_eq!(flat_bvh.max_y.len(), 2);
-        assert_eq!(flat_bvh.depth.len(), 2);
-        assert_eq!(flat_bvh.is_leaf.len(), 2);
-
-        // Check both nodes have a proper size and depth
-        assert_eq!(flat_bvh.min_x[0], 1.0);
-        assert_eq!(flat_bvh.min_y[0], 1.0);
-        assert_eq!(flat_bvh.max_x[0], 5.0);
-        assert_eq!(flat_bvh.max_y[0], 5.0);
-        assert_eq!(flat_bvh.depth[0], 0);
-
-        assert_eq!(flat_bvh.min_x[1], 1.0);
-        assert_eq!(flat_bvh.min_y[1], 1.0);
-        assert_eq!(flat_bvh.max_x[1], 5.0);
-        assert_eq!(flat_bvh.max_y[1], 5.0);
-        assert_eq!(flat_bvh.depth[1], 1);
     }
 }

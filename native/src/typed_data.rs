@@ -15,6 +15,11 @@ pub fn bytes_to<T>(bytes: &[u8]) -> &[T] {
     let data = unsafe { std::slice::from_raw_parts(ptr, typed_len) };
     data
 }
+pub fn bytes_to_value<T>(bytes: &[u8]) -> &T {
+    let data = bytes_to(bytes);
+    assert_eq!(data.len(), 1);
+    &data[0]
+}
 
 pub fn to_bytes<T>(data: &[T]) -> &[u8] {
     let len = data.len();
@@ -26,6 +31,10 @@ pub fn to_bytes<T>(data: &[T]) -> &[u8] {
     let typed_len = len * std::mem::size_of::<T>();
     let bytes = unsafe { std::slice::from_raw_parts(ptr, typed_len) };
     bytes
+}
+pub fn value_to_bytes<T>(value: &T) -> &[u8] {
+    let slice = std::slice::from_ref(value);
+    to_bytes(slice)
 }
 
 // Specific
