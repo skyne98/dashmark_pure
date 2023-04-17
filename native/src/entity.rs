@@ -187,18 +187,10 @@ mod test_entity {
                 let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
                 let aabb = entity.get_global_aabb(&transform).unwrap();
-                let expected_minx = ((-x * 2.0) * 100.0).round() as i32;
-                let actual_minx = (aabb.mins.x * 100.0).round() as i32;
-                assert_eq!(expected_minx, actual_minx, "x: {}, y: {}", x, y);
-                let expected_miny = ((-y * 2.0) * 100.0).round() as i32;
-                let actual_miny = (aabb.mins.y * 100.0).round() as i32;
-                assert_eq!(expected_miny, actual_miny, "x: {}, y: {}", x, y);
-                let expected_maxx = ((1.0 - x) * 2.0 * 100.0).round() as i32;
-                let actual_maxx = (aabb.maxs.x * 100.0).round() as i32;
-                assert_eq!(expected_maxx, actual_maxx, "x: {}, y: {}", x, y);
-                let expected_maxy = ((1.0 - y) * 2.0 * 100.0).round() as i32;
-                let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
-                assert_eq!(expected_maxy, actual_maxy, "x: {}, y: {}", x, y);
+                let expected_min = Point2::new(-x * 2.0, -y * 2.0);
+                assert_points_equal(aabb.mins, expected_min);
+                let expected_max = Point2::new((1.0 - x) * 2.0, (1.0 - y) * 2.0);
+                assert_points_equal(aabb.maxs, expected_max);
             }
         }
     }
@@ -218,18 +210,10 @@ mod test_entity {
                 let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
                 let aabb = entity.get_global_aabb(&transform).unwrap();
-                let expected_minx = (-x * 100.0).round() as i32;
-                let actual_minx = (aabb.mins.x * 100.0).round() as i32;
-                assert_eq!(expected_minx, actual_minx, "x: {}, y: {}", x, y);
-                let expected_miny = (-y * 100.0).round() as i32;
-                let actual_miny = (aabb.mins.y * 100.0).round() as i32;
-                assert_eq!(expected_miny, actual_miny, "x: {}, y: {}", x, y);
-                let expected_maxx = ((2.0 - x) * 100.0).round() as i32;
-                let actual_maxx = (aabb.maxs.x * 100.0).round() as i32;
-                assert_eq!(expected_maxx, actual_maxx, "x: {}, y: {}", x, y);
-                let expected_maxy = ((2.0 - y) * 100.0).round() as i32;
-                let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
-                assert_eq!(expected_maxy, actual_maxy, "x: {}, y: {}", x, y);
+                let expected_min = Point2::new(-x, -y);
+                assert_points_equal(aabb.mins, expected_min);
+                let expected_max = Point2::new(2.0 - x, 2.0 - y);
+                assert_points_equal(aabb.maxs, expected_max);
             }
         }
     }
@@ -249,24 +233,12 @@ mod test_entity {
                 let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
                 let aabb = entity.get_global_aabb(&transform).unwrap();
-                let translation = 100 * 100;
+                let translation = Vector2::new(100.0, 100.0);
 
-                let offset_minx = (-x * 2.0 * 100.0).round() as i32;
-                let expected_minx = offset_minx + translation;
-                let actual_minx = (aabb.mins.x * 100.0).round() as i32;
-                assert_eq!(expected_minx, actual_minx, "x: {}, y: {}", x, y);
-                let offset_miny = (-y * 2.0 * 100.0).round() as i32;
-                let expected_miny = offset_miny + translation;
-                let actual_miny = (aabb.mins.y * 100.0).round() as i32;
-                assert_eq!(expected_miny, actual_miny, "x: {}, y: {}", x, y);
-                let offset_maxx = ((1.0 - x) * 2.0 * 100.0).round() as i32;
-                let expected_maxx = offset_maxx + translation;
-                let actual_maxx = (aabb.maxs.x * 100.0).round() as i32;
-                assert_eq!(expected_maxx, actual_maxx, "x: {}, y: {}", x, y);
-                let offset_maxy = ((1.0 - y) * 2.0 * 100.0).round() as i32;
-                let expected_maxy = offset_maxy + translation;
-                let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
-                assert_eq!(expected_maxy, actual_maxy, "x: {}, y: {}", x, y);
+                let expected_min = Point2::new(-x * 2.0, -y * 2.0) + translation;
+                assert_points_equal(aabb.mins, expected_min);
+                let expected_max = Point2::new((1.0 - x) * 2.0, (1.0 - y) * 2.0) + translation;
+                assert_points_equal(aabb.maxs, expected_max);
             }
         }
     }
@@ -308,27 +280,19 @@ mod test_entity {
             entity.set_shape(shape);
             let aabb = entity.get_global_aabb(&transform).unwrap();
 
-            let expected_minx = -1 * 100 + 100 * 100;
-            let actual_minx = (aabb.mins.x * 100.0).round() as i32;
-            assert_eq!(expected_minx, actual_minx, "rotation: {}", rotation);
-            let expected_miny = -1 * 100 + 100 * 100;
-            let actual_miny = (aabb.mins.y * 100.0).round() as i32;
-            assert_eq!(expected_miny, actual_miny, "rotation: {}", rotation);
-            let expected_maxx = 1 * 100 + 100 * 100;
-            let actual_maxx = (aabb.maxs.x * 100.0).round() as i32;
-            assert_eq!(expected_maxx, actual_maxx, "rotation: {}", rotation);
-            let expected_maxy = 1 * 100 + 100 * 100;
-            let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
-            assert_eq!(expected_maxy, actual_maxy, "rotation: {}", rotation);
+            let expected_min = Vector2::new(-1.0, -1.0) + Vector2::new(100.0, 100.0);
+            assert_points_equal(expected_min.into(), aabb.mins);
+            let expected_max = Vector2::new(1.0, 1.0) + Vector2::new(100.0, 100.0);
+            assert_points_equal(expected_max.into(), aabb.maxs);
         }
     }
 
     #[test]
     fn rotation_at_zero_zero() {
-        let expected_minxs = vec![0, -200, -200, 0];
-        let expected_minys = vec![0, 0, -200, -200];
-        let expected_maxxs = vec![200, 0, 0, 200];
-        let expected_maxys = vec![200, 200, 0, 0];
+        let expected_minxs = vec![0.0, -2.0, -2.0, 0.0];
+        let expected_minys = vec![0.0, 0.0, -2.0, -2.0];
+        let expected_maxxs = vec![2.0, 0.0, 0.0, 2.0];
+        let expected_maxys = vec![2.0, 2.0, 0.0, 0.0];
 
         // Skip every 90 degrees and test new expected values
         for rotation_i in 0..4 {
@@ -343,18 +307,16 @@ mod test_entity {
             let aabb = entity.get_global_aabb(&transform).unwrap();
 
             // Each time the AABB will jump around, calculate the expected values for min and max
-            let expected_minx = expected_minxs[rotation_i];
-            let actual_minx = (aabb.mins.x * 100.0).round() as i32;
-            assert_eq!(expected_minx, actual_minx, "rotation: {}", rotation);
-            let expected_miny = expected_minys[rotation_i];
-            let actual_miny = (aabb.mins.y * 100.0).round() as i32;
-            assert_eq!(expected_miny, actual_miny, "rotation: {}", rotation);
-            let expected_maxx = expected_maxxs[rotation_i];
-            let actual_maxx = (aabb.maxs.x * 100.0).round() as i32;
-            assert_eq!(expected_maxx, actual_maxx, "rotation: {}", rotation);
-            let expected_maxy = expected_maxys[rotation_i];
-            let actual_maxy = (aabb.maxs.y * 100.0).round() as i32;
-            assert_eq!(expected_maxy, actual_maxy, "rotation: {}", rotation);
+            let expected_min = Point2::new(
+                expected_minxs[rotation_i as usize],
+                expected_minys[rotation_i as usize],
+            );
+            assert_points_equal(aabb.mins, expected_min);
+            let expected_max = Point2::new(
+                expected_maxxs[rotation_i as usize],
+                expected_maxys[rotation_i as usize],
+            );
+            assert_points_equal(aabb.maxs, expected_max);
         }
     }
 
