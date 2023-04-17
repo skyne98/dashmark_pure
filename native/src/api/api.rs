@@ -73,11 +73,10 @@ pub fn entity_set_origin(index: RawIndex, relative: bool, x: f64, y: f64) -> Syn
         if let Some(mut trasform) = state.transforms.borrow_mut().transform_mut(index.into()) {
             if let Some(entity) = state.entities.borrow_mut().get_entity_mut(index.into()) {
                 if relative {
-                    trasform.set_origin_relative(Vector2::new(x, y));
-                } else {
-                    let origin = Origin::Absolute(Vector2::new(x, y));
                     let size = entity.get_size();
-                    trasform.set_origin_relative(origin.to_relative(size));
+                    trasform.set_origin_relative(Vector2::new(x, y), size);
+                } else {
+                    trasform.set_origin_absolute(Vector2::new(x, y));
                 }
                 state.broadphase.borrow_mut().index_updated(entity.index);
             }

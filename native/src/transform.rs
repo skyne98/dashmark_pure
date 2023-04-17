@@ -20,17 +20,35 @@ impl Origin {
         Self::Absolute(Vector2::new(x, y))
     }
 
-    pub fn to_absolute(&self, size: Vector2<f64>) -> Vector2<f64> {
+    pub fn to_absolute(&self, dimensions: Vector2<f64>) -> Vector2<f64> {
         match self {
-            Origin::Relative(offset) => Vector2::new(offset.x * size.x, offset.y * size.y),
+            Origin::Relative(offset) => {
+                Vector2::new(offset.x * dimensions.x, offset.y * dimensions.y)
+            }
             Origin::Absolute(offset) => *offset,
         }
     }
 
-    pub fn to_relative(&self, size: Vector2<f64>) -> Vector2<f64> {
+    pub fn to_relative(&self, dimensions: Vector2<f64>) -> Vector2<f64> {
         match self {
             Origin::Relative(offset) => *offset,
-            Origin::Absolute(offset) => Vector2::new(offset.x / size.x, offset.y / size.y),
+            Origin::Absolute(offset) => {
+                Vector2::new(offset.x / dimensions.x, offset.y / dimensions.y)
+            }
+        }
+    }
+
+    pub fn as_absolute(&self) -> Option<Vector2<f64>> {
+        match self {
+            Origin::Relative(_) => None,
+            Origin::Absolute(offset) => Some(*offset),
+        }
+    }
+
+    pub fn as_relative(&self) -> Option<Vector2<f64>> {
+        match self {
+            Origin::Relative(offset) => Some(*offset),
+            Origin::Absolute(_) => None,
         }
     }
 }
@@ -46,6 +64,7 @@ pub struct Transform {
     position: Vector2<f64>,
     rotation: f64,
     scale: Vector2<f64>,
+    /// Absolute origin of the transform
     origin: Vector2<f64>,
     matrix: RefCell<TransformMatrix>,
     dirty_matrix: RefCell<bool>,
@@ -111,11 +130,16 @@ impl Transform {
     }
 
     pub fn origin(&self) -> Origin {
-        Origin::Relative(self.origin)
+        Origin::Absolute(self.origin)
     }
 
-    pub fn set_origin_relative(&mut self, origin: Vector2<f64>) {
+    pub fn set_origin_absolute(&mut self, origin: Vector2<f64>) {
         self.origin = origin;
+        self.set_dirty(true);
+    }
+
+    pub fn set_origin_relative(&mut self, origin: Vector2<f64>, dimensions: Vector2<f64>) {
+        self.origin = Origin::Relative(origin).to_absolute(dimensions);
         self.set_dirty(true);
     }
 
@@ -132,12 +156,10 @@ impl Transform {
         self.transform_matrix().matrix
     }
 
-    pub fn isometry(&self, size: Vector2<f64>) -> Ref<Isometry2<f64>> {
+    pub fn isometry(&self, natural_offset: Vector2<f64>) -> Ref<Isometry2<f64>> {
         if *self.dirty_isometry.borrow() {
             let mut isometry = self.isometry.borrow_mut();
-            let origin = self.origin();
-            let absolute_origin = origin.to_absolute(size);
-            isometry.translation.vector = self.position - absolute_origin;
+            isometry.translation.vector = self.position - self.origin + natural_offset;
             isometry.rotation = UnitComplex::new(0.0);
             isometry.append_rotation_wrt_point_mut(
                 &UnitComplex::new(self.rotation),
