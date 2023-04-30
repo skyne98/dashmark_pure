@@ -25,7 +25,7 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
   }
 
   @protected
-  List<dynamic> api2wire_box_autoadd_raw_index(RawIndex raw) {
+  List<dynamic> api2wire_box_autoadd_raw_index(GenerationalIndex raw) {
     return api2wire_raw_index(raw);
   }
 
@@ -45,7 +45,7 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
   }
 
   @protected
-  List<dynamic> api2wire_raw_index(RawIndex raw) {
+  List<dynamic> api2wire_raw_index(GenerationalIndex raw) {
     return [api2wire_usize(raw.field0), api2wire_u64(raw.field1)];
   }
 

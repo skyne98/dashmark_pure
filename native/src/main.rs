@@ -13,7 +13,61 @@ mod state;
 mod transform;
 mod typed_data;
 
+struct Data {
+    a: i64,
+    b: i64,
+    flag: bool,
+}
+
 fn main() {
+    // Test cache misses
+    // Prepare the data
+    let amount = 100_000_000 as usize;
+    let mut data = vec![];
+    for i in 0..amount {
+        data.push(Data {
+            a: i as i64,
+            b: i as i64 * 2,
+            flag: i % 2 == 0,
+        });
+    }
+
+    // Process the data
+    let mut result = vec![0; amount as usize];
+    let now = std::time::Instant::now();
+    for i in 0..amount {
+        let data = &data[i];
+        if data.flag {
+            result[i] = data.a + data.b;
+        } else {
+            result[i] = data.a * data.b;
+        }
+    }
+    println!("Cache-optimized version took {:?}", now.elapsed());
+
+    // Setup cache-miss version
+    let mut result = vec![0; amount as usize];
+    let mut a = vec![];
+    let mut b = vec![];
+    let mut flag = vec![];
+    for (index, data) in data.iter().enumerate() {
+        a.push(data.a);
+        b.push(data.b);
+        flag.push(data.flag);
+    }
+    let now = std::time::Instant::now();
+    for i in 0..amount {
+        let a = a[i];
+        let b = b[i];
+        let flag = flag[i];
+        if flag {
+            result[i] = a + b;
+        } else {
+            result[i] = a * b;
+        }
+    }
+    println!("Cache-miss version took {:?}", now.elapsed());
+
     const iterations: u32 = 1000000;
 
     // Make a parry_2d_f64 test

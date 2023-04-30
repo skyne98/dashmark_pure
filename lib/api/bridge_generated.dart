@@ -28,11 +28,11 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kUpdateConstMeta;
 
-  RawIndex createEntity({dynamic hint});
+  GenerationalIndex createEntity({dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kCreateEntityConstMeta;
 
-  void dropEntity({required RawIndex index, dynamic hint});
+  void dropEntity({required GenerationalIndex index, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kDropEntityConstMeta;
 
@@ -42,7 +42,7 @@ abstract class Native {
   FlutterRustBridgeTaskConstMeta get kEntitiesSetPositionRawConstMeta;
 
   void entitySetOrigin(
-      {required RawIndex index,
+      {required GenerationalIndex index,
       required bool relative,
       required double x,
       required double y,
@@ -56,16 +56,18 @@ abstract class Native {
   FlutterRustBridgeTaskConstMeta get kEntitiesSetRotationRawConstMeta;
 
   void entitySetShape(
-      {required RawIndex index, required Shape shape, dynamic hint});
+      {required GenerationalIndex index, required Shape shape, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kEntitySetShapeConstMeta;
 
   void entitySetVerticesRaw(
-      {required RawIndex index, required Uint8List vertices, dynamic hint});
+      {required GenerationalIndex index,
+      required Uint8List vertices,
+      dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kEntitySetVerticesRawConstMeta;
 
-  List<RawIndex> queryAabb(
+  List<GenerationalIndex> queryAabb(
       {required double x,
       required double y,
       required double width,
@@ -88,11 +90,11 @@ abstract class Native {
   FlutterRustBridgeTaskConstMeta get kTransformedVerticesConstMeta;
 }
 
-class RawIndex {
+class GenerationalIndex {
   final int field0;
   final int field1;
 
-  const RawIndex({
+  const GenerationalIndex({
     required this.field0,
     required this.field1,
   });
@@ -167,7 +169,7 @@ class NativeImpl implements Native {
         argNames: ["dt"],
       );
 
-  RawIndex createEntity({dynamic hint}) {
+  GenerationalIndex createEntity({dynamic hint}) {
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_create_entity(),
       parseSuccessData: _wire2api_raw_index,
@@ -183,7 +185,7 @@ class NativeImpl implements Native {
         argNames: [],
       );
 
-  void dropEntity({required RawIndex index, dynamic hint}) {
+  void dropEntity({required GenerationalIndex index, dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_drop_entity(arg0),
@@ -222,7 +224,7 @@ class NativeImpl implements Native {
       );
 
   void entitySetOrigin(
-      {required RawIndex index,
+      {required GenerationalIndex index,
       required bool relative,
       required double x,
       required double y,
@@ -269,7 +271,7 @@ class NativeImpl implements Native {
       );
 
   void entitySetShape(
-      {required RawIndex index, required Shape shape, dynamic hint}) {
+      {required GenerationalIndex index, required Shape shape, dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
     var arg1 = _platform.api2wire_box_autoadd_shape(shape);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
@@ -288,7 +290,9 @@ class NativeImpl implements Native {
       );
 
   void entitySetVerticesRaw(
-      {required RawIndex index, required Uint8List vertices, dynamic hint}) {
+      {required GenerationalIndex index,
+      required Uint8List vertices,
+      dynamic hint}) {
     var arg0 = _platform.api2wire_box_autoadd_raw_index(index);
     var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(vertices);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
@@ -306,7 +310,7 @@ class NativeImpl implements Native {
         argNames: ["index", "vertices"],
       );
 
-  List<RawIndex> queryAabb(
+  List<GenerationalIndex> queryAabb(
       {required double x,
       required double y,
       required double width,
@@ -386,15 +390,15 @@ class NativeImpl implements Native {
     return raw as Uint8List;
   }
 
-  List<RawIndex> _wire2api_list_raw_index(dynamic raw) {
+  List<GenerationalIndex> _wire2api_list_raw_index(dynamic raw) {
     return (raw as List<dynamic>).map(_wire2api_raw_index).toList();
   }
 
-  RawIndex _wire2api_raw_index(dynamic raw) {
+  GenerationalIndex _wire2api_raw_index(dynamic raw) {
     final arr = raw as List<dynamic>;
     if (arr.length != 2)
       throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return RawIndex(
+    return GenerationalIndex(
       field0: _wire2api_usize(arr[0]),
       field1: _wire2api_u64(arr[1]),
     );

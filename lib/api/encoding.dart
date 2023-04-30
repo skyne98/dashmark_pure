@@ -1,15 +1,16 @@
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'package:vector_math/vector_math_64.dart';
 
-import 'ffi_export.dart';
+import '../ffi_export.dart';
+import '../typed_buffer/mod.dart';
 
 /* Decoding */
-class ByteBufferDecoder {
+class ByteDecoder {
   final Uint8List _buffer;
   late ByteData _byteData;
   int _counter = 0;
 
-  ByteBufferDecoder(this._buffer) {
+  ByteDecoder(this._buffer) {
     _byteData = ByteData.view(_buffer.buffer);
   }
 
@@ -83,6 +84,13 @@ class ByteBufferDecoder {
     return array;
   }
 
+  Float32List readF32Array() {
+    final length = readU64();
+    final array = Float32List.view(_buffer.buffer, _counter, length);
+    _counter += length * 4;
+    return array;
+  }
+
   Float64List readF64Array() {
     final length = readU64();
     final array = Float64List.view(_buffer.buffer, _counter, length);
@@ -92,7 +100,7 @@ class ByteBufferDecoder {
 }
 
 /* Encoding */
-class ByteBufferEncoder {
+class ByteEncoder {
   ByteData _byteData = ByteData(0);
   int _counter = 0;
 
@@ -112,6 +120,26 @@ class ByteBufferEncoder {
       return true;
     }
     return false;
+  }
+
+  void writeGeneric<T>(T value) {
+    if (value is bool) {
+      writeBool(value);
+    } else if (value is int) {
+      writeU64(value);
+    } else if (value is double) {
+      writeF64(value);
+    } else if (value is Uint8List) {
+      writeU8Array(value);
+    } else if (value is Float32List) {
+      writeF32Array(value);
+    } else if (value is Float64List) {
+      writeF64Array(value);
+    } else if (value is TypedBuffer) {
+      writeTypedBuffer(value);
+    } else {
+      throw Exception('Unsupported type: ${value.runtimeType}');
+    }
   }
 
   // Single-value write methods
@@ -180,11 +208,25 @@ class ByteBufferEncoder {
     _counter += array.length;
   }
 
+  void writeF32Array(Float32List array) {
+    writeU64(array.length);
+    growToFitNext(array.length * 4);
+    _byteData.buffer.asFloat32List().setAll(_counter, array);
+    _counter += array.length * 4;
+  }
+
   void writeF64Array(Float64List array) {
     writeU64(array.length);
     growToFitNext(array.length * 8);
     _byteData.buffer.asFloat64List().setAll(_counter, array);
     _counter += array.length * 8;
+  }
+
+  void writeTypedBuffer<T>(TypedBuffer<T> buffer) {
+    writeU64(buffer.length);
+    for (final element in buffer) {
+      writeGeneric(element);
+    }
   }
 
   // Builder
@@ -195,30 +237,30 @@ class ByteBufferEncoder {
 
 /* Extensions */
 extension Vector2ByteBufferExtensions on Vector2 {
-  void encode(ByteBufferEncoder encoder) {
+  void encode(ByteEncoder encoder) {
     encoder.writeF64(x);
     encoder.writeF64(y);
   }
 
-  static void encodeArray(ByteBufferEncoder encoder, List<Vector2> array) {
+  static void encodeArray(ByteEncoder encoder, List<Vector2> array) {
     encoder.writeU64(array.length);
     for (final element in array) {
       element.encode(encoder);
     }
   }
 
-  static Vector2 decode(ByteBufferDecoder decoder) {
+  static Vector2 decode(ByteDecoder decoder) {
     final x = decoder.readF64();
     final y = decoder.readF64();
     return Vector2(x, y);
   }
 
-  static void decodeInto(ByteBufferDecoder decoder, Vector2 vector) {
+  static void decodeInto(ByteDecoder decoder, Vector2 vector) {
     vector.x = decoder.readF64();
     vector.y = decoder.readF64();
   }
 
-  static List<Vector2> decodeArray(ByteBufferDecoder decoder) {
+  static List<Vector2> decodeArray(ByteDecoder decoder) {
     final length = decoder.readU64();
     final array = List.filled(length, Vector2.zero());
     for (var i = 0; i < length; i++) {
@@ -228,7 +270,7 @@ extension Vector2ByteBufferExtensions on Vector2 {
   }
 
   static List<Vector2> decodeArrayInto(
-      ByteBufferDecoder decoder, List<Vector2> array) {
+      ByteDecoder decoder, List<Vector2> array) {
     final length = decoder.readU64();
     for (var i = 0; i < length; i++) {
       array[i].x = decoder.readF64();
@@ -238,33 +280,34 @@ extension Vector2ByteBufferExtensions on Vector2 {
   }
 }
 
-extension RawIndexByteBufferExtensions on RawIndex {
-  void encode(ByteBufferEncoder encoder) {
+extension RawIndexByteBufferExtensions on GenerationalIndex {
+  void encode(ByteEncoder encoder) {
     encoder.writeU64(field0);
     encoder.writeU64(field1);
   }
 
-  static void encodeArray(ByteBufferEncoder encoder, List<RawIndex> array) {
+  static void encodeArray(ByteEncoder encoder, List<GenerationalIndex> array) {
     encoder.writeU64(array.length);
     for (final element in array) {
       element.encode(encoder);
     }
   }
 
-  static RawIndex decode(ByteBufferDecoder decoder) {
+  static GenerationalIndex decode(ByteDecoder decoder) {
     final index = decoder.readU64();
     final generation = decoder.readU64();
-    return RawIndex(field0: index, field1: generation);
+    return GenerationalIndex(field0: index, field1: generation);
   }
 
-  static void decodeArray(ByteBufferDecoder decoder, List<RawIndex> array) {
+  static void decodeArray(ByteDecoder decoder, List<GenerationalIndex> array) {
     final length = decoder.readU64();
     for (var i = 0; i < length; i++) {
       array[i] = decode(decoder);
     }
   }
 
-  static void decodeArrayInto(ByteBufferDecoder decoder, List<RawIndex> array) {
+  static void decodeArrayInto(
+      ByteDecoder decoder, List<GenerationalIndex> array) {
     final length = decoder.readU64();
     for (var i = 0; i < length; i++) {
       array[i] = decode(decoder);

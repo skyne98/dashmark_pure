@@ -23,7 +23,8 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
   }
 
   @protected
-  ffi.Pointer<wire_RawIndex> api2wire_box_autoadd_raw_index(RawIndex raw) {
+  ffi.Pointer<wire_RawIndex> api2wire_box_autoadd_raw_index(
+      GenerationalIndex raw) {
     final ptr = inner.new_box_autoadd_raw_index_0();
     _api_fill_to_wire_raw_index(raw, ptr.ref);
     return ptr;
@@ -72,7 +73,7 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
 // Section: api_fill_to_wire
 
   void _api_fill_to_wire_box_autoadd_raw_index(
-      RawIndex apiObj, ffi.Pointer<wire_RawIndex> wireObj) {
+      GenerationalIndex apiObj, ffi.Pointer<wire_RawIndex> wireObj) {
     _api_fill_to_wire_raw_index(apiObj, wireObj.ref);
   }
 
@@ -81,7 +82,8 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
     _api_fill_to_wire_shape(apiObj, wireObj.ref);
   }
 
-  void _api_fill_to_wire_raw_index(RawIndex apiObj, wire_RawIndex wireObj) {
+  void _api_fill_to_wire_raw_index(
+      GenerationalIndex apiObj, wire_RawIndex wireObj) {
     wireObj.field0 = api2wire_usize(apiObj.field0);
     wireObj.field1 = api2wire_u64(apiObj.field1);
   }

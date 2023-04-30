@@ -1,6 +1,6 @@
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 
-import 'buffer.dart';
+import 'api/encoding.dart';
 
 class FlatBvh {
   final Float64List minX;
@@ -13,7 +13,7 @@ class FlatBvh {
   FlatBvh(this.minX, this.minY, this.maxX, this.maxY, this.depth, this.isLeafs);
 
   factory FlatBvh.fromBytes(Uint8List bytes) {
-    final decoder = ByteBufferDecoder(bytes);
+    final decoder = ByteDecoder(bytes);
     final minxs = decoder.readF64Array();
     final minys = decoder.readF64Array();
     final maxxs = decoder.readF64Array();

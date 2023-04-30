@@ -1,6 +1,7 @@
 use flutter_rust_bridge::{SyncReturn, ZeroCopyBuffer};
 pub use generational_arena::Arena;
 use rapier2d_f64::na::{Point2, Vector2};
+use std::time::Instant;
 pub use std::{
     ops::Deref,
     sync::{Mutex, RwLock},
@@ -9,7 +10,7 @@ pub use std::{
 use crate::{
     api::shape::Shape,
     entity::EntityShape,
-    index::RawIndex,
+    index::GenerationalIndex,
     matrix::bulk_transform_vectors_mut,
     state::State,
     transform::Origin,
@@ -28,7 +29,7 @@ pub fn update(dt: f64) -> SyncReturn<()> {
 }
 
 // Entities
-pub fn create_entity() -> SyncReturn<RawIndex> {
+pub fn create_entity() -> SyncReturn<GenerationalIndex> {
     let index = State::acquire_mut(|state| {
         let index = state.entities.borrow_mut().create_entity();
         state.broadphase.borrow_mut().index_added(index);
@@ -39,7 +40,7 @@ pub fn create_entity() -> SyncReturn<RawIndex> {
     SyncReturn(index.into())
 }
 
-pub fn drop_entity(index: RawIndex) -> SyncReturn<()> {
+pub fn drop_entity(index: GenerationalIndex) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         let entity = state.entities.borrow_mut().remove_entity(index.into());
         if let Some(entity) = entity {
@@ -68,7 +69,12 @@ pub fn entities_set_position_raw(
     SyncReturn(())
 }
 
-pub fn entity_set_origin(index: RawIndex, relative: bool, x: f64, y: f64) -> SyncReturn<()> {
+pub fn entity_set_origin(
+    index: GenerationalIndex,
+    relative: bool,
+    x: f64,
+    y: f64,
+) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         if let Some(mut trasform) = state.transforms.borrow_mut().transform_mut(index.into()) {
             if let Some(entity) = state.entities.borrow_mut().get_entity_mut(index.into()) {
@@ -102,7 +108,7 @@ pub fn entities_set_rotation_raw(
     SyncReturn(())
 }
 
-pub fn entity_set_shape(index: RawIndex, shape: Shape) -> SyncReturn<()> {
+pub fn entity_set_shape(index: GenerationalIndex, shape: Shape) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         if let Some(mut entity) = state.entities.borrow_mut().get_entity_mut(index.into()) {
             let shape: Box<dyn EntityShape> = shape.into();
@@ -114,7 +120,7 @@ pub fn entity_set_shape(index: RawIndex, shape: Shape) -> SyncReturn<()> {
 }
 
 pub fn entity_set_vertices_raw(
-    index: RawIndex,
+    index: GenerationalIndex,
     vertices: ZeroCopyBuffer<Vec<u8>>,
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
@@ -125,7 +131,7 @@ pub fn entity_set_vertices_raw(
 }
 
 // Collisions
-pub fn query_aabb(x: f64, y: f64, width: f64, height: f64) -> SyncReturn<Vec<RawIndex>> {
+pub fn query_aabb(x: f64, y: f64, width: f64, height: f64) -> SyncReturn<Vec<GenerationalIndex>> {
     let result = State::acquire(|state| {
         let aabb = rapier2d_f64::parry::bounding_volume::Aabb::new(
             Point2::new(x, y),
@@ -161,6 +167,7 @@ pub fn transformed_vertices() -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
     // N. Vertices count
     // N + V. Vertices
     State::acquire(|state| {
+        let start = Instant::now();
         let mut buffer = Vec::new();
 
         let entities = state.entities.borrow();
@@ -176,12 +183,14 @@ pub fn transformed_vertices() -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
             let vertices_len = vertices.len() as u64;
             buffer.extend_from_slice(value_to_bytes(&vertices_len));
             let mut transformed_vertices = Vec::with_capacity(vertices_len as usize);
-            transformed_vertices.copy_from_slice(vertices);
+            transformed_vertices.extend_from_slice(vertices);
             bulk_transform_vectors_mut(&transform.matrix(), &mut transformed_vertices);
 
             buffer.extend_from_slice(to_bytes(&transformed_vertices));
         }
 
+        let elapsed = start.elapsed();
+        println!("transformed_vertices: {:?}", elapsed);
         SyncReturn(ZeroCopyBuffer(buffer))
     })
 }

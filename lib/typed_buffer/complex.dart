@@ -1,8 +1,10 @@
 import 'dart:collection';
+import 'dart:ui';
 
 import 'package:vector_math/vector_math_64.dart' as vector64;
 import 'package:vector_math/vector_math.dart' as vector32;
 
+import '../api/bridge_generated.dart';
 import 'mod.dart';
 
 abstract class ComplexTypedDataView<CT, T> extends ListBase<CT> {
@@ -78,5 +80,53 @@ class Vector64Buffer extends ComplexTypedDataView<vector64.Vector2, double> {
   void byteify(int index, vector64.Vector2 value) {
     buffer[index] = value.x;
     buffer[index + 1] = value.y;
+  }
+}
+
+class GenerationalIndexBuffer
+    extends ComplexTypedDataView<GenerationalIndex, int> {
+  GenerationalIndexBuffer() : super(Uint64Buffer());
+  GenerationalIndexBuffer.fromBuffer(GenerationalIndexBuffer buffer)
+      : super(buffer.buffer);
+  GenerationalIndexBuffer.fromList(List<GenerationalIndex> list)
+      : super(Uint64Buffer.fromList(
+            list.expand((v) => [v.field0, v.field1]).toList()));
+
+  @override
+  int elementLength() {
+    return 2;
+  }
+
+  @override
+  GenerationalIndex debyteify(int index) {
+    return GenerationalIndex(field0: buffer[index], field1: buffer[index + 1]);
+  }
+
+  @override
+  void byteify(int index, GenerationalIndex value) {
+    buffer[index] = value.field0;
+    buffer[index + 1] = value.field1;
+  }
+}
+
+class ColorBuffer extends ComplexTypedDataView<Color, int> {
+  ColorBuffer() : super(Int32Buffer());
+  ColorBuffer.fromBuffer(ColorBuffer buffer) : super(buffer.buffer);
+  ColorBuffer.fromList(List<Color> list)
+      : super(Int32Buffer.fromList(list.map((e) => e.value).toList()));
+
+  @override
+  int elementLength() {
+    return 1;
+  }
+
+  @override
+  Color debyteify(int index) {
+    return Color(buffer[index]);
+  }
+
+  @override
+  void byteify(int index, Color value) {
+    buffer[index] = value.value;
   }
 }

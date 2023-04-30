@@ -20,8 +20,8 @@ impl IndexedData for IndexWrapper {
         self.0.into_raw_parts().0
     }
 }
-impl From<RawIndex> for IndexWrapper {
-    fn from(raw_index: RawIndex) -> Self {
+impl From<GenerationalIndex> for IndexWrapper {
+    fn from(raw_index: GenerationalIndex) -> Self {
         IndexWrapper(raw_index.into())
     }
 }
@@ -42,20 +42,20 @@ impl From<&mut Index> for IndexWrapper {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct RawIndex(pub usize, pub u64);
-impl From<Index> for RawIndex {
+pub struct GenerationalIndex(pub usize, pub u64);
+impl From<Index> for GenerationalIndex {
     fn from(index: Index) -> Self {
         let (i, g) = index.into_raw_parts();
-        RawIndex(i, g)
+        GenerationalIndex(i, g)
     }
 }
-impl From<&Index> for RawIndex {
+impl From<&Index> for GenerationalIndex {
     fn from(index: &Index) -> Self {
         let (i, g) = index.into_raw_parts();
-        RawIndex(i, g)
+        GenerationalIndex(i, g)
     }
 }
-impl Into<Index> for RawIndex {
+impl Into<Index> for GenerationalIndex {
     fn into(self) -> Index {
         Index::from_raw_parts(self.0, self.1)
     }

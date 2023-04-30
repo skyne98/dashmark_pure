@@ -21,7 +21,7 @@ use std::sync::Arc;
 
 use crate::api::shape::Shape;
 use crate::api::shape::ShapeTransform;
-use crate::index::RawIndex;
+use crate::index::GenerationalIndex;
 
 // Section: wire functions
 
@@ -58,7 +58,9 @@ fn wire_create_entity_impl() -> support::WireSyncReturn {
         move || Ok(create_entity()),
     )
 }
-fn wire_drop_entity_impl(index: impl Wire2Api<RawIndex> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_drop_entity_impl(
+    index: impl Wire2Api<GenerationalIndex> + UnwindSafe,
+) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "drop_entity",
@@ -89,7 +91,7 @@ fn wire_entities_set_position_raw_impl(
     )
 }
 fn wire_entity_set_origin_impl(
-    index: impl Wire2Api<RawIndex> + UnwindSafe,
+    index: impl Wire2Api<GenerationalIndex> + UnwindSafe,
     relative: impl Wire2Api<bool> + UnwindSafe,
     x: impl Wire2Api<f64> + UnwindSafe,
     y: impl Wire2Api<f64> + UnwindSafe,
@@ -127,7 +129,7 @@ fn wire_entities_set_rotation_raw_impl(
     )
 }
 fn wire_entity_set_shape_impl(
-    index: impl Wire2Api<RawIndex> + UnwindSafe,
+    index: impl Wire2Api<GenerationalIndex> + UnwindSafe,
     shape: impl Wire2Api<Shape> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
@@ -144,7 +146,7 @@ fn wire_entity_set_shape_impl(
     )
 }
 fn wire_entity_set_vertices_raw_impl(
-    index: impl Wire2Api<RawIndex> + UnwindSafe,
+    index: impl Wire2Api<GenerationalIndex> + UnwindSafe,
     vertices: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
@@ -265,12 +267,12 @@ impl Wire2Api<usize> for usize {
 }
 // Section: impl IntoDart
 
-impl support::IntoDart for RawIndex {
+impl support::IntoDart for GenerationalIndex {
     fn into_dart(self) -> support::DartAbi {
         vec![self.0.into_dart(), self.1.into_dart()].into_dart()
     }
 }
-impl support::IntoDartExceptPrimitive for RawIndex {}
+impl support::IntoDartExceptPrimitive for GenerationalIndex {}
 
 // Section: executor
 

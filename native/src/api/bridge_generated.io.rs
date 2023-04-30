@@ -137,10 +137,10 @@ impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for *mut wire_uint_8_list {
     }
 }
 
-impl Wire2Api<RawIndex> for *mut wire_RawIndex {
-    fn wire2api(self) -> RawIndex {
+impl Wire2Api<GenerationalIndex> for *mut wire_RawIndex {
+    fn wire2api(self) -> GenerationalIndex {
         let wrap = unsafe { support::box_from_leak_ptr(self) };
-        Wire2Api::<RawIndex>::wire2api(*wrap).into()
+        Wire2Api::<GenerationalIndex>::wire2api(*wrap).into()
     }
 }
 impl Wire2Api<Shape> for *mut wire_Shape {
@@ -168,9 +168,9 @@ impl Wire2Api<Vec<ShapeTransform>> for *mut wire_list_shape_transform {
         vec.into_iter().map(Wire2Api::wire2api).collect()
     }
 }
-impl Wire2Api<RawIndex> for wire_RawIndex {
-    fn wire2api(self) -> RawIndex {
-        RawIndex(self.field0.wire2api(), self.field1.wire2api())
+impl Wire2Api<GenerationalIndex> for wire_RawIndex {
+    fn wire2api(self) -> GenerationalIndex {
+        GenerationalIndex(self.field0.wire2api(), self.field1.wire2api())
     }
 }
 impl Wire2Api<Shape> for wire_Shape {
