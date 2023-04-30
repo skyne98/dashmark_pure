@@ -30,13 +30,11 @@ pub fn wire_entities_set_position_raw(
 }
 
 #[wasm_bindgen]
-pub fn wire_entity_set_origin(
-    index: JsValue,
-    relative: bool,
-    x: f64,
-    y: f64,
+pub fn wire_entities_set_origin_raw(
+    indices: Box<[u8]>,
+    origins: Box<[u8]>,
 ) -> support::WireSyncReturn {
-    wire_entity_set_origin_impl(index, relative, x, y)
+    wire_entities_set_origin_raw_impl(indices, origins)
 }
 
 #[wasm_bindgen]
@@ -48,16 +46,11 @@ pub fn wire_entities_set_rotation_raw(
 }
 
 #[wasm_bindgen]
-pub fn wire_entity_set_shape(index: JsValue, shape: JsValue) -> support::WireSyncReturn {
-    wire_entity_set_shape_impl(index, shape)
-}
-
-#[wasm_bindgen]
-pub fn wire_entity_set_vertices_raw(
-    index: JsValue,
-    vertices: Box<[u8]>,
+pub fn wire_entities_set_scale_raw(
+    indices: Box<[u8]>,
+    scales: Box<[u8]>,
 ) -> support::WireSyncReturn {
-    wire_entity_set_vertices_raw_impl(index, vertices)
+    wire_entities_set_scale_raw_impl(indices, scales)
 }
 
 #[wasm_bindgen]
@@ -71,8 +64,54 @@ pub fn wire_query_aabb_raw(x: f64, y: f64, width: f64, height: f64) -> support::
 }
 
 #[wasm_bindgen]
-pub fn wire_transformed_vertices() -> support::WireSyncReturn {
-    wire_transformed_vertices_impl()
+pub fn wire_entity_set_vertices_raw(
+    index: JsValue,
+    vertices: Box<[u8]>,
+) -> support::WireSyncReturn {
+    wire_entity_set_vertices_raw_impl(index, vertices)
+}
+
+#[wasm_bindgen]
+pub fn wire_entities_set_priority_raw(
+    indices: Box<[u8]>,
+    priorities: Box<[u8]>,
+) -> support::WireSyncReturn {
+    wire_entities_set_priority_raw_impl(indices, priorities)
+}
+
+#[wasm_bindgen]
+pub fn wire_entity_set_shape(index: JsValue, shape: JsValue) -> support::WireSyncReturn {
+    wire_entity_set_shape_impl(index, shape)
+}
+
+#[wasm_bindgen]
+pub fn wire_entity_set_color(index: JsValue, color: i32) -> support::WireSyncReturn {
+    wire_entity_set_color_impl(index, color)
+}
+
+#[wasm_bindgen]
+pub fn wire_batches_count() -> support::WireSyncReturn {
+    wire_batches_count_impl()
+}
+
+#[wasm_bindgen]
+pub fn wire_transformed_vertices(batchIndex: u16) -> support::WireSyncReturn {
+    wire_transformed_vertices_impl(batchIndex)
+}
+
+#[wasm_bindgen]
+pub fn wire_tex_coords(batchIndex: u16) -> support::WireSyncReturn {
+    wire_tex_coords_impl(batchIndex)
+}
+
+#[wasm_bindgen]
+pub fn wire_indices(batchIndex: u16) -> support::WireSyncReturn {
+    wire_indices_impl(batchIndex)
+}
+
+#[wasm_bindgen]
+pub fn wire_colors(batchIndex: u16) -> support::WireSyncReturn {
+    wire_colors_impl(batchIndex)
 }
 
 // Section: allocate functions
@@ -84,6 +123,19 @@ pub fn wire_transformed_vertices() -> support::WireSyncReturn {
 impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for Box<[u8]> {
     fn wire2api(self) -> ZeroCopyBuffer<Vec<u8>> {
         ZeroCopyBuffer(self.wire2api())
+    }
+}
+
+impl Wire2Api<GenerationalIndex> for JsValue {
+    fn wire2api(self) -> GenerationalIndex {
+        let self_ = self.dyn_into::<JsArray>().unwrap();
+        assert_eq!(
+            self_.length(),
+            2,
+            "Expected 2 elements, got {}",
+            self_.length()
+        );
+        GenerationalIndex(self_.get(0).wire2api(), self_.get(1).wire2api())
     }
 }
 
@@ -103,18 +155,6 @@ impl Wire2Api<Vec<ShapeTransform>> for JsValue {
             .iter()
             .map(Wire2Api::wire2api)
             .collect()
-    }
-}
-impl Wire2Api<RawIndex> for JsValue {
-    fn wire2api(self) -> RawIndex {
-        let self_ = self.dyn_into::<JsArray>().unwrap();
-        assert_eq!(
-            self_.length(),
-            2,
-            "Expected 2 elements, got {}",
-            self_.length()
-        );
-        RawIndex(self_.get(0).wire2api(), self_.get(1).wire2api())
     }
 }
 impl Wire2Api<Shape> for JsValue {
@@ -164,13 +204,18 @@ impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for JsValue {
         ZeroCopyBuffer(self.wire2api())
     }
 }
-impl Wire2Api<bool> for JsValue {
-    fn wire2api(self) -> bool {
-        self.is_truthy()
-    }
-}
 impl Wire2Api<f64> for JsValue {
     fn wire2api(self) -> f64 {
+        self.unchecked_into_f64() as _
+    }
+}
+impl Wire2Api<i32> for JsValue {
+    fn wire2api(self) -> i32 {
+        self.unchecked_into_f64() as _
+    }
+}
+impl Wire2Api<u16> for JsValue {
+    fn wire2api(self) -> u16 {
         self.unchecked_into_f64() as _
     }
 }

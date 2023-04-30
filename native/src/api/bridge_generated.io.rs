@@ -17,7 +17,7 @@ pub extern "C" fn wire_create_entity() -> support::WireSyncReturn {
 }
 
 #[no_mangle]
-pub extern "C" fn wire_drop_entity(index: *mut wire_RawIndex) -> support::WireSyncReturn {
+pub extern "C" fn wire_drop_entity(index: *mut wire_GenerationalIndex) -> support::WireSyncReturn {
     wire_drop_entity_impl(index)
 }
 
@@ -30,13 +30,11 @@ pub extern "C" fn wire_entities_set_position_raw(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_entity_set_origin(
-    index: *mut wire_RawIndex,
-    relative: bool,
-    x: f64,
-    y: f64,
+pub extern "C" fn wire_entities_set_origin_raw(
+    indices: *mut wire_uint_8_list,
+    origins: *mut wire_uint_8_list,
 ) -> support::WireSyncReturn {
-    wire_entity_set_origin_impl(index, relative, x, y)
+    wire_entities_set_origin_raw_impl(indices, origins)
 }
 
 #[no_mangle]
@@ -48,19 +46,11 @@ pub extern "C" fn wire_entities_set_rotation_raw(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_entity_set_shape(
-    index: *mut wire_RawIndex,
-    shape: *mut wire_Shape,
+pub extern "C" fn wire_entities_set_scale_raw(
+    indices: *mut wire_uint_8_list,
+    scales: *mut wire_uint_8_list,
 ) -> support::WireSyncReturn {
-    wire_entity_set_shape_impl(index, shape)
-}
-
-#[no_mangle]
-pub extern "C" fn wire_entity_set_vertices_raw(
-    index: *mut wire_RawIndex,
-    vertices: *mut wire_uint_8_list,
-) -> support::WireSyncReturn {
-    wire_entity_set_vertices_raw_impl(index, vertices)
+    wire_entities_set_scale_raw_impl(indices, scales)
 }
 
 #[no_mangle]
@@ -84,15 +74,67 @@ pub extern "C" fn wire_query_aabb_raw(
 }
 
 #[no_mangle]
-pub extern "C" fn wire_transformed_vertices() -> support::WireSyncReturn {
-    wire_transformed_vertices_impl()
+pub extern "C" fn wire_entity_set_vertices_raw(
+    index: *mut wire_GenerationalIndex,
+    vertices: *mut wire_uint_8_list,
+) -> support::WireSyncReturn {
+    wire_entity_set_vertices_raw_impl(index, vertices)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_entities_set_priority_raw(
+    indices: *mut wire_uint_8_list,
+    priorities: *mut wire_uint_8_list,
+) -> support::WireSyncReturn {
+    wire_entities_set_priority_raw_impl(indices, priorities)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_entity_set_shape(
+    index: *mut wire_GenerationalIndex,
+    shape: *mut wire_Shape,
+) -> support::WireSyncReturn {
+    wire_entity_set_shape_impl(index, shape)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_entity_set_color(
+    index: *mut wire_GenerationalIndex,
+    color: i32,
+) -> support::WireSyncReturn {
+    wire_entity_set_color_impl(index, color)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_batches_count() -> support::WireSyncReturn {
+    wire_batches_count_impl()
+}
+
+#[no_mangle]
+pub extern "C" fn wire_transformed_vertices(batchIndex: u16) -> support::WireSyncReturn {
+    wire_transformed_vertices_impl(batchIndex)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_tex_coords(batchIndex: u16) -> support::WireSyncReturn {
+    wire_tex_coords_impl(batchIndex)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_indices(batchIndex: u16) -> support::WireSyncReturn {
+    wire_indices_impl(batchIndex)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_colors(batchIndex: u16) -> support::WireSyncReturn {
+    wire_colors_impl(batchIndex)
 }
 
 // Section: allocate functions
 
 #[no_mangle]
-pub extern "C" fn new_box_autoadd_raw_index_0() -> *mut wire_RawIndex {
-    support::new_leak_box_ptr(wire_RawIndex::new_with_null_ptr())
+pub extern "C" fn new_box_autoadd_generational_index_0() -> *mut wire_GenerationalIndex {
+    support::new_leak_box_ptr(wire_GenerationalIndex::new_with_null_ptr())
 }
 
 #[no_mangle]
@@ -136,8 +178,7 @@ impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for *mut wire_uint_8_list {
         ZeroCopyBuffer(self.wire2api())
     }
 }
-
-impl Wire2Api<GenerationalIndex> for *mut wire_RawIndex {
+impl Wire2Api<GenerationalIndex> for *mut wire_GenerationalIndex {
     fn wire2api(self) -> GenerationalIndex {
         let wrap = unsafe { support::box_from_leak_ptr(self) };
         Wire2Api::<GenerationalIndex>::wire2api(*wrap).into()
@@ -147,6 +188,12 @@ impl Wire2Api<Shape> for *mut wire_Shape {
     fn wire2api(self) -> Shape {
         let wrap = unsafe { support::box_from_leak_ptr(self) };
         Wire2Api::<Shape>::wire2api(*wrap).into()
+    }
+}
+
+impl Wire2Api<GenerationalIndex> for wire_GenerationalIndex {
+    fn wire2api(self) -> GenerationalIndex {
+        GenerationalIndex(self.field0.wire2api(), self.field1.wire2api())
     }
 }
 
@@ -166,11 +213,6 @@ impl Wire2Api<Vec<ShapeTransform>> for *mut wire_list_shape_transform {
             support::vec_from_leak_ptr(wrap.ptr, wrap.len)
         };
         vec.into_iter().map(Wire2Api::wire2api).collect()
-    }
-}
-impl Wire2Api<GenerationalIndex> for wire_RawIndex {
-    fn wire2api(self) -> GenerationalIndex {
-        GenerationalIndex(self.field0.wire2api(), self.field1.wire2api())
     }
 }
 impl Wire2Api<Shape> for wire_Shape {
@@ -220,6 +262,13 @@ impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
 
 #[repr(C)]
 #[derive(Clone)]
+pub struct wire_GenerationalIndex {
+    field0: usize,
+    field1: u64,
+}
+
+#[repr(C)]
+#[derive(Clone)]
 pub struct wire_list_shape {
     ptr: *mut wire_Shape,
     len: i32,
@@ -230,13 +279,6 @@ pub struct wire_list_shape {
 pub struct wire_list_shape_transform {
     ptr: *mut wire_ShapeTransform,
     len: i32,
-}
-
-#[repr(C)]
-#[derive(Clone)]
-pub struct wire_RawIndex {
-    field0: usize,
-    field1: u64,
 }
 
 #[repr(C)]
@@ -294,7 +336,7 @@ impl<T> NewWithNullPtr for *mut T {
     }
 }
 
-impl NewWithNullPtr for wire_RawIndex {
+impl NewWithNullPtr for wire_GenerationalIndex {
     fn new_with_null_ptr() -> Self {
         Self {
             field0: Default::default(),
@@ -303,7 +345,7 @@ impl NewWithNullPtr for wire_RawIndex {
     }
 }
 
-impl Default for wire_RawIndex {
+impl Default for wire_GenerationalIndex {
     fn default() -> Self {
         Self::new_with_null_ptr()
     }

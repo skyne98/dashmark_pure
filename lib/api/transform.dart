@@ -74,20 +74,3 @@ void setOriginsBulk(GenerationalIndexBuffer entities, Vector64Buffer origins) {
       indices: entities.buffer.toUint8List(),
       origins: origins.buffer.toUint8List());
 }
-
-// Size
-void setSize(GenerationalIndex entity, double x, double y) {
-  var indicesBuffer = GenerationalIndexBuffer();
-  indicesBuffer.add(entity);
-  var vectorBuffer = Vector64Buffer();
-  vectorBuffer.add(vector64.Vector2(x, y));
-  api.entitiesSetSizeRaw(
-      indices: indicesBuffer.buffer.toUint8List(),
-      sizes: vectorBuffer.buffer.toUint8List());
-}
-
-void setSizesBulk(GenerationalIndexBuffer entities, Vector64Buffer sizes) {
-  api.entitiesSetSizeRaw(
-      indices: entities.buffer.toUint8List(),
-      sizes: sizes.buffer.toUint8List());
-}

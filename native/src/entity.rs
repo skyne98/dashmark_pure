@@ -32,6 +32,10 @@ pub struct Entity {
 
     // Coliisions
     pub shape: Option<Box<dyn EntityShape>>,
+
+    // Rendering
+    pub priority: i32,
+    pub color: i32,
 }
 
 impl Debug for Entity {
@@ -53,6 +57,8 @@ impl Default for Entity {
             index: Index::from_raw_parts(usize::MAX, u64::MAX),
             parent: None,
             shape: None,
+            priority: 0,
+            color: 0,
         }
     }
 }

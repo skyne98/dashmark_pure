@@ -85,6 +85,10 @@ class World {
         _position.add(Vector2(x, y));
         _velocity.add(Vector2(vx, vy));
         _rotation.add(0.0);
+        _scale.add(Vector2(1.0, 1.0));
+        final origin = Vector2(dashImage!.width / 2 * scaleToSize,
+            dashImage!.height / 2 * scaleToSize);
+        _origin.add(origin);
 
         // Create the entity
         final entity = api.createEntity();
@@ -92,7 +96,7 @@ class World {
         setPosition(entity, x, y);
         const shape = Shape.ball(radius: World.desiredSize / 2);
         api.entitySetShape(index: entity, shape: shape);
-        api.entitySetOrigin(index: entity, relative: true, x: 0.5, y: 0.5);
+        setOrigin(entity, origin.x, origin.y);
         final vertices = Vector64Buffer();
         vertices.add(Vector2(0.0, 0.0));
         vertices.add(Vector2(0.0, 1.0));
@@ -139,6 +143,7 @@ class World {
 
         // Rotate slightly
         rotation += 3.14 * lastDt;
+        _rotation[i] = rotation;
       }
       lastDt = t;
 
@@ -147,7 +152,6 @@ class World {
       setRotationsBulk(_entityIndices, _rotation);
       setScalesBulk(_entityIndices, _scale);
       setOriginsBulk(_entityIndices, _origin);
-      setSizesBulk(_entityIndices, _size);
 
       // Call the native world update
       api.update(dt: t);

@@ -14,7 +14,9 @@ use crate::{
     matrix::bulk_transform_vectors_mut,
     state::State,
     transform::Origin,
-    typed_data::{bytes_to_indices, bytes_to_vector2s, indices_to_bytes, to_bytes, value_to_bytes},
+    typed_data::{
+        bytes_to, bytes_to_indices, bytes_to_vector2s, indices_to_bytes, to_bytes, value_to_bytes,
+    },
 };
 
 // For initialization
@@ -52,6 +54,7 @@ pub fn drop_entity(index: GenerationalIndex) -> SyncReturn<()> {
     SyncReturn(())
 }
 
+// Transform
 pub fn entities_set_position_raw(
     indices: ZeroCopyBuffer<Vec<u8>>,
     positions: ZeroCopyBuffer<Vec<u8>>,
@@ -69,22 +72,17 @@ pub fn entities_set_position_raw(
     SyncReturn(())
 }
 
-pub fn entity_set_origin(
-    index: GenerationalIndex,
-    relative: bool,
-    x: f64,
-    y: f64,
+pub fn entities_set_origin_raw(
+    indices: ZeroCopyBuffer<Vec<u8>>,
+    origins: ZeroCopyBuffer<Vec<u8>>,
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        if let Some(mut trasform) = state.transforms.borrow_mut().transform_mut(index.into()) {
-            if let Some(entity) = state.entities.borrow_mut().get_entity_mut(index.into()) {
-                if relative {
-                    let size = entity.get_size();
-                    trasform.set_origin_relative(Vector2::new(x, y), size);
-                } else {
-                    trasform.set_origin_absolute(Vector2::new(x, y));
-                }
-                state.broadphase.borrow_mut().index_updated(entity.index);
+        let indices = bytes_to_indices(indices.0.as_slice());
+        let origins = bytes_to_vector2s(origins.0.as_slice());
+        for (index, origin) in indices.iter().zip(origins.iter()) {
+            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
+                transform.set_origin_absolute(*origin);
+                state.broadphase.borrow_mut().index_updated(*index);
             }
         }
     });
@@ -97,10 +95,10 @@ pub fn entities_set_rotation_raw(
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         let indices = bytes_to_indices(indices.0.as_slice());
-        let rotations = bytes_to_vector2s(rotations.0.as_slice());
+        let rotations = bytes_to(rotations.0.as_slice());
         for (index, rotation) in indices.iter().zip(rotations.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
-                transform.set_rotation(rotation.x);
+                transform.set_rotation(*rotation);
                 state.broadphase.borrow_mut().index_updated(*index);
             }
         }
@@ -108,24 +106,19 @@ pub fn entities_set_rotation_raw(
     SyncReturn(())
 }
 
-pub fn entity_set_shape(index: GenerationalIndex, shape: Shape) -> SyncReturn<()> {
-    State::acquire_mut(|state| {
-        if let Some(mut entity) = state.entities.borrow_mut().get_entity_mut(index.into()) {
-            let shape: Box<dyn EntityShape> = shape.into();
-            entity.set_shape_box(shape);
-            state.broadphase.borrow_mut().index_updated(entity.index);
-        }
-    });
-    SyncReturn(())
-}
-
-pub fn entity_set_vertices_raw(
-    index: GenerationalIndex,
-    vertices: ZeroCopyBuffer<Vec<u8>>,
+pub fn entities_set_scale_raw(
+    indices: ZeroCopyBuffer<Vec<u8>>,
+    scales: ZeroCopyBuffer<Vec<u8>>,
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        let vertices = bytes_to_vector2s(vertices.0.as_slice());
-        state.vertices.borrow_mut().set(index.into(), vertices);
+        let indices = bytes_to_indices(indices.0.as_slice());
+        let scales = bytes_to_vector2s(scales.0.as_slice());
+        for (index, scale) in indices.iter().zip(scales.iter()) {
+            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
+                transform.set_scale(*scale);
+                state.broadphase.borrow_mut().index_updated(*index);
+            }
+        }
     });
     SyncReturn(())
 }
@@ -161,7 +154,58 @@ pub fn query_aabb_raw(
 }
 
 // Rendering
-pub fn transformed_vertices() -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+pub fn entity_set_vertices_raw(
+    index: GenerationalIndex,
+    vertices: ZeroCopyBuffer<Vec<u8>>,
+) -> SyncReturn<()> {
+    State::acquire_mut(|state| {
+        let vertices = bytes_to_vector2s(vertices.0.as_slice());
+        state.vertices.borrow_mut().set(index.into(), vertices);
+    });
+    SyncReturn(())
+}
+
+pub fn entities_set_priority_raw(
+    indices: ZeroCopyBuffer<Vec<u8>>,
+    priorities: ZeroCopyBuffer<Vec<u8>>,
+) -> SyncReturn<()> {
+    State::acquire_mut(|state| {
+        let indices = bytes_to_indices(indices.0.as_slice());
+        let priorities = bytes_to(priorities.0.as_slice());
+        for (index, priority) in indices.iter().zip(priorities.iter()) {
+            if let Some(mut entity) = state.entities.borrow_mut().get_entity_mut(*index) {
+                entity.priority = *priority;
+            }
+        }
+    });
+    SyncReturn(())
+}
+
+pub fn entity_set_shape(index: GenerationalIndex, shape: Shape) -> SyncReturn<()> {
+    State::acquire_mut(|state| {
+        if let Some(mut entity) = state.entities.borrow_mut().get_entity_mut(index.into()) {
+            let shape: Box<dyn EntityShape> = shape.into();
+            entity.set_shape_box(shape);
+            state.broadphase.borrow_mut().index_updated(entity.index);
+        }
+    });
+    SyncReturn(())
+}
+
+pub fn entity_set_color(index: GenerationalIndex, color: i32) -> SyncReturn<()> {
+    State::acquire_mut(|state| {
+        if let Some(mut entity) = state.entities.borrow_mut().get_entity_mut(index.into()) {
+            entity.color = color;
+        }
+    });
+    SyncReturn(())
+}
+
+pub fn batches_count() -> SyncReturn<u64> {
+    panic!("Not implemented")
+}
+
+pub fn transformed_vertices(batchIndex: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
     // Buffer layout:
     // 1. Entities count
     // N. Vertices count
@@ -193,4 +237,16 @@ pub fn transformed_vertices() -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
         println!("transformed_vertices: {:?}", elapsed);
         SyncReturn(ZeroCopyBuffer(buffer))
     })
+}
+
+pub fn tex_coords(batchIndex: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+    panic!("Not implemented")
+}
+
+pub fn indices(batchIndex: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+    panic!("Not implemented")
+}
+
+pub fn colors(batchIndex: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+    panic!("Not implemented")
 }
