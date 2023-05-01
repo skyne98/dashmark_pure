@@ -3,7 +3,7 @@ use std::sync::mpsc::Receiver;
 #[cfg(target_arch = "wasm32")]
 use flutter_rust_bridge::JsValue;
 use generational_arena::Index;
-use rapier2d_f64::prelude::Aabb;
+use rapier2d::prelude::Aabb;
 
 use crate::{bvh::Bvh, index::IndexWrapper};
 

@@ -65,12 +65,12 @@ pub fn wire_entities_set_scale_raw(
 }
 
 #[wasm_bindgen]
-pub fn wire_query_aabb(x: f64, y: f64, width: f64, height: f64) -> support::WireSyncReturn {
+pub fn wire_query_aabb(x: f32, y: f32, width: f32, height: f32) -> support::WireSyncReturn {
     wire_query_aabb_impl(x, y, width, height)
 }
 
 #[wasm_bindgen]
-pub fn wire_query_aabb_raw(x: f64, y: f64, width: f64, height: f64) -> support::WireSyncReturn {
+pub fn wire_query_aabb_raw(x: f32, y: f32, width: f32, height: f32) -> support::WireSyncReturn {
     wire_query_aabb_raw_impl(x, y, width, height)
 }
 
@@ -226,6 +226,11 @@ impl Wire2Api<Vec<u8>> for Box<[u8]> {
 impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for JsValue {
     fn wire2api(self) -> ZeroCopyBuffer<Vec<u8>> {
         ZeroCopyBuffer(self.wire2api())
+    }
+}
+impl Wire2Api<f32> for JsValue {
+    fn wire2api(self) -> f32 {
+        self.unchecked_into_f64() as _
     }
 }
 impl Wire2Api<f64> for JsValue {

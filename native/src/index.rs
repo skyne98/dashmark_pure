@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use generational_arena::Index;
-use rapier2d_f64::parry::partitioning::IndexedData;
+use rapier2d::parry::partitioning::IndexedData;
 
 #[derive(Debug, Clone, Copy)]
 pub struct IndexWrapper(pub Index);

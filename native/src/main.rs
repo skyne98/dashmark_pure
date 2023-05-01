@@ -1,8 +1,8 @@
 use crate::matrix::{bulk_transform_vectors_mut, bulk_transform_vectors_mut_n, TransformMatrix};
-use rapier2d_f64::na::Vector2;
-use rapier2d_f64::parry::bounding_volume::Aabb as ParryAabb;
-use rapier2d_f64::parry::na::Point2;
-use rapier2d_f64::parry::partitioning::Qbvh as ParryQbvh;
+use rapier2d::na::Vector2;
+use rapier2d::parry::bounding_volume::Aabb as ParryAabb;
+use rapier2d::parry::na::Point2;
+use rapier2d::parry::partitioning::Qbvh as ParryQbvh;
 
 mod api;
 mod bvh;
@@ -70,13 +70,13 @@ fn main() {
 
     const iterations: u32 = 1000000;
 
-    // Make a parry_2d_f64 test
+    // Make a parry_2d test
     let mut aabbs = Vec::new();
 
     let mut start = std::time::Instant::now();
     for _ in 0..iterations {
-        let x = fastrand::f64() * 1000.0;
-        let y = fastrand::f64() * 1000.0;
+        let x = fastrand::f32() * 1000.0;
+        let y = fastrand::f32() * 1000.0;
         let one_aabb = ParryAabb::new(Point2::new(x, y), Point2::new(x + 20.0, y + 20.0));
         aabbs.push((0 as u64, one_aabb));
     }
@@ -94,8 +94,8 @@ fn main() {
     // Now do iterations / 10 intersection tests
     start = std::time::Instant::now();
     for _ in 0..iterations / 10 {
-        let x = fastrand::f64() * 1000.0;
-        let y = fastrand::f64() * 1000.0;
+        let x = fastrand::f32() * 1000.0;
+        let y = fastrand::f32() * 1000.0;
         let one_aabb = ParryAabb::new(Point2::new(x, y), Point2::new(x + 20.0, y + 20.0));
         let mut results = Vec::new();
         bvh.intersect_aabb(&one_aabb, &mut results);

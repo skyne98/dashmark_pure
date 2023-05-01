@@ -1,5 +1,5 @@
 use generational_arena::Index;
-use rapier2d_f64::na::Vector2;
+use rapier2d::na::Vector2;
 use smallvec::SmallVec;
 
 use crate::matrix::bulk_transform_vectors_mut;
@@ -8,8 +8,8 @@ use super::{entity_manager::EntityManager, transform_manager::TransformManager};
 
 #[derive(Default, Debug, Clone)]
 pub struct RenderingResources {
-    pub vertices: Vec<SmallVec<[Vector2<f64>; 10]>>,
-    pub texCoords: Vec<SmallVec<[Vector2<f64>; 10]>>,
+    pub vertices: Vec<SmallVec<[Vector2<f32>; 10]>>,
+    pub texCoords: Vec<SmallVec<[Vector2<f32>; 10]>>,
     pub colors: Vec<i32>,
     pub indices: Vec<SmallVec<[u16; 10]>>,
     pub batches: Vec<Batch>,
@@ -26,8 +26,8 @@ impl RenderingResources {
         &self,
         index: Index,
     ) -> Option<(
-        &SmallVec<[Vector2<f64>; 10]>,
-        &SmallVec<[Vector2<f64>; 10]>,
+        &SmallVec<[Vector2<f32>; 10]>,
+        &SmallVec<[Vector2<f32>; 10]>,
         &i32,
         &SmallVec<[u16; 10]>,
     )> {
@@ -48,8 +48,8 @@ impl RenderingResources {
         &mut self,
         index: Index,
     ) -> Option<(
-        &mut SmallVec<[Vector2<f64>; 10]>,
-        &mut SmallVec<[Vector2<f64>; 10]>,
+        &mut SmallVec<[Vector2<f32>; 10]>,
+        &mut SmallVec<[Vector2<f32>; 10]>,
         &mut i32,
         &mut SmallVec<[u16; 10]>,
     )> {
@@ -66,7 +66,7 @@ impl RenderingResources {
         }
     }
 
-    pub fn set_vertices<V: AsRef<[Vector2<f64>]>>(&mut self, index: Index, vertices: V) {
+    pub fn set_vertices<V: AsRef<[Vector2<f32>]>>(&mut self, index: Index, vertices: V) {
         let (index, _) = index.into_raw_parts();
         if index >= self.vertices.len() {
             panic!("Index out of bounds when setting vertices");
@@ -74,7 +74,7 @@ impl RenderingResources {
         self.vertices[index].clear();
         self.vertices[index].extend_from_slice(vertices.as_ref());
     }
-    pub fn set_tex_coords<V: AsRef<[Vector2<f64>]>>(&mut self, index: Index, tex_coords: V) {
+    pub fn set_tex_coords<V: AsRef<[Vector2<f32>]>>(&mut self, index: Index, tex_coords: V) {
         let (index, _) = index.into_raw_parts();
         if index >= self.vertices.len() {
             panic!("Index out of bounds when setting tex_coords");
@@ -95,7 +95,7 @@ impl RenderingResources {
         &self,
         index: Index,
         transforms: &TransformManager,
-    ) -> SmallVec<[Vector2<f64>; 10]> {
+    ) -> SmallVec<[Vector2<f32>; 10]> {
         let (index_index, _) = index.into_raw_parts();
         if index_index >= self.vertices.len() {
             panic!("Index out of bounds when getting transformed vertices");

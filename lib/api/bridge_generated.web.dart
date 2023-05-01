@@ -52,7 +52,7 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
   @protected
   List<dynamic> api2wire_shape(Shape raw) {
     if (raw is Shape_Ball) {
-      return [0, api2wire_f64(raw.radius)];
+      return [0, api2wire_f32(raw.radius)];
     }
     if (raw is Shape_Compound) {
       return [
@@ -68,11 +68,11 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire>
   @protected
   List<dynamic> api2wire_shape_transform(ShapeTransform raw) {
     return [
-      api2wire_f64(raw.positionX),
-      api2wire_f64(raw.positionY),
-      api2wire_f64(raw.rotation),
-      api2wire_f64(raw.absoluteOriginX),
-      api2wire_f64(raw.absoluteOriginY)
+      api2wire_f32(raw.positionX),
+      api2wire_f32(raw.positionY),
+      api2wire_f32(raw.rotation),
+      api2wire_f32(raw.absoluteOriginX),
+      api2wire_f32(raw.absoluteOriginY)
     ];
   }
 

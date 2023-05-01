@@ -1,5 +1,5 @@
 use generational_arena::Index;
-use rapier2d_f64::na::Vector2;
+use rapier2d::na::Vector2;
 
 // Standard
 pub fn bytes_to<T>(bytes: &[u8]) -> &[T] {
@@ -47,7 +47,7 @@ pub fn bytes_to_indices(bytes: &[u8]) -> Vec<Index> {
     indices
 }
 
-pub fn bytes_to_vector2s(bytes: &[u8]) -> Vec<Vector2<f64>> {
+pub fn bytes_to_vector2s(bytes: &[u8]) -> Vec<Vector2<f32>> {
     let data = bytes_to(bytes);
     let vectors = data
         .chunks_exact(2)
@@ -66,7 +66,7 @@ pub fn indices_to_bytes(indices: &[Index]) -> Vec<u8> {
     bytes.to_vec()
 }
 
-pub fn vector2s_to_bytes(vectors: &[Vector2<f64>]) -> Vec<u8> {
+pub fn vector2s_to_bytes(vectors: &[Vector2<f32>]) -> Vec<u8> {
     let data = vectors
         .iter()
         .flat_map(|vector| vec![vector.x, vector.y])

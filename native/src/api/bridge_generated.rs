@@ -171,10 +171,10 @@ fn wire_entities_set_scale_raw_impl(
     )
 }
 fn wire_query_aabb_impl(
-    x: impl Wire2Api<f64> + UnwindSafe,
-    y: impl Wire2Api<f64> + UnwindSafe,
-    width: impl Wire2Api<f64> + UnwindSafe,
-    height: impl Wire2Api<f64> + UnwindSafe,
+    x: impl Wire2Api<f32> + UnwindSafe,
+    y: impl Wire2Api<f32> + UnwindSafe,
+    width: impl Wire2Api<f32> + UnwindSafe,
+    height: impl Wire2Api<f32> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -192,10 +192,10 @@ fn wire_query_aabb_impl(
     )
 }
 fn wire_query_aabb_raw_impl(
-    x: impl Wire2Api<f64> + UnwindSafe,
-    y: impl Wire2Api<f64> + UnwindSafe,
-    width: impl Wire2Api<f64> + UnwindSafe,
-    height: impl Wire2Api<f64> + UnwindSafe,
+    x: impl Wire2Api<f32> + UnwindSafe,
+    y: impl Wire2Api<f32> + UnwindSafe,
+    width: impl Wire2Api<f32> + UnwindSafe,
+    height: impl Wire2Api<f32> + UnwindSafe,
 ) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
@@ -399,6 +399,11 @@ where
     }
 }
 
+impl Wire2Api<f32> for f32 {
+    fn wire2api(self) -> f32 {
+        self
+    }
+}
 impl Wire2Api<f64> for f64 {
     fn wire2api(self) -> f64 {
         self

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use generational_arena::Index;
-use rapier2d_f64::{
+use rapier2d::{
     parry::partitioning::{Qbvh, QbvhUpdateWorkspace},
     prelude::Aabb,
 };
@@ -110,10 +110,10 @@ impl Bvh {
 // Flattened
 #[derive(Debug, Clone)]
 pub struct FlatBvh {
-    pub min_x: Vec<f64>,
-    pub min_y: Vec<f64>,
-    pub max_x: Vec<f64>,
-    pub max_y: Vec<f64>,
+    pub min_x: Vec<f32>,
+    pub min_y: Vec<f32>,
+    pub max_x: Vec<f32>,
+    pub max_y: Vec<f32>,
     pub depth: Vec<u8>,
     pub is_leaf: Vec<u8>,
 }
@@ -154,10 +154,10 @@ impl FlatBvh {
             let node = &nodes[inode as usize];
             let simd_aabb = &node.simd_aabb;
 
-            for ii in 0..rapier2d_f64::parry::math::SIMD_WIDTH {
+            for ii in 0..rapier2d::parry::math::SIMD_WIDTH {
                 let aabb = simd_aabb.extract(ii);
 
-                if aabb.mins.x == f64::MAX {
+                if aabb.mins.x == f32::MAX {
                     continue;
                 }
                 flat_bvh.min_x.push(aabb.mins.x);
@@ -192,7 +192,7 @@ impl FlatBvh {
         let minxs_buffer = unsafe {
             let minxs = self.min_x;
             let minxs_ptr = minxs.as_ptr() as *const u8;
-            let minxs_len = minxs.len() * std::mem::size_of::<f64>();
+            let minxs_len = minxs.len() * std::mem::size_of::<f32>();
             let raw_minxs = std::slice::from_raw_parts(minxs_ptr, minxs_len).to_vec();
             // Make sure the data doesn't get dropped
             std::mem::forget(minxs);
@@ -203,7 +203,7 @@ impl FlatBvh {
         let minys_buffer = unsafe {
             let minys = self.min_y;
             let minys_ptr = minys.as_ptr() as *const u8;
-            let minys_len = minys.len() * std::mem::size_of::<f64>();
+            let minys_len = minys.len() * std::mem::size_of::<f32>();
             let raw_minys = std::slice::from_raw_parts(minys_ptr, minys_len).to_vec();
             // Make sure the data doesn't get dropped
             std::mem::forget(minys);
@@ -214,7 +214,7 @@ impl FlatBvh {
         let maxxs_buffer = unsafe {
             let maxxs = self.max_x;
             let maxxs_ptr = maxxs.as_ptr() as *const u8;
-            let maxxs_len = maxxs.len() * std::mem::size_of::<f64>();
+            let maxxs_len = maxxs.len() * std::mem::size_of::<f32>();
             let raw_maxxs = std::slice::from_raw_parts(maxxs_ptr, maxxs_len).to_vec();
             // Make sure the data doesn't get dropped
             std::mem::forget(maxxs);
@@ -225,7 +225,7 @@ impl FlatBvh {
         let maxys_buffer = unsafe {
             let maxys = self.max_y;
             let maxys_ptr = maxys.as_ptr() as *const u8;
-            let maxys_len = maxys.len() * std::mem::size_of::<f64>();
+            let maxys_len = maxys.len() * std::mem::size_of::<f32>();
             let raw_maxys = std::slice::from_raw_parts(maxys_ptr, maxys_len).to_vec();
             // Make sure the data doesn't get dropped
             std::mem::forget(maxys);

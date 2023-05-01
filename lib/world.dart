@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:vector_math/vector_math_64.dart' show Vector2;
+import 'package:vector_math/vector_math.dart' show Vector2;
 import 'bvh.dart';
 import 'ffi_export.dart';
 import 'typed_buffer/mod.dart';
@@ -29,12 +29,12 @@ class World {
   final GenerationalIndexBuffer _entityIndices = GenerationalIndexBuffer();
   final Int32Buffer _priorities = Int32Buffer();
   final ColorBuffer _colors = ColorBuffer();
-  final Vector64Buffer _velocity = Vector64Buffer();
-  final Vector64Buffer _position = Vector64Buffer();
-  final Float64Buffer _rotation = Float64Buffer();
-  final Vector64Buffer _scale = Vector64Buffer();
-  final Vector64Buffer _origin = Vector64Buffer();
-  final Vector64Buffer _size = Vector64Buffer();
+  final VectorBuffer _velocity = VectorBuffer();
+  final VectorBuffer _position = VectorBuffer();
+  final Float32Buffer _rotation = Float32Buffer();
+  final VectorBuffer _scale = VectorBuffer();
+  final VectorBuffer _origin = VectorBuffer();
+  final VectorBuffer _size = VectorBuffer();
 
   // FPS
   final _lastFrameTimes = List.filled(60, 0.0, growable: true);
@@ -96,13 +96,13 @@ class World {
         const shape = Shape.ball(radius: World.desiredSize / 2);
         api.entitySetShape(index: entity, shape: shape);
         setOrigin(entity, origin.x, origin.y);
-        final vertices = Vector64Buffer();
+        final vertices = VectorBuffer();
         vertices.add(Vector2(0.0, 0.0));
         vertices.add(Vector2(0.0, 64.0));
         vertices.add(Vector2(64.0, 64.0));
         vertices.add(Vector2(64.0, 0.0));
         rendering.setVertices(entity, vertices);
-        final texCoords = Vector64Buffer();
+        final texCoords = VectorBuffer();
         texCoords.add(Vector2(0.0, 0.0));
         texCoords.add(Vector2(128.0, 0.0));
         texCoords.add(Vector2(128.0, 128.0));

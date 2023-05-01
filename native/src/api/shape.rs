@@ -1,20 +1,20 @@
-use rapier2d_f64::na::{Point2, UnitComplex, Vector2};
-use rapier2d_f64::parry::math::Isometry;
-use rapier2d_f64::parry::shape::{Ball as ParryBall, Compound as ParryCompound, SharedShape};
+use rapier2d::na::{Point2, UnitComplex, Vector2};
+use rapier2d::parry::math::Isometry;
+use rapier2d::parry::shape::{Ball as ParryBall, Compound as ParryCompound, SharedShape};
 
 use crate::entity::EntityShape;
 
 #[derive(Debug, Clone)]
 pub struct ShapeTransform {
-    pub position_x: f64,
-    pub position_y: f64,
-    pub rotation: f64,
-    pub absolute_origin_x: f64,
-    pub absolute_origin_y: f64,
+    pub position_x: f32,
+    pub position_y: f32,
+    pub rotation: f32,
+    pub absolute_origin_x: f32,
+    pub absolute_origin_y: f32,
 }
 
-impl Into<Isometry<f64>> for ShapeTransform {
-    fn into(self) -> Isometry<f64> {
+impl Into<Isometry<f32>> for ShapeTransform {
+    fn into(self) -> Isometry<f32> {
         let mut isometry = Isometry::new(Vector2::new(self.position_x, self.position_y), 0.0);
         isometry.append_rotation_wrt_point_mut(
             &UnitComplex::new(self.rotation),
@@ -27,7 +27,7 @@ impl Into<Isometry<f64>> for ShapeTransform {
 #[derive(Debug, Clone)]
 pub enum Shape {
     Ball {
-        radius: f64,
+        radius: f32,
     },
     Compound {
         children: Vec<Shape>,

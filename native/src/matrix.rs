@@ -1,10 +1,10 @@
-use rapier2d_f64::na::SimdValue;
-use rapier2d_f64::na::{Matrix2x3, Point2, Vector2};
-use simba::simd::f64x4;
+use rapier2d::na::SimdValue;
+use rapier2d::na::{Matrix2x3, Point2, Vector2};
+use simba::simd::f32x4;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TransformMatrix {
-    pub matrix: Matrix2x3<f64>,
+    pub matrix: Matrix2x3<f32>,
 }
 
 impl TransformMatrix {
@@ -16,9 +16,9 @@ impl TransformMatrix {
     }
 
     pub fn multiply_transforms(
-        transform1: &Matrix2x3<f64>,
-        transform2: &Matrix2x3<f64>,
-    ) -> Matrix2x3<f64> {
+        transform1: &Matrix2x3<f32>,
+        transform2: &Matrix2x3<f32>,
+    ) -> Matrix2x3<f32> {
         let m11 = transform1[(0, 0)] * transform2[(0, 0)] + transform1[(0, 1)] * transform2[(1, 0)];
         let m12 = transform1[(0, 0)] * transform2[(0, 1)] + transform1[(0, 1)] * transform2[(1, 1)];
         let m21 = transform1[(1, 0)] * transform2[(0, 0)] + transform1[(1, 1)] * transform2[(1, 0)];
@@ -33,7 +33,7 @@ impl TransformMatrix {
         Matrix2x3::new(m11, m12, m31, m21, m22, m32)
     }
 
-    pub fn multiply_by_matrix(&mut self, matrix: &Matrix2x3<f64>) {
+    pub fn multiply_by_matrix(&mut self, matrix: &Matrix2x3<f32>) {
         let transform1 = self.matrix;
         let transform2 = matrix;
         let m11 = transform1[(0, 0)] * transform2[(0, 0)] + transform1[(0, 1)] * transform2[(1, 0)];
@@ -59,12 +59,12 @@ impl TransformMatrix {
         self.multiply_by_matrix(&other.matrix);
     }
 
-    pub fn translate(&mut self, translation: Vector2<f64>) {
+    pub fn translate(&mut self, translation: Vector2<f32>) {
         let new_matrix = Matrix2x3::new(1.0, 0.0, translation.x, 0.0, 1.0, translation.y);
         self.multiply_by_matrix(&new_matrix);
     }
 
-    pub fn rotate_deg(&mut self, angle_degrees: f64) {
+    pub fn rotate_deg(&mut self, angle_degrees: f32) {
         let angle_radians = angle_degrees.to_radians();
         let rotation_matrix = Matrix2x3::new(
             angle_radians.cos(),
@@ -77,7 +77,7 @@ impl TransformMatrix {
         self.multiply_by_matrix(&rotation_matrix);
     }
 
-    pub fn rotate(&mut self, angle_radians: f64) {
+    pub fn rotate(&mut self, angle_radians: f32) {
         let rotation_matrix = Matrix2x3::new(
             angle_radians.cos(),
             -angle_radians.sin(),
@@ -89,17 +89,17 @@ impl TransformMatrix {
         self.multiply_by_matrix(&rotation_matrix);
     }
 
-    pub fn scale(&mut self, sx: f64, sy: f64) {
+    pub fn scale(&mut self, sx: f32, sy: f32) {
         let scale_matrix = Matrix2x3::new(sx, 0.0, 0.0, 0.0, sy, 0.0);
         self.multiply_by_matrix(&scale_matrix);
     }
 
     pub fn build_transform(
         &mut self,
-        translation: [f64; 2],
-        angle: f64,
-        scale: [f64; 2],
-        origin: [f64; 2],
+        translation: [f32; 2],
+        angle: f32,
+        scale: [f32; 2],
+        origin: [f32; 2],
     ) {
         let c = angle.cos();
         let s = angle.sin();
@@ -114,27 +114,27 @@ impl TransformMatrix {
         self.matrix[(1, 2)] = ty;
     }
 
-    pub fn transform_point_mut(&self, point: &mut Point2<f64>) {
+    pub fn transform_point_mut(&self, point: &mut Point2<f32>) {
         let x = point.x;
         let y = point.y;
         point.x = self.matrix[(0, 0)] * x + self.matrix[(0, 1)] * y + self.matrix[(0, 2)];
         point.y = self.matrix[(1, 0)] * x + self.matrix[(1, 1)] * y + self.matrix[(1, 2)];
     }
 
-    pub fn transform_point(&self, point: &Point2<f64>) -> Point2<f64> {
+    pub fn transform_point(&self, point: &Point2<f32>) -> Point2<f32> {
         let mut result = *point;
         self.transform_point_mut(&mut result);
         result
     }
 
-    pub fn transform_vector_mut(&self, vector: &mut Vector2<f64>) {
+    pub fn transform_vector_mut(&self, vector: &mut Vector2<f32>) {
         let x = vector.x;
         let y = vector.y;
         vector.x = self.matrix[(0, 0)] * x + self.matrix[(0, 1)] * y;
         vector.y = self.matrix[(1, 0)] * x + self.matrix[(1, 1)] * y;
     }
 
-    pub fn transform_vector(&self, vector: &Vector2<f64>) -> Vector2<f64> {
+    pub fn transform_vector(&self, vector: &Vector2<f32>) -> Vector2<f32> {
         let mut result = *vector;
         self.transform_vector_mut(&mut result);
         result
@@ -163,7 +163,7 @@ impl TransformMatrix {
     }
 }
 
-pub fn bulk_transform_vectors_mut(transform: &Matrix2x3<f64>, input_vectors: &mut [Vector2<f64>]) {
+pub fn bulk_transform_vectors_mut(transform: &Matrix2x3<f32>, input_vectors: &mut [Vector2<f32>]) {
     let m11 = transform[(0, 0)];
     let m12 = transform[(0, 1)];
     let m21 = transform[(1, 0)];
@@ -171,18 +171,18 @@ pub fn bulk_transform_vectors_mut(transform: &Matrix2x3<f64>, input_vectors: &mu
     let m31 = transform[(0, 2)];
     let m32 = transform[(1, 2)];
 
-    let m11s = f64x4::splat(m11);
-    let m12s = f64x4::splat(m12);
-    let m21s = f64x4::splat(m21);
-    let m22s = f64x4::splat(m22);
-    let m31s = f64x4::splat(m31);
-    let m32s = f64x4::splat(m32);
+    let m11s = f32x4::splat(m11);
+    let m12s = f32x4::splat(m12);
+    let m21s = f32x4::splat(m21);
+    let m22s = f32x4::splat(m22);
+    let m31s = f32x4::splat(m31);
+    let m32s = f32x4::splat(m32);
 
     for chunk in input_vectors.chunks_mut(4) {
         let xs: Vec<_> = chunk.iter().map(|v| v.x).collect();
         let ys: Vec<_> = chunk.iter().map(|v| v.y).collect();
-        let xs = f64x4::from_slice_unaligned(&xs);
-        let ys = f64x4::from_slice_unaligned(&ys);
+        let xs = f32x4::from_slice_unaligned(&xs);
+        let ys = f32x4::from_slice_unaligned(&ys);
 
         let xt = m11s * xs + m12s * ys + m31s;
         let yt = m21s * xs + m22s * ys + m32s;
@@ -194,7 +194,7 @@ pub fn bulk_transform_vectors_mut(transform: &Matrix2x3<f64>, input_vectors: &mu
     }
 }
 
-pub fn bulk_transform_points_mut(transform: &Matrix2x3<f64>, input_points: &mut [Point2<f64>]) {
+pub fn bulk_transform_points_mut(transform: &Matrix2x3<f32>, input_points: &mut [Point2<f32>]) {
     let m11 = transform[(0, 0)];
     let m12 = transform[(0, 1)];
     let m21 = transform[(1, 0)];
@@ -202,18 +202,18 @@ pub fn bulk_transform_points_mut(transform: &Matrix2x3<f64>, input_points: &mut 
     let m31 = transform[(0, 2)];
     let m32 = transform[(1, 2)];
 
-    let m11s = f64x4::splat(m11);
-    let m12s = f64x4::splat(m12);
-    let m21s = f64x4::splat(m21);
-    let m22s = f64x4::splat(m22);
-    let m31s = f64x4::splat(m31);
-    let m32s = f64x4::splat(m32);
+    let m11s = f32x4::splat(m11);
+    let m12s = f32x4::splat(m12);
+    let m21s = f32x4::splat(m21);
+    let m22s = f32x4::splat(m22);
+    let m31s = f32x4::splat(m31);
+    let m32s = f32x4::splat(m32);
 
     for chunk in input_points.chunks_mut(4) {
         let xs: Vec<_> = chunk.iter().map(|v| v.x).collect();
         let ys: Vec<_> = chunk.iter().map(|v| v.y).collect();
-        let xs = f64x4::from_slice_unaligned(&xs);
-        let ys = f64x4::from_slice_unaligned(&ys);
+        let xs = f32x4::from_slice_unaligned(&xs);
+        let ys = f32x4::from_slice_unaligned(&ys);
 
         let xt = m11s * xs + m12s * ys + m31s;
         let yt = m21s * xs + m22s * ys + m32s;
@@ -226,8 +226,8 @@ pub fn bulk_transform_points_mut(transform: &Matrix2x3<f64>, input_points: &mut 
 }
 
 pub fn bulk_transform_vectors_mut_n(
-    transforms: &[Matrix2x3<f64>],
-    input_vectors: &mut [Vector2<f64>],
+    transforms: &[Matrix2x3<f32>],
+    input_vectors: &mut [Vector2<f32>],
     n: usize,
 ) {
     for (transform, chunk) in transforms.iter().zip(input_vectors.chunks_mut(n)) {
@@ -238,18 +238,18 @@ pub fn bulk_transform_vectors_mut_n(
         let m31 = transform[(0, 2)];
         let m32 = transform[(1, 2)];
 
-        let m11s = f64x4::splat(m11);
-        let m12s = f64x4::splat(m12);
-        let m21s = f64x4::splat(m21);
-        let m22s = f64x4::splat(m22);
-        let m31s = f64x4::splat(m31);
-        let m32s = f64x4::splat(m32);
+        let m11s = f32x4::splat(m11);
+        let m12s = f32x4::splat(m12);
+        let m21s = f32x4::splat(m21);
+        let m22s = f32x4::splat(m22);
+        let m31s = f32x4::splat(m31);
+        let m32s = f32x4::splat(m32);
 
         for chunk in chunk.chunks_mut(4) {
             let xs: Vec<_> = chunk.iter().map(|v| v.x).collect();
             let ys: Vec<_> = chunk.iter().map(|v| v.y).collect();
-            let xs = f64x4::from_slice_unaligned(&xs);
-            let ys = f64x4::from_slice_unaligned(&ys);
+            let xs = f32x4::from_slice_unaligned(&xs);
+            let ys = f32x4::from_slice_unaligned(&ys);
 
             let xt = m11s * xs + m12s * ys + m31s;
             let yt = m21s * xs + m22s * ys + m32s;
@@ -263,8 +263,8 @@ pub fn bulk_transform_vectors_mut_n(
 }
 
 pub fn bulk_transform_points_mut_n(
-    transforms: &[Matrix2x3<f64>],
-    input_points: &mut [Point2<f64>],
+    transforms: &[Matrix2x3<f32>],
+    input_points: &mut [Point2<f32>],
     n: usize,
 ) {
     for (transform, chunk) in transforms.iter().zip(input_points.chunks_mut(n)) {
@@ -275,18 +275,18 @@ pub fn bulk_transform_points_mut_n(
         let m31 = transform[(0, 2)];
         let m32 = transform[(1, 2)];
 
-        let m11s = f64x4::splat(m11);
-        let m12s = f64x4::splat(m12);
-        let m21s = f64x4::splat(m21);
-        let m22s = f64x4::splat(m22);
-        let m31s = f64x4::splat(m31);
-        let m32s = f64x4::splat(m32);
+        let m11s = f32x4::splat(m11);
+        let m12s = f32x4::splat(m12);
+        let m21s = f32x4::splat(m21);
+        let m22s = f32x4::splat(m22);
+        let m31s = f32x4::splat(m31);
+        let m32s = f32x4::splat(m32);
 
         for chunk in chunk.chunks_mut(4) {
             let xs: Vec<_> = chunk.iter().map(|v| v.x).collect();
             let ys: Vec<_> = chunk.iter().map(|v| v.y).collect();
-            let xs = f64x4::from_slice_unaligned(&xs);
-            let ys = f64x4::from_slice_unaligned(&ys);
+            let xs = f32x4::from_slice_unaligned(&xs);
+            let ys = f32x4::from_slice_unaligned(&ys);
 
             let xt = m11s * xs + m12s * ys + m31s;
             let yt = m21s * xs + m22s * ys + m32s;
@@ -303,7 +303,7 @@ pub fn bulk_transform_points_mut_n(
 mod tests_matrix {
     use super::*;
 
-    fn assert_points_equal(a: &Point2<f64>, b: &Point2<f64>) {
+    fn assert_points_equal(a: &Point2<f32>, b: &Point2<f32>) {
         assert!((a.x - b.x).abs() < 0.0001, "{:?} != {:?}", a, b);
         assert!((a.y - b.y).abs() < 0.0001, "{:?} != {:?}", a, b);
     }
@@ -335,7 +335,7 @@ mod tests_matrix {
     #[test]
     fn test_rotate() {
         let mut transform = TransformMatrix::new();
-        let angle_degrees = 90.0f64;
+        let angle_degrees = 90.0f32;
         transform.rotate_deg(angle_degrees);
         let point = Point2::new(1.0, 2.0);
         let transformed_point = transform.transform_point(&point);
@@ -397,7 +397,7 @@ mod tests_matrix {
     #[test]
     fn test_build_transform_rotate() {
         let mut transform = TransformMatrix::new();
-        transform.build_transform([0.0, 0.0], 90.0f64.to_radians(), [1.0, 1.0], [0.0, 0.0]);
+        transform.build_transform([0.0, 0.0], 90.0f32.to_radians(), [1.0, 1.0], [0.0, 0.0]);
         let point = Point2::new(1.0, 2.0);
         let transformed_point = transform.transform_point(&point);
         let expected_point = Point2::new(-2.0, 1.0);
@@ -462,7 +462,7 @@ mod tests_matrix {
         assert_points_equal(&inverse_transformed_point, &Point2::new(0.5, 0.5));
     }
 
-    fn get_quad() -> [Point2<f64>; 4] {
+    fn get_quad() -> [Point2<f32>; 4] {
         [
             Point2::new(0.0, 0.0),
             Point2::new(1.0, 0.0),
@@ -506,7 +506,7 @@ mod tests_matrix {
     fn test_build_transform_origin_scale_rotate_quad() {
         let points = get_quad();
         let mut transform = TransformMatrix::new();
-        transform.build_transform([0.0, 0.0], 90.0f64.to_radians(), [2.0, 3.0], [0.5, 0.5]);
+        transform.build_transform([0.0, 0.0], 90.0f32.to_radians(), [2.0, 3.0], [0.5, 0.5]);
         let transformed_points = points
             .iter()
             .map(|point| transform.transform_point(point))
@@ -538,7 +538,7 @@ mod tests_matrix {
     fn test_build_transform_origin_scale_rotate_translate_quad() {
         let points = get_quad();
         let mut transform = TransformMatrix::new();
-        transform.build_transform([1.0, 2.0], 90.0f64.to_radians(), [2.0, 3.0], [0.5, 0.5]);
+        transform.build_transform([1.0, 2.0], 90.0f32.to_radians(), [2.0, 3.0], [0.5, 0.5]);
         let transformed_points = points
             .iter()
             .map(|point| transform.transform_point(point))
@@ -574,7 +574,7 @@ mod tests_matrix {
             let mut transform = TransformMatrix::new();
             transform.build_transform(
                 [0.0, 0.0],
-                i as f64 * 1.0f64.to_radians(),
+                i as f32 * 1.0f32.to_radians(),
                 [1.0, 1.0],
                 [0.5, 0.5],
             );
@@ -583,7 +583,7 @@ mod tests_matrix {
                 .map(|point| transform.transform_point(point))
                 .collect::<Vec<_>>();
             // Manually calculate the expected points
-            let radians = i as f64 * 1.0f64.to_radians();
+            let radians = i as f32 * 1.0f32.to_radians();
             let expected_points = [
                 Point2::new(
                     (0.0 - 0.5) * 1.0 * radians.cos() - (0.0 - 0.5) * 1.0 * radians.sin(),
@@ -633,81 +633,81 @@ mod tests_matrix {
                                 for origin_y in 0..2 {
                                     let mut transform = TransformMatrix::new();
                                     transform.build_transform(
-                                        [translation_x as f64, translation_y as f64],
-                                        angle as f64 * 1.0f64.to_radians(),
-                                        [scale_x as f64, scale_y as f64],
-                                        [origin_x as f64, origin_y as f64],
+                                        [translation_x as f32, translation_y as f32],
+                                        angle as f32 * 1.0f32.to_radians(),
+                                        [scale_x as f32, scale_y as f32],
+                                        [origin_x as f32, origin_y as f32],
                                     );
                                     let transformed_points = points
                                         .iter()
                                         .map(|point| transform.transform_point(point))
                                         .collect::<Vec<_>>();
                                     // Manually calculate the expected points
-                                    let radians = angle as f64 * 1.0f64.to_radians();
+                                    let radians = angle as f32 * 1.0f32.to_radians();
                                     let expected_points = [
                                         Point2::new(
-                                            (0.0 - origin_x as f64)
-                                                * scale_x as f64
+                                            (0.0 - origin_x as f32)
+                                                * scale_x as f32
                                                 * radians.cos()
-                                                - (0.0 - origin_y as f64)
-                                                    * scale_y as f64
+                                                - (0.0 - origin_y as f32)
+                                                    * scale_y as f32
                                                     * radians.sin()
-                                                + translation_x as f64,
-                                            (0.0 - origin_x as f64)
-                                                * scale_x as f64
+                                                + translation_x as f32,
+                                            (0.0 - origin_x as f32)
+                                                * scale_x as f32
                                                 * radians.sin()
-                                                + (0.0 - origin_y as f64)
-                                                    * scale_y as f64
+                                                + (0.0 - origin_y as f32)
+                                                    * scale_y as f32
                                                     * radians.cos()
-                                                + translation_y as f64,
+                                                + translation_y as f32,
                                         ),
                                         Point2::new(
-                                            (1.0 - origin_x as f64)
-                                                * scale_x as f64
+                                            (1.0 - origin_x as f32)
+                                                * scale_x as f32
                                                 * radians.cos()
-                                                - (0.0 - origin_y as f64)
-                                                    * scale_y as f64
+                                                - (0.0 - origin_y as f32)
+                                                    * scale_y as f32
                                                     * radians.sin()
-                                                + translation_x as f64,
-                                            (1.0 - origin_x as f64)
-                                                * scale_x as f64
+                                                + translation_x as f32,
+                                            (1.0 - origin_x as f32)
+                                                * scale_x as f32
                                                 * radians.sin()
-                                                + (0.0 - origin_y as f64)
-                                                    * scale_y as f64
+                                                + (0.0 - origin_y as f32)
+                                                    * scale_y as f32
                                                     * radians.cos()
-                                                + translation_y as f64,
+                                                + translation_y as f32,
                                         ),
                                         Point2::new(
-                                            (1.0 - origin_x as f64)
-                                                * scale_x as f64
+                                            (1.0 - origin_x as f32)
+                                                * scale_x as f32
                                                 * radians.cos()
-                                                - (1.0 - origin_y as f64)
-                                                    * scale_y as f64
+                                                - (1.0 - origin_y as f32)
+                                                    * scale_y as f32
                                                     * radians.sin()
-                                                + translation_x as f64,
-                                            (1.0 - origin_x as f64)
-                                                * scale_x as f64
+                                                + translation_x as f32,
+                                            (1.0 - origin_x as f32)
+                                                * scale_x as f32
                                                 * radians.sin()
-                                                + (1.0 - origin_y as f64)
-                                                    * scale_y as f64
+                                                + (1.0 - origin_y as f32)
+                                                    * scale_y as f32
                                                     * radians.cos()
-                                                + translation_y as f64,
+                                                + translation_y as f32,
                                         ),
                                         Point2::new(
-                                            (0.0 - origin_x as f64)
-                                                * scale_x as f64
+                                            (0.0 - origin_x as f32)
+                                                * scale_x as f32
                                                 * radians.cos()
-                                                - (1.0 - origin_y as f64)
-                                                    * scale_y as f64
+                                                - (1.0 - origin_y as f32)
+                                                    * scale_y as f32
                                                     * radians.sin()
-                                                + translation_x as f64,
-                                            (0.0 - origin_x as f64)
-                                                * scale_x as f64
+                                                + translation_x as f32,
+                                            (0.0 - origin_x as f32)
+                                                * scale_x as f32
                                                 * radians.sin()
-                                                + (1.0 - origin_y as f64)
-                                                    * scale_y as f64
+                                                + (1.0 - origin_y as f32)
+                                                    * scale_y as f32
                                                     * radians.cos()
-                                                + translation_y as f64,
+                                                + translation_y as f32,
                                         ),
                                     ];
                                     assert_points_equal(
@@ -793,7 +793,7 @@ mod tests_matrix {
     fn test_build_transform_bulk_rotation() {
         let mut points = get_quad();
         let mut transform = TransformMatrix::new();
-        transform.build_transform([0.0, 0.0], 90.0f64.to_radians(), [1.0, 1.0], [0.0, 0.0]);
+        transform.build_transform([0.0, 0.0], 90.0f32.to_radians(), [1.0, 1.0], [0.0, 0.0]);
         bulk_transform_points_mut(&transform.matrix, &mut points);
 
         assert_points_equal(&points[0], &Point2::new(0.0, 0.0));
@@ -832,7 +832,7 @@ mod tests_matrix {
     fn test_build_transform_bulk_origin_rotation() {
         let mut points = get_quad();
         let mut transform = TransformMatrix::new();
-        transform.build_transform([0.0, 0.0], 90.0f64.to_radians(), [1.0, 1.0], [0.5, 0.5]);
+        transform.build_transform([0.0, 0.0], 90.0f32.to_radians(), [1.0, 1.0], [0.5, 0.5]);
         bulk_transform_points_mut(&transform.matrix, &mut points);
 
         assert_points_equal(&points[0], &Point2::new(0.5, -0.5));
@@ -845,7 +845,7 @@ mod tests_matrix {
     fn test_build_transform_bulk_origin_scale_and_rotation() {
         let mut points = get_quad();
         let mut transform = TransformMatrix::new();
-        transform.build_transform([0.0, 0.0], 90.0f64.to_radians(), [2.0, 3.0], [0.5, 0.5]);
+        transform.build_transform([0.0, 0.0], 90.0f32.to_radians(), [2.0, 3.0], [0.5, 0.5]);
         bulk_transform_points_mut(&transform.matrix, &mut points);
 
         assert_points_equal(&points[0], &Point2::new(1.5, -1.0));
@@ -858,7 +858,7 @@ mod tests_matrix {
     fn test_build_transform_bulk_origin_scale_and_rotation_and_translation() {
         let mut points = get_quad();
         let mut transform = TransformMatrix::new();
-        transform.build_transform([1.0, 1.0], 90.0f64.to_radians(), [2.0, 3.0], [0.5, 0.5]);
+        transform.build_transform([1.0, 1.0], 90.0f32.to_radians(), [2.0, 3.0], [0.5, 0.5]);
         bulk_transform_points_mut(&transform.matrix, &mut points);
 
         assert_points_equal(&points[0], &Point2::new(2.5, 0.0));
@@ -871,7 +871,7 @@ mod tests_matrix {
     fn test_build_transform_bulk_n_origin_scale_and_rotation_and_translation() {
         let mut points = get_quad();
         let mut transform = TransformMatrix::new();
-        transform.build_transform([1.0, 1.0], 90.0f64.to_radians(), [2.0, 3.0], [0.5, 0.5]);
+        transform.build_transform([1.0, 1.0], 90.0f32.to_radians(), [2.0, 3.0], [0.5, 0.5]);
         bulk_transform_points_mut_n(&[transform.matrix; 4], &mut points, 4);
 
         assert_points_equal(&points[0], &Point2::new(2.5, 0.0));

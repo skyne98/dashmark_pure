@@ -66,20 +66,20 @@ pub extern "C" fn wire_entities_set_scale_raw(
 
 #[no_mangle]
 pub extern "C" fn wire_query_aabb(
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
 ) -> support::WireSyncReturn {
     wire_query_aabb_impl(x, y, width, height)
 }
 
 #[no_mangle]
 pub extern "C" fn wire_query_aabb_raw(
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
 ) -> support::WireSyncReturn {
     wire_query_aabb_raw_impl(x, y, width, height)
 }
@@ -311,11 +311,11 @@ pub struct wire_list_shape_transform {
 #[repr(C)]
 #[derive(Clone)]
 pub struct wire_ShapeTransform {
-    position_x: f64,
-    position_y: f64,
-    rotation: f64,
-    absolute_origin_x: f64,
-    absolute_origin_y: f64,
+    position_x: f32,
+    position_y: f32,
+    rotation: f32,
+    absolute_origin_x: f32,
+    absolute_origin_y: f32,
 }
 
 #[repr(C)]
@@ -341,7 +341,7 @@ pub union ShapeKind {
 #[repr(C)]
 #[derive(Clone)]
 pub struct wire_Shape_Ball {
-    radius: f64,
+    radius: f32,
 }
 
 #[repr(C)]

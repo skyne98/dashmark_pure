@@ -369,10 +369,10 @@ class NativeImpl implements Native {
       required double width,
       required double height,
       dynamic hint}) {
-    var arg0 = api2wire_f64(x);
-    var arg1 = api2wire_f64(y);
-    var arg2 = api2wire_f64(width);
-    var arg3 = api2wire_f64(height);
+    var arg0 = api2wire_f32(x);
+    var arg1 = api2wire_f32(y);
+    var arg2 = api2wire_f32(width);
+    var arg3 = api2wire_f32(height);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_query_aabb(arg0, arg1, arg2, arg3),
       parseSuccessData: _wire2api_list_generational_index,
@@ -394,10 +394,10 @@ class NativeImpl implements Native {
       required double width,
       required double height,
       dynamic hint}) {
-    var arg0 = api2wire_f64(x);
-    var arg1 = api2wire_f64(y);
-    var arg2 = api2wire_f64(width);
-    var arg3 = api2wire_f64(height);
+    var arg0 = api2wire_f32(x);
+    var arg1 = api2wire_f32(y);
+    var arg2 = api2wire_f32(width);
+    var arg3 = api2wire_f32(height);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () =>
           _platform.inner.wire_query_aabb_raw(arg0, arg1, arg2, arg3),
@@ -669,6 +669,11 @@ class NativeImpl implements Native {
 }
 
 // Section: api2wire
+
+@protected
+double api2wire_f32(double raw) {
+  return raw;
+}
 
 @protected
 double api2wire_f64(double raw) {

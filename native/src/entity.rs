@@ -1,14 +1,13 @@
-use anyhow::Result;
 use core::fmt::Debug;
 use downcast_rs::impl_downcast;
 use generational_arena::Index;
-use rapier2d_f64::{
-    na::{Isometry2, Point2, UnitComplex, Vector2},
+use rapier2d::{
+    na::{Point2, Vector2},
     parry::shape::Shape,
     prelude::Aabb,
 };
 
-use crate::{matrix::TransformMatrix, state::entity_manager::EntityManager, transform::Transform};
+use crate::{state::entity_manager::EntityManager, transform::Transform};
 
 // Shape
 pub trait EntityShape: Shape {}
@@ -95,14 +94,14 @@ impl Entity {
             .collect()
     }
 
-    pub fn get_size(&self) -> Vector2<f64> {
+    pub fn get_size(&self) -> Vector2<f32> {
         match self.get_local_aabb() {
             Some(aabb) => Vector2::new(aabb.maxs.x - aabb.mins.x, aabb.maxs.y - aabb.mins.y),
             None => Vector2::new(0.0, 0.0),
         }
     }
 
-    pub fn get_shape_natural_offset(&self) -> Vector2<f64> {
+    pub fn get_shape_natural_offset(&self) -> Vector2<f32> {
         match self.get_local_aabb() {
             Some(aabb) => Vector2::new(-aabb.mins.x, -aabb.mins.y),
             None => Vector2::new(0.0, 0.0),
@@ -136,7 +135,7 @@ impl Entity {
         shape.map(|shape| shape.compute_aabb(&transform_iso))
     }
 
-    pub fn get_local_aabb_and_size(&self) -> (Aabb, Vector2<f64>) {
+    pub fn get_local_aabb_and_size(&self) -> (Aabb, Vector2<f32>) {
         match self.get_local_aabb() {
             Some(aabb) => {
                 let size = Vector2::new(aabb.maxs.x - aabb.mins.x, aabb.maxs.y - aabb.mins.y);
@@ -153,7 +152,7 @@ impl Entity {
 // ===== Tests =====
 #[cfg(test)]
 mod test_entity {
-    use rapier2d_f64::prelude::SharedShape;
+    use rapier2d::prelude::SharedShape;
 
     use super::*;
 
@@ -169,7 +168,7 @@ mod test_entity {
         transform.set_origin_relative(Vector2::new(0.0, 0.0), Vector2::new(2.0, 2.0));
         transform.set_position(Vector2::new(0.0, 0.0));
         transform.set_rotation(0.0);
-        let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+        let shape = rapier2d::parry::shape::Ball::new(1.0);
         entity.set_shape(shape);
         let aabb = entity.get_global_aabb(&transform).unwrap();
         assert_points_equal(aabb.mins, Point2::new(0.0, 0.0));
@@ -188,7 +187,7 @@ mod test_entity {
                 transform.set_origin_relative(Vector2::new(x, y), Vector2::new(2.0, 2.0));
                 transform.set_position(Vector2::new(0.0, 0.0));
                 transform.set_rotation(0.0);
-                let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+                let shape = rapier2d::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
                 let aabb = entity.get_global_aabb(&transform).unwrap();
                 let expected_min = Point2::new(-x * 2.0, -y * 2.0);
@@ -211,7 +210,7 @@ mod test_entity {
                 transform.set_origin_absolute(Vector2::new(x, y));
                 transform.set_position(Vector2::new(0.0, 0.0));
                 transform.set_rotation(0.0);
-                let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+                let shape = rapier2d::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
                 let aabb = entity.get_global_aabb(&transform).unwrap();
                 let expected_min = Point2::new(-x, -y);
@@ -234,7 +233,7 @@ mod test_entity {
                 transform.set_origin_relative(Vector2::new(x, y), Vector2::new(2.0, 2.0));
                 transform.set_position(Vector2::new(100.0, 100.0));
                 transform.set_rotation(0.0);
-                let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+                let shape = rapier2d::parry::shape::Ball::new(1.0);
                 entity.set_shape(shape);
                 let aabb = entity.get_global_aabb(&transform).unwrap();
                 let translation = Vector2::new(100.0, 100.0);
@@ -259,7 +258,7 @@ mod test_entity {
             transform.set_origin_relative(Vector2::new(0.5, 0.5), Vector2::new(2.0, 2.0));
             transform.set_position(Vector2::new(0.0, 0.0));
             transform.set_rotation(rotation.to_radians());
-            let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+            let shape = rapier2d::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
             let aabb = entity.get_global_aabb(&transform).unwrap();
 
@@ -280,7 +279,7 @@ mod test_entity {
             transform.set_origin_relative(Vector2::new(0.5, 0.5), Vector2::new(2.0, 2.0));
             transform.set_position(Vector2::new(100.0, 100.0));
             transform.set_rotation(rotation.to_radians());
-            let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+            let shape = rapier2d::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
             let aabb = entity.get_global_aabb(&transform).unwrap();
 
@@ -306,7 +305,7 @@ mod test_entity {
             let mut entity = Entity::new(Index::from_raw_parts(0, 0));
             transform.set_origin_relative(Vector2::new(0.0, 0.0), Vector2::new(2.0, 2.0));
             transform.set_rotation(rotation_rad);
-            let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+            let shape = rapier2d::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
             let aabb = entity.get_global_aabb(&transform).unwrap();
 
@@ -340,7 +339,7 @@ mod test_entity {
             transform.set_origin_relative(Vector2::new(1.0, 1.0), Vector2::new(2.0, 2.0));
             transform.set_position(Vector2::new(100.0, 100.0));
             transform.set_rotation(rotation_rad);
-            let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+            let shape = rapier2d::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
             let aabb = entity.get_global_aabb(&transform).unwrap();
 
@@ -376,7 +375,7 @@ mod test_entity {
             transform.set_origin_relative(Vector2::new(1.0, 1.0), Vector2::new(2.0, 2.0));
             transform.set_position(Vector2::new(0.0, 0.0));
             transform.set_rotation(rotation_rad);
-            let shape = rapier2d_f64::parry::shape::Ball::new(1.0);
+            let shape = rapier2d::parry::shape::Ball::new(1.0);
             entity.set_shape(shape);
             let aabb = entity.get_global_aabb(&transform).unwrap();
 
@@ -398,14 +397,14 @@ mod test_entity {
 
     #[test]
     fn compound_shape_works() {
-        let shape = rapier2d_f64::parry::shape::Compound::new(vec![
+        let shape = rapier2d::parry::shape::Compound::new(vec![
             (
                 Isometry2::new(Vector2::new(0.0, 0.0), 0.0),
-                SharedShape::new(rapier2d_f64::parry::shape::Ball::new(1.0)),
+                SharedShape::new(rapier2d::parry::shape::Ball::new(1.0)),
             ),
             (
                 Isometry2::new(Vector2::new(2.0, 2.0), 0.0),
-                SharedShape::new(rapier2d_f64::parry::shape::Ball::new(1.0)),
+                SharedShape::new(rapier2d::parry::shape::Ball::new(1.0)),
             ),
         ]);
         let shape_size = shape.local_aabb().maxs - shape.local_aabb().mins;
@@ -426,14 +425,14 @@ mod test_entity {
 
     #[test]
     fn compound_shape_with_zero_origin_works() {
-        let shape = rapier2d_f64::parry::shape::Compound::new(vec![
+        let shape = rapier2d::parry::shape::Compound::new(vec![
             (
                 Isometry2::new(Vector2::new(0.0, 0.0), 0.0),
-                SharedShape::new(rapier2d_f64::parry::shape::Ball::new(1.0)),
+                SharedShape::new(rapier2d::parry::shape::Ball::new(1.0)),
             ),
             (
                 Isometry2::new(Vector2::new(2.0, 2.0), 0.0),
-                SharedShape::new(rapier2d_f64::parry::shape::Ball::new(1.0)),
+                SharedShape::new(rapier2d::parry::shape::Ball::new(1.0)),
             ),
         ]);
         let shape_size = shape.local_aabb().maxs - shape.local_aabb().mins;
@@ -452,7 +451,7 @@ mod test_entity {
 
         // Test all internal shapes are at correct positions
         let isometry = transform.isometry(size);
-        let compound: &rapier2d_f64::parry::shape::Compound =
+        let compound: &rapier2d::parry::shape::Compound =
             entity.get_shape().unwrap().as_shape().unwrap();
         let shape_aabbs = compound
             .aabbs()
@@ -476,14 +475,14 @@ mod test_entity {
         for i in 0..4 {
             let rotation = i as f64 * 90.0;
             let rotation_rad = rotation.to_radians();
-            let shape = rapier2d_f64::parry::shape::Compound::new(vec![
+            let shape = rapier2d::parry::shape::Compound::new(vec![
                 (
                     Isometry2::new(Vector2::new(0.0, 0.0), 0.0),
-                    SharedShape::new(rapier2d_f64::parry::shape::Ball::new(1.0)),
+                    SharedShape::new(rapier2d::parry::shape::Ball::new(1.0)),
                 ),
                 (
                     Isometry2::new(Vector2::new(2.0, 2.0), 0.0),
-                    SharedShape::new(rapier2d_f64::parry::shape::Ball::new(1.0)),
+                    SharedShape::new(rapier2d::parry::shape::Ball::new(1.0)),
                 ),
             ]);
             let shape_size = shape.local_aabb().maxs - shape.local_aabb().mins;

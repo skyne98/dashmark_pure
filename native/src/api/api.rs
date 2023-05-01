@@ -1,6 +1,6 @@
 use flutter_rust_bridge::{SyncReturn, ZeroCopyBuffer};
 pub use generational_arena::Arena;
-use rapier2d_f64::na::{Point2, Vector2};
+use rapier2d::na::Point2;
 use std::time::Instant;
 pub use std::{
     ops::Deref,
@@ -11,12 +11,8 @@ use crate::{
     api::shape::Shape,
     entity::EntityShape,
     index::GenerationalIndex,
-    matrix::bulk_transform_vectors_mut,
     state::State,
-    transform::Origin,
-    typed_data::{
-        bytes_to, bytes_to_indices, bytes_to_vector2s, indices_to_bytes, to_bytes, value_to_bytes,
-    },
+    typed_data::{bytes_to, bytes_to_indices, bytes_to_vector2s, indices_to_bytes, to_bytes},
 };
 
 // For initialization
@@ -65,10 +61,10 @@ pub fn entities_set_transform_raw(
     let start = Instant::now();
     State::acquire_mut(|state| {
         let indices = bytes_to_indices(indices.0.as_slice());
-        let positions: &[[f64; 2]] = bytes_to(positions.0.as_slice());
-        let origins: &[[f64; 2]] = bytes_to(origins.0.as_slice());
-        let rotations: &[f64] = bytes_to(rotations.0.as_slice());
-        let scales: &[[f64; 2]] = bytes_to(scales.0.as_slice());
+        let positions: &[[f32; 2]] = bytes_to(positions.0.as_slice());
+        let origins: &[[f32; 2]] = bytes_to(origins.0.as_slice());
+        let rotations: &[f32] = bytes_to(rotations.0.as_slice());
+        let scales: &[[f32; 2]] = bytes_to(scales.0.as_slice());
 
         let transforms = state.transforms.borrow_mut();
         let mut broadphase = state.broadphase.borrow_mut();
@@ -89,7 +85,7 @@ pub fn entities_set_position_raw(
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         let indices = bytes_to_indices(indices.0.as_slice());
-        let positions: &[[f64; 2]] = bytes_to(positions.0.as_slice());
+        let positions: &[[f32; 2]] = bytes_to(positions.0.as_slice());
         for (index, position) in indices.iter().zip(positions.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_position(*position);
@@ -106,7 +102,7 @@ pub fn entities_set_origin_raw(
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         let indices = bytes_to_indices(indices.0.as_slice());
-        let origins: &[[f64; 2]] = bytes_to(origins.0.as_slice());
+        let origins: &[[f32; 2]] = bytes_to(origins.0.as_slice());
         for (index, origin) in indices.iter().zip(origins.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_origin_absolute(*origin);
@@ -140,7 +136,7 @@ pub fn entities_set_scale_raw(
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         let indices = bytes_to_indices(indices.0.as_slice());
-        let scales: &[[f64; 2]] = bytes_to(scales.0.as_slice());
+        let scales: &[[f32; 2]] = bytes_to(scales.0.as_slice());
         for (index, scale) in indices.iter().zip(scales.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_scale(*scale);
@@ -152,9 +148,9 @@ pub fn entities_set_scale_raw(
 }
 
 // Collisions
-pub fn query_aabb(x: f64, y: f64, width: f64, height: f64) -> SyncReturn<Vec<GenerationalIndex>> {
+pub fn query_aabb(x: f32, y: f32, width: f32, height: f32) -> SyncReturn<Vec<GenerationalIndex>> {
     let result = State::acquire(|state| {
-        let aabb = rapier2d_f64::parry::bounding_volume::Aabb::new(
+        let aabb = rapier2d::parry::bounding_volume::Aabb::new(
             Point2::new(x, y),
             Point2::new(x + width, y + height),
         );
@@ -165,13 +161,13 @@ pub fn query_aabb(x: f64, y: f64, width: f64, height: f64) -> SyncReturn<Vec<Gen
 }
 
 pub fn query_aabb_raw(
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
 ) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
     let result = State::acquire(|state| {
-        let aabb = rapier2d_f64::parry::bounding_volume::Aabb::new(
+        let aabb = rapier2d::parry::bounding_volume::Aabb::new(
             Point2::new(x, y),
             Point2::new(x + width, y + height),
         );

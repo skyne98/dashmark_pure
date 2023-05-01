@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import '../ffi_export.dart';
 import '../typed_buffer/mod.dart';
 
-void setVertices(GenerationalIndex entity, Vector64Buffer vertices) {
+void setVertices(GenerationalIndex entity, VectorBuffer vertices) {
   api.entitySetVerticesRaw(
       index: entity, vertices: vertices.buffer.toUint8List());
 }
 
-void setTexCoords(GenerationalIndex entity, Vector64Buffer texCoords) {
+void setTexCoords(GenerationalIndex entity, VectorBuffer texCoords) {
   api.entitySetTexCoordsRaw(
       index: entity, texCoords: texCoords.buffer.toUint8List());
 }

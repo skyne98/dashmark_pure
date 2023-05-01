@@ -90,7 +90,7 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
 
   void _api_fill_to_wire_shape(Shape apiObj, wire_Shape wireObj) {
     if (apiObj is Shape_Ball) {
-      var pre_radius = api2wire_f64(apiObj.radius);
+      var pre_radius = api2wire_f32(apiObj.radius);
       wireObj.tag = 0;
       wireObj.kind = inner.inflate_Shape_Ball();
       wireObj.kind.ref.Ball.ref.radius = pre_radius;
@@ -109,11 +109,11 @@ class NativePlatform extends FlutterRustBridgeBase<NativeWire> {
 
   void _api_fill_to_wire_shape_transform(
       ShapeTransform apiObj, wire_ShapeTransform wireObj) {
-    wireObj.position_x = api2wire_f64(apiObj.positionX);
-    wireObj.position_y = api2wire_f64(apiObj.positionY);
-    wireObj.rotation = api2wire_f64(apiObj.rotation);
-    wireObj.absolute_origin_x = api2wire_f64(apiObj.absoluteOriginX);
-    wireObj.absolute_origin_y = api2wire_f64(apiObj.absoluteOriginY);
+    wireObj.position_x = api2wire_f32(apiObj.positionX);
+    wireObj.position_y = api2wire_f32(apiObj.positionY);
+    wireObj.rotation = api2wire_f32(apiObj.rotation);
+    wireObj.absolute_origin_x = api2wire_f32(apiObj.absoluteOriginX);
+    wireObj.absolute_origin_y = api2wire_f32(apiObj.absoluteOriginY);
   }
 }
 
@@ -393,8 +393,8 @@ class NativeWire implements FlutterRustBridgeWireBase {
 
   late final _wire_query_aabbPtr = _lookup<
       ffi.NativeFunction<
-          WireSyncReturn Function(ffi.Double, ffi.Double, ffi.Double,
-              ffi.Double)>>('wire_query_aabb');
+          WireSyncReturn Function(
+              ffi.Float, ffi.Float, ffi.Float, ffi.Float)>>('wire_query_aabb');
   late final _wire_query_aabb = _wire_query_aabbPtr
       .asFunction<WireSyncReturn Function(double, double, double, double)>();
 
@@ -414,8 +414,8 @@ class NativeWire implements FlutterRustBridgeWireBase {
 
   late final _wire_query_aabb_rawPtr = _lookup<
       ffi.NativeFunction<
-          WireSyncReturn Function(ffi.Double, ffi.Double, ffi.Double,
-              ffi.Double)>>('wire_query_aabb_raw');
+          WireSyncReturn Function(ffi.Float, ffi.Float, ffi.Float,
+              ffi.Float)>>('wire_query_aabb_raw');
   late final _wire_query_aabb_raw = _wire_query_aabb_rawPtr
       .asFunction<WireSyncReturn Function(double, double, double, double)>();
 
@@ -716,7 +716,7 @@ class wire_uint_8_list extends ffi.Struct {
 }
 
 class wire_Shape_Ball extends ffi.Struct {
-  @ffi.Double()
+  @ffi.Float()
   external double radius;
 }
 
@@ -754,19 +754,19 @@ class wire_list_shape_transform extends ffi.Struct {
 }
 
 class wire_ShapeTransform extends ffi.Struct {
-  @ffi.Double()
+  @ffi.Float()
   external double position_x;
 
-  @ffi.Double()
+  @ffi.Float()
   external double position_y;
 
-  @ffi.Double()
+  @ffi.Float()
   external double rotation;
 
-  @ffi.Double()
+  @ffi.Float()
   external double absolute_origin_x;
 
-  @ffi.Double()
+  @ffi.Float()
   external double absolute_origin_y;
 }
 
