@@ -110,11 +110,9 @@ impl RenderingResources {
     }
 
     pub fn batchify(&mut self, entities: &mut EntityManager, transforms: &TransformManager) {
-        let start = crate::time::Instant::now();
         self.batches.clear();
 
         // Get all active entities from the entity manager
-        let sort_start = crate::time::Instant::now();
         let mut active_entities = entities.iter().collect::<Vec<_>>();
         // Sort them by their priority
         active_entities.sort_unstable_by(|a, b| {
@@ -122,10 +120,6 @@ impl RenderingResources {
             let (_, b) = b;
             a.priority.cmp(&b.priority)
         });
-        println!(
-            "Sorting entities by priority took {:?}",
-            sort_start.elapsed()
-        );
 
         // 1. Split into batches up to 8192 vertices (not indices)
         // 2. Make sure not to split a polygon (3 indices) into two batches
@@ -133,13 +127,10 @@ impl RenderingResources {
 
         let mut finished_batches = Vec::new();
         let mut batch = Batch::default();
-        let mut transformation_duration = std::time::Duration::default();
 
         for (index, _) in active_entities {
             let (_, tex_coords, color, indices) = self.get(index).expect("Entity not found");
-            let transform_start = crate::time::Instant::now();
             let vertices = self.transformed_vertices(index, transforms);
-            transformation_duration += transform_start.elapsed();
 
             // Start a new batch if the current one is full
             if (batch.vertices.len() / 2) + vertices.len() > 8192 {
@@ -170,12 +161,6 @@ impl RenderingResources {
 
         // Update the batches
         self.batches = finished_batches;
-
-        println!(
-            "Batched in {:?} (transformations took {:?})",
-            start.elapsed(),
-            transformation_duration
-        );
     }
 }
 

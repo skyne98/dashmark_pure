@@ -31,6 +31,14 @@ fn main() {
     println!("Time elapsed: {:?}", chrono::Utc::now() - now_chrono);
     println!("Time elapsed: {:?}", mine.elapsed());
 
+    // Profile our Instant implementation
+    let now = crate::time::Instant::now();
+    for _ in 0..1000000 {
+        let now = crate::time::Instant::now();
+        let _ = now.elapsed();
+    }
+    println!("Time elapsed on our Instant: {:?}", now.elapsed());
+
     // Test cache misses
     // Prepare the data
     let amount = 100_000_000 as usize;

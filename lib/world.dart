@@ -116,7 +116,6 @@ class World {
 
   void update(double t) {
     _spawnedThisFrame = 0;
-    var updateStopwatch = Stopwatch()..start();
     if (dashImage != null && fragmentShader != null) {
       // Jump around the dashes
       final length = _velocity.length;
@@ -158,31 +157,21 @@ class World {
       lastDt = t;
 
       // Send all data to the native world
-      var stopwatch = Stopwatch()..start();
       setTransformsBulk(_entityIndices, _position, _origin, _rotation, _scale);
-      stopwatch.stop();
-      debugPrint('Set data in ${stopwatch.elapsedMilliseconds}ms');
 
       // Call the native world update
-      stopwatch = Stopwatch()..start();
       api.update(dt: t);
-      stopwatch.stop();
-      debugPrint('Native update in ${stopwatch.elapsedMilliseconds}ms');
 
       // Make a test query and print the count of entities
-      stopwatch = Stopwatch()..start();
       final center = Vector2(size.x / 2, size.y / 2);
       final screenThird = Vector2(size.x / 3, size.y / 3);
-      final queryResults = Int32List.view(api
+      Int32List.view(api
           .queryAabbRaw(
               x: center.x - screenThird.x / 2,
               y: center.y - screenThird.y / 2,
               width: screenThird.x,
               height: screenThird.y)
           .buffer);
-      stopwatch.stop();
-      debugPrint(
-          'Query results: ${queryResults.length / 2} in ${stopwatch.elapsedMilliseconds}ms');
 
       // FPS
       _lastFrameTimes.add(t);
@@ -213,12 +202,6 @@ class World {
       final title =
           'Dashmark - $fpsRounded FPS - $percentileFpsRounded FPS (95%) - $medianFpsRounded FPS (50%) - ${_velocity.length} dashes';
       status = title;
-    }
-
-    var updateTime = updateStopwatch.elapsedMilliseconds;
-    updateStopwatch.stop();
-    if (updateTime > 0) {
-      debugPrint('Update time: $updateTime ms');
     }
   }
 
@@ -255,13 +238,8 @@ class World {
         texCoordBatches.add(rendering.texCoords(i));
         colorBatches.add(rendering.colors(i));
       }
-      var time = stopwatch.elapsedMilliseconds;
-      stopwatch.stop();
-      debugPrint('Received all rendering data in $time ms');
 
       // Render the batches
-      debugPrint('Rendering $batchCount batches');
-      stopwatch = Stopwatch()..start();
       for (var i = 0; i < batchCount; ++i) {
         final verts = vertBatches[i];
         final indices = indexBatches[i];
@@ -276,9 +254,6 @@ class World {
         );
         canvas.drawVertices(vertBuffer, BlendMode.modulate, paint);
       }
-      time = stopwatch.elapsedMilliseconds;
-      stopwatch.stop();
-      debugPrint('Rendered all batches in $time ms');
 
       // Draw status in the middle
       final text = TextSpan(

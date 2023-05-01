@@ -58,7 +58,6 @@ pub fn entities_set_transform_raw(
     rotations: Vec<f32>,
     scales: Vec<f32>,
 ) -> SyncReturn<()> {
-    let start = Instant::now();
     State::acquire_mut(|state| {
         let indices = u32s_to_indices(indices.as_slice());
         let positions = f32s_to_vec2_arrays(positions.as_slice());
@@ -75,7 +74,6 @@ pub fn entities_set_transform_raw(
             }
         }
     });
-    println!("set_transform_raw: {:?}", start.elapsed());
     SyncReturn(())
 }
 
