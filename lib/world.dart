@@ -69,7 +69,7 @@ class World {
 
   void input(double x, double y) {
     if (dashImage != null && fragmentShader != null) {
-      const amountPerSecond = 5000;
+      const amountPerSecond = 15000;
       var amount = (amountPerSecond * lastDt).toInt();
       if (amount > amountPerSecond) {
         amount = amountPerSecond;

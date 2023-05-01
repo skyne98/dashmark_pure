@@ -13,13 +13,19 @@
             "name": "dashmark_pure (profile mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "env": {
+                "RUSTFLAGS": "-O -C target-cpu=native -C target-feature=+ssse3,+sse4.1,+sse4.2,+avx"
+            }
         },
         {
             "name": "dashmark_pure (release mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
+            "flutterMode": "release",
+            "env": {
+                "RUSTFLAGS": "-O -C target-cpu=native -C target-feature=+ssse3,+sse4.1,+sse4.2,+avx"
+            }
         }
     ]
 }
