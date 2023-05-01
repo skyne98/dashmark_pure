@@ -147,12 +147,7 @@ pub fn query_aabb(x: f32, y: f32, width: f32, height: f32) -> SyncReturn<Vec<Gen
     SyncReturn(result)
 }
 
-pub fn query_aabb_raw(
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
-) -> SyncReturn<ZeroCopyBuffer<Vec<u32>>> {
+pub fn query_aabb_raw(x: f32, y: f32, width: f32, height: f32) -> SyncReturn<Vec<u32>> {
     let result = State::acquire(|state| {
         let aabb = rapier2d::parry::bounding_volume::Aabb::new(
             Point2::new(x, y),
@@ -161,7 +156,7 @@ pub fn query_aabb_raw(
         state.broadphase.borrow().query_aabb(&aabb)
     });
     let result_bytes = indices_to_u32s(&result[..]);
-    SyncReturn(ZeroCopyBuffer(result_bytes))
+    SyncReturn(result_bytes)
 }
 
 // Rendering
@@ -239,38 +234,38 @@ pub fn batches_count() -> SyncReturn<u64> {
     })
 }
 
-pub fn vertices(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<f32>>> {
+pub fn vertices(batch_index: u16) -> SyncReturn<Vec<f32>> {
     State::acquire(|state| {
         let rendering = state.rendering.borrow();
         let batch = &rendering.batches[batch_index as usize];
         let vertices = &batch.vertices;
-        SyncReturn(ZeroCopyBuffer(vertices.clone()))
+        SyncReturn(vertices.clone())
     })
 }
 
-pub fn tex_coords(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<f32>>> {
+pub fn tex_coords(batch_index: u16) -> SyncReturn<Vec<f32>> {
     State::acquire(|state| {
         let rendering = state.rendering.borrow();
         let batch = &rendering.batches[batch_index as usize];
         let tex_coords = &batch.tex_coords;
-        SyncReturn(ZeroCopyBuffer(tex_coords.clone()))
+        SyncReturn(tex_coords.clone())
     })
 }
 
-pub fn indices(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u16>>> {
+pub fn indices(batch_index: u16) -> SyncReturn<Vec<u16>> {
     State::acquire(|state| {
         let rendering = state.rendering.borrow();
         let batch = &rendering.batches[batch_index as usize];
         let indices = &batch.indices;
-        SyncReturn(ZeroCopyBuffer(indices.clone()))
+        SyncReturn(indices.clone())
     })
 }
 
-pub fn colors(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<i32>>> {
+pub fn colors(batch_index: u16) -> SyncReturn<Vec<i32>> {
     State::acquire(|state| {
         let rendering = state.rendering.borrow();
         let batch = &rendering.batches[batch_index as usize];
         let colors = &batch.colors;
-        SyncReturn(ZeroCopyBuffer(colors.clone()))
+        SyncReturn(colors.clone())
     })
 }
