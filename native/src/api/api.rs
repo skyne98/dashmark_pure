@@ -62,27 +62,24 @@ pub fn entities_set_transform_raw(
     rotations: ZeroCopyBuffer<Vec<u8>>,
     scales: ZeroCopyBuffer<Vec<u8>>,
 ) -> SyncReturn<()> {
+    let start = Instant::now();
     State::acquire_mut(|state| {
-        let start = Instant::now();
         let indices = bytes_to_indices(indices.0.as_slice());
-        let positions = bytes_to_vector2s(positions.0.as_slice());
-        let origins = bytes_to_vector2s(origins.0.as_slice());
-        let rotations = bytes_to(rotations.0.as_slice());
-        let scales = bytes_to_vector2s(scales.0.as_slice());
-        for ((((index, position), origin), rotation), scale) in indices
-            .iter()
-            .zip(positions.iter())
-            .zip(origins.iter())
-            .zip(rotations.iter())
-            .zip(scales.iter())
-        {
-            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
-                transform.set_all(*position, *origin, *rotation, *scale);
-                state.broadphase.borrow_mut().index_updated(*index);
+        let positions: &[[f64; 2]] = bytes_to(positions.0.as_slice());
+        let origins: &[[f64; 2]] = bytes_to(origins.0.as_slice());
+        let rotations: &[f64] = bytes_to(rotations.0.as_slice());
+        let scales: &[[f64; 2]] = bytes_to(scales.0.as_slice());
+
+        let transforms = state.transforms.borrow_mut();
+        let mut broadphase = state.broadphase.borrow_mut();
+        for (i, index) in indices.iter().enumerate() {
+            if let Some(mut transform) = transforms.transform_mut(*index) {
+                transform.set_all(positions[i], origins[i], rotations[i], scales[i]);
+                broadphase.index_updated(*index);
             }
         }
-        println!("set_transform_raw: {:?}", start.elapsed());
     });
+    println!("set_transform_raw: {:?}", start.elapsed());
     SyncReturn(())
 }
 
@@ -92,7 +89,7 @@ pub fn entities_set_position_raw(
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         let indices = bytes_to_indices(indices.0.as_slice());
-        let positions = bytes_to_vector2s(positions.0.as_slice());
+        let positions: &[[f64; 2]] = bytes_to(positions.0.as_slice());
         for (index, position) in indices.iter().zip(positions.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_position(*position);
@@ -109,7 +106,7 @@ pub fn entities_set_origin_raw(
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         let indices = bytes_to_indices(indices.0.as_slice());
-        let origins = bytes_to_vector2s(origins.0.as_slice());
+        let origins: &[[f64; 2]] = bytes_to(origins.0.as_slice());
         for (index, origin) in indices.iter().zip(origins.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_origin_absolute(*origin);
@@ -143,7 +140,7 @@ pub fn entities_set_scale_raw(
 ) -> SyncReturn<()> {
     State::acquire_mut(|state| {
         let indices = bytes_to_indices(indices.0.as_slice());
-        let scales = bytes_to_vector2s(scales.0.as_slice());
+        let scales: &[[f64; 2]] = bytes_to(scales.0.as_slice());
         for (index, scale) in indices.iter().zip(scales.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_scale(*scale);

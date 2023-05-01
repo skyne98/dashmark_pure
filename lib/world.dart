@@ -116,6 +116,7 @@ class World {
 
   void update(double t) {
     _spawnedThisFrame = 0;
+    var updateStopwatch = Stopwatch()..start();
     if (dashImage != null && fragmentShader != null) {
       // Jump around the dashes
       final length = _velocity.length;
@@ -213,6 +214,12 @@ class World {
           'Dashmark - $fpsRounded FPS - $percentileFpsRounded FPS (95%) - $medianFpsRounded FPS (50%) - ${_velocity.length} dashes';
       status = title;
     }
+
+    var updateTime = updateStopwatch.elapsedMilliseconds;
+    updateStopwatch.stop();
+    if (updateTime > 0) {
+      debugPrint('Update time: $updateTime ms');
+    }
   }
 
   void render(double t, Canvas canvas) {
@@ -254,6 +261,7 @@ class World {
 
       // Render the batches
       debugPrint('Rendering $batchCount batches');
+      stopwatch = Stopwatch()..start();
       for (var i = 0; i < batchCount; ++i) {
         final verts = vertBatches[i];
         final indices = indexBatches[i];
@@ -268,6 +276,9 @@ class World {
         );
         canvas.drawVertices(vertBuffer, BlendMode.modulate, paint);
       }
+      time = stopwatch.elapsedMilliseconds;
+      stopwatch.stop();
+      debugPrint('Rendered all batches in $time ms');
 
       // Draw status in the middle
       final text = TextSpan(

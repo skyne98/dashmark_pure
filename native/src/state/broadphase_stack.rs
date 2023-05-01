@@ -42,9 +42,6 @@ impl BroadphaseStack {
     }
 
     pub fn index_added(&mut self, index: Index) {
-        self.current_bvh
-            .bvh
-            .pre_update_or_insert(IndexWrapper::from(index));
         self.needs_rebuild = true;
     }
 
@@ -54,9 +51,6 @@ impl BroadphaseStack {
     }
 
     pub fn index_updated(&mut self, index: Index) {
-        self.current_bvh
-            .bvh
-            .pre_update_or_insert(IndexWrapper::from(index));
         self.needs_rebuild = true;
     }
 
