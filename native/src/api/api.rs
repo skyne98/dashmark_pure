@@ -1,7 +1,7 @@
+use crate::time::Instant;
 use flutter_rust_bridge::{SyncReturn, ZeroCopyBuffer};
 pub use generational_arena::Arena;
 use rapier2d::na::Point2;
-use std::time::Instant;
 pub use std::{
     ops::Deref,
     sync::{Mutex, RwLock},

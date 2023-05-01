@@ -15,11 +15,6 @@ pub fn bytes_to<T>(bytes: &[u8]) -> &[T] {
     let data = unsafe { std::slice::from_raw_parts(ptr, typed_len) };
     data
 }
-pub fn bytes_to_value<T>(bytes: &[u8]) -> &T {
-    let data = bytes_to(bytes);
-    assert_eq!(data.len(), 1);
-    &data[0]
-}
 
 pub fn to_bytes<T>(data: &[T]) -> &[u8] {
     let len = data.len();
@@ -32,17 +27,13 @@ pub fn to_bytes<T>(data: &[T]) -> &[u8] {
     let bytes = unsafe { std::slice::from_raw_parts(ptr, typed_len) };
     bytes
 }
-pub fn value_to_bytes<T>(value: &T) -> &[u8] {
-    let slice = std::slice::from_ref(value);
-    to_bytes(slice)
-}
 
 // Specific
 pub fn bytes_to_indices(bytes: &[u8]) -> Vec<Index> {
-    let data = bytes_to(bytes);
+    let data: &[u32] = bytes_to(bytes);
     let indices = data
         .chunks_exact(2)
-        .map(|chunk| Index::from_raw_parts(chunk[0] as usize, chunk[1]))
+        .map(|chunk| Index::from_raw_parts(chunk[0] as usize, chunk[1] as u64))
         .collect::<Vec<_>>();
     indices
 }
@@ -60,7 +51,7 @@ pub fn indices_to_bytes(indices: &[Index]) -> Vec<u8> {
     let data = indices
         .iter()
         .map(|index| index.into_raw_parts())
-        .flat_map(|(index, gen)| vec![index as u64, gen])
+        .flat_map(|(index, gen)| vec![index as u32, gen as u32])
         .collect::<Vec<_>>();
     let bytes = to_bytes(&data);
     bytes.to_vec()

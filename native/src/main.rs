@@ -1,3 +1,4 @@
+#![feature(portable_simd)]
 use crate::matrix::{bulk_transform_vectors_mut, bulk_transform_vectors_mut_n, TransformMatrix};
 use rapier2d::na::Vector2;
 use rapier2d::parry::bounding_volume::Aabb as ParryAabb;
@@ -10,6 +11,7 @@ mod entity;
 mod index;
 mod matrix;
 mod state;
+mod time;
 mod transform;
 mod typed_data;
 
@@ -20,6 +22,15 @@ struct Data {
 }
 
 fn main() {
+    // Test chrono
+    let now = crate::time::Instant::now();
+    let now_chrono = chrono::Utc::now();
+    let mine = time::Instant::now();
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    println!("Time elapsed: {:?}", now.elapsed());
+    println!("Time elapsed: {:?}", chrono::Utc::now() - now_chrono);
+    println!("Time elapsed: {:?}", mine.elapsed());
+
     // Test cache misses
     // Prepare the data
     let amount = 100_000_000 as usize;
@@ -34,7 +45,7 @@ fn main() {
 
     // Process the data
     let mut result = vec![0; amount as usize];
-    let now = std::time::Instant::now();
+    let now = crate::time::Instant::now();
     for i in 0..amount {
         let data = &data[i];
         if data.flag {
@@ -55,7 +66,7 @@ fn main() {
         b.push(data.b);
         flag.push(data.flag);
     }
-    let now = std::time::Instant::now();
+    let now = crate::time::Instant::now();
     for i in 0..amount {
         let a = a[i];
         let b = b[i];
@@ -73,7 +84,7 @@ fn main() {
     // Make a parry_2d test
     let mut aabbs = Vec::new();
 
-    let mut start = std::time::Instant::now();
+    let mut start = crate::time::Instant::now();
     for _ in 0..iterations {
         let x = fastrand::f32() * 1000.0;
         let y = fastrand::f32() * 1000.0;
@@ -86,13 +97,13 @@ fn main() {
     );
 
     // Now generate a BVH with it
-    start = std::time::Instant::now();
+    start = crate::time::Instant::now();
     let mut bvh = ParryQbvh::new();
     bvh.clear_and_rebuild(aabbs.into_iter(), 0.0);
     println!("Time to generate ParryQbvh: {:?}", start.elapsed());
 
     // Now do iterations / 10 intersection tests
-    start = std::time::Instant::now();
+    start = crate::time::Instant::now();
     for _ in 0..iterations / 10 {
         let x = fastrand::f32() * 1000.0;
         let y = fastrand::f32() * 1000.0;
@@ -120,7 +131,7 @@ fn main() {
 
     // Do 1000000 matrix and vector allocations, then do
     // 1000000 matrix and vector transformations
-    start = std::time::Instant::now();
+    start = crate::time::Instant::now();
     let mut matrices = Vec::with_capacity(iterations as usize);
     matrices.resize(iterations as usize, TransformMatrix::new());
     println!(
@@ -128,12 +139,12 @@ fn main() {
         start.elapsed()
     );
 
-    start = std::time::Instant::now();
+    start = crate::time::Instant::now();
     let mut vectors = Vec::with_capacity(iterations as usize);
     vectors.resize(iterations as usize, Vector2::new(0.0, 0.0));
     println!("Time to generate iterations vectors: {:?}", start.elapsed());
 
-    start = std::time::Instant::now();
+    start = crate::time::Instant::now();
     let mut results = Vec::with_capacity(iterations as usize);
     for _ in 0..iterations {
         let matrix = matrices.pop().unwrap();
@@ -145,7 +156,7 @@ fn main() {
         start.elapsed()
     );
 
-    start = std::time::Instant::now();
+    start = crate::time::Instant::now();
     let matrix = TransformMatrix::new();
     bulk_transform_vectors_mut(&matrix.matrix, &mut vectors);
     println!(
@@ -154,7 +165,7 @@ fn main() {
     );
 
     let transform_matrices = matrices.iter().map(|m| m.matrix).collect::<Vec<_>>();
-    start = std::time::Instant::now();
+    start = crate::time::Instant::now();
     bulk_transform_vectors_mut_n(&transform_matrices[..], &mut vectors, 1);
     println!(
         "Time to do iterations bulk matrix and vector transformations (n=1): {:?}",

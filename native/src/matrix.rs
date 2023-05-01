@@ -1,6 +1,6 @@
 use rapier2d::na::SimdValue;
 use rapier2d::na::{Matrix2x3, Point2, Vector2};
-use simba::simd::f32x4;
+use std::simd::f32x4;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TransformMatrix {
@@ -181,15 +181,15 @@ pub fn bulk_transform_vectors_mut(transform: &Matrix2x3<f32>, input_vectors: &mu
     for chunk in input_vectors.chunks_mut(4) {
         let xs: Vec<_> = chunk.iter().map(|v| v.x).collect();
         let ys: Vec<_> = chunk.iter().map(|v| v.y).collect();
-        let xs = f32x4::from_slice_unaligned(&xs);
-        let ys = f32x4::from_slice_unaligned(&ys);
+        let xs = f32x4::from_slice(&xs);
+        let ys = f32x4::from_slice(&ys);
 
         let xt = m11s * xs + m12s * ys + m31s;
         let yt = m21s * xs + m22s * ys + m32s;
 
         for (i, v) in chunk.iter_mut().enumerate() {
-            v.x = xt.extract(i);
-            v.y = yt.extract(i);
+            v.x = xt.as_array()[i];
+            v.y = yt.as_array()[i];
         }
     }
 }
@@ -212,15 +212,15 @@ pub fn bulk_transform_points_mut(transform: &Matrix2x3<f32>, input_points: &mut 
     for chunk in input_points.chunks_mut(4) {
         let xs: Vec<_> = chunk.iter().map(|v| v.x).collect();
         let ys: Vec<_> = chunk.iter().map(|v| v.y).collect();
-        let xs = f32x4::from_slice_unaligned(&xs);
-        let ys = f32x4::from_slice_unaligned(&ys);
+        let xs = f32x4::from_slice(&xs);
+        let ys = f32x4::from_slice(&ys);
 
         let xt = m11s * xs + m12s * ys + m31s;
         let yt = m21s * xs + m22s * ys + m32s;
 
         for (i, v) in chunk.iter_mut().enumerate() {
-            v.x = xt.extract(i);
-            v.y = yt.extract(i);
+            v.x = xt.as_array()[i];
+            v.y = yt.as_array()[i];
         }
     }
 }
@@ -248,15 +248,15 @@ pub fn bulk_transform_vectors_mut_n(
         for chunk in chunk.chunks_mut(4) {
             let xs: Vec<_> = chunk.iter().map(|v| v.x).collect();
             let ys: Vec<_> = chunk.iter().map(|v| v.y).collect();
-            let xs = f32x4::from_slice_unaligned(&xs);
-            let ys = f32x4::from_slice_unaligned(&ys);
+            let xs = f32x4::from_slice(&xs);
+            let ys = f32x4::from_slice(&ys);
 
             let xt = m11s * xs + m12s * ys + m31s;
             let yt = m21s * xs + m22s * ys + m32s;
 
             for (i, v) in chunk.iter_mut().enumerate() {
-                v.x = xt.extract(i);
-                v.y = yt.extract(i);
+                v.x = xt.as_array()[i];
+                v.y = yt.as_array()[i];
             }
         }
     }
@@ -285,15 +285,15 @@ pub fn bulk_transform_points_mut_n(
         for chunk in chunk.chunks_mut(4) {
             let xs: Vec<_> = chunk.iter().map(|v| v.x).collect();
             let ys: Vec<_> = chunk.iter().map(|v| v.y).collect();
-            let xs = f32x4::from_slice_unaligned(&xs);
-            let ys = f32x4::from_slice_unaligned(&ys);
+            let xs = f32x4::from_slice(&xs);
+            let ys = f32x4::from_slice(&ys);
 
             let xt = m11s * xs + m12s * ys + m31s;
             let yt = m21s * xs + m22s * ys + m32s;
 
             for (i, v) in chunk.iter_mut().enumerate() {
-                v.x = xt.extract(i);
-                v.y = yt.extract(i);
+                v.x = xt.as_array()[i];
+                v.y = yt.as_array()[i];
             }
         }
     }

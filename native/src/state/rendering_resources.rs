@@ -110,11 +110,11 @@ impl RenderingResources {
     }
 
     pub fn batchify(&mut self, entities: &mut EntityManager, transforms: &TransformManager) {
-        let start = std::time::Instant::now();
+        let start = crate::time::Instant::now();
         self.batches.clear();
 
         // Get all active entities from the entity manager
-        let sort_start = std::time::Instant::now();
+        let sort_start = crate::time::Instant::now();
         let mut active_entities = entities.iter().collect::<Vec<_>>();
         // Sort them by their priority
         active_entities.sort_unstable_by(|a, b| {
@@ -137,7 +137,7 @@ impl RenderingResources {
 
         for (index, _) in active_entities {
             let (_, tex_coords, color, indices) = self.get(index).expect("Entity not found");
-            let transform_start = std::time::Instant::now();
+            let transform_start = crate::time::Instant::now();
             let vertices = self.transformed_vertices(index, transforms);
             transformation_duration += transform_start.elapsed();
 

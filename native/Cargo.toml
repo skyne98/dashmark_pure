@@ -13,6 +13,8 @@ generational-arena = { version = "0.2.8", features = ["std"] }
 rapier2d = { version = "0.17.2", features = ["simd-stable", "dim2"] }
 simba = { version = "0.8.0", features = ["std", "packed_simd"] }
 smallvec = "1.10.0"
+chrono = { version = "0.4.24", features = ["wasmbind"] }
+chrono-humanize = "0.2.2"
 
 [lib]
 crate-type = ["staticlib", "cdylib"]

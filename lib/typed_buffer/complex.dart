@@ -100,11 +100,11 @@ class Vector64Buffer extends ComplexTypedDataView<vector64.Vector2, double> {
 
 class GenerationalIndexBuffer
     extends ComplexTypedDataView<GenerationalIndex, int> {
-  GenerationalIndexBuffer() : super(Uint64Buffer());
+  GenerationalIndexBuffer() : super(Uint32Buffer());
   GenerationalIndexBuffer.fromBuffer(GenerationalIndexBuffer buffer)
       : super(buffer.buffer);
   GenerationalIndexBuffer.fromList(List<GenerationalIndex> list)
-      : super(Uint64Buffer.fromList(
+      : super(Uint32Buffer.fromList(
             list.expand((v) => [v.field0, v.field1]).toList()));
 
   @override
@@ -118,8 +118,8 @@ class GenerationalIndexBuffer
   }
 
   @override
-  Uint64List byteify(GenerationalIndex value) {
-    return Uint64List.fromList([value.field0, value.field1]);
+  Uint32List byteify(GenerationalIndex value) {
+    return Uint32List.fromList([value.field0, value.field1]);
   }
 }
 
