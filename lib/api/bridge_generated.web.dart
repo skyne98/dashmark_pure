@@ -128,6 +128,12 @@ class NativeWasmModule implements WasmModule {
   external dynamic /* void */ wire_entity_set_vertices_raw(
       List<dynamic> index, Uint8List vertices);
 
+  external dynamic /* void */ wire_entity_set_tex_coords_raw(
+      List<dynamic> index, Uint8List tex_coords);
+
+  external dynamic /* void */ wire_entity_set_indices_raw(
+      List<dynamic> index, Uint8List indices);
+
   external dynamic /* void */ wire_entities_set_priority_raw(
       Uint8List indices, Uint8List priorities);
 
@@ -139,13 +145,13 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* Object */ wire_batches_count();
 
-  external dynamic /* Uint8List */ wire_transformed_vertices(int batchIndex);
+  external dynamic /* Uint8List */ wire_vertices(int batch_index);
 
-  external dynamic /* Uint8List */ wire_tex_coords(int batchIndex);
+  external dynamic /* Uint8List */ wire_tex_coords(int batch_index);
 
-  external dynamic /* Uint8List */ wire_indices(int batchIndex);
+  external dynamic /* Uint8List */ wire_indices(int batch_index);
 
-  external dynamic /* Uint8List */ wire_colors(int batchIndex);
+  external dynamic /* Uint8List */ wire_colors(int batch_index);
 }
 
 // Section: WASM wire connector
@@ -192,6 +198,14 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
           List<dynamic> index, Uint8List vertices) =>
       wasmModule.wire_entity_set_vertices_raw(index, vertices);
 
+  dynamic /* void */ wire_entity_set_tex_coords_raw(
+          List<dynamic> index, Uint8List tex_coords) =>
+      wasmModule.wire_entity_set_tex_coords_raw(index, tex_coords);
+
+  dynamic /* void */ wire_entity_set_indices_raw(
+          List<dynamic> index, Uint8List indices) =>
+      wasmModule.wire_entity_set_indices_raw(index, indices);
+
   dynamic /* void */ wire_entities_set_priority_raw(
           Uint8List indices, Uint8List priorities) =>
       wasmModule.wire_entities_set_priority_raw(indices, priorities);
@@ -205,15 +219,15 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
 
   dynamic /* Object */ wire_batches_count() => wasmModule.wire_batches_count();
 
-  dynamic /* Uint8List */ wire_transformed_vertices(int batchIndex) =>
-      wasmModule.wire_transformed_vertices(batchIndex);
+  dynamic /* Uint8List */ wire_vertices(int batch_index) =>
+      wasmModule.wire_vertices(batch_index);
 
-  dynamic /* Uint8List */ wire_tex_coords(int batchIndex) =>
-      wasmModule.wire_tex_coords(batchIndex);
+  dynamic /* Uint8List */ wire_tex_coords(int batch_index) =>
+      wasmModule.wire_tex_coords(batch_index);
 
-  dynamic /* Uint8List */ wire_indices(int batchIndex) =>
-      wasmModule.wire_indices(batchIndex);
+  dynamic /* Uint8List */ wire_indices(int batch_index) =>
+      wasmModule.wire_indices(batch_index);
 
-  dynamic /* Uint8List */ wire_colors(int batchIndex) =>
-      wasmModule.wire_colors(batchIndex);
+  dynamic /* Uint8List */ wire_colors(int batch_index) =>
+      wasmModule.wire_colors(batch_index);
 }

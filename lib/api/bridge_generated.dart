@@ -81,6 +81,20 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kEntitySetVerticesRawConstMeta;
 
+  void entitySetTexCoordsRaw(
+      {required GenerationalIndex index,
+      required Uint8List texCoords,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetTexCoordsRawConstMeta;
+
+  void entitySetIndicesRaw(
+      {required GenerationalIndex index,
+      required Uint8List indices,
+      dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetIndicesRawConstMeta;
+
   void entitiesSetPriorityRaw(
       {required Uint8List indices,
       required Uint8List priorities,
@@ -102,9 +116,9 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kBatchesCountConstMeta;
 
-  Uint8List transformedVertices({required int batchIndex, dynamic hint});
+  Uint8List vertices({required int batchIndex, dynamic hint});
 
-  FlutterRustBridgeTaskConstMeta get kTransformedVerticesConstMeta;
+  FlutterRustBridgeTaskConstMeta get kVerticesConstMeta;
 
   Uint8List texCoords({required int batchIndex, dynamic hint});
 
@@ -383,6 +397,48 @@ class NativeImpl implements Native {
         argNames: ["index", "vertices"],
       );
 
+  void entitySetTexCoordsRaw(
+      {required GenerationalIndex index,
+      required Uint8List texCoords,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_generational_index(index);
+    var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(texCoords);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_entity_set_tex_coords_raw(arg0, arg1),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kEntitySetTexCoordsRawConstMeta,
+      argValues: [index, texCoords],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetTexCoordsRawConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "entity_set_tex_coords_raw",
+        argNames: ["index", "texCoords"],
+      );
+
+  void entitySetIndicesRaw(
+      {required GenerationalIndex index,
+      required Uint8List indices,
+      dynamic hint}) {
+    var arg0 = _platform.api2wire_box_autoadd_generational_index(index);
+    var arg1 = _platform.api2wire_ZeroCopyBuffer_Uint8List(indices);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_entity_set_indices_raw(arg0, arg1),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kEntitySetIndicesRawConstMeta,
+      argValues: [index, indices],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kEntitySetIndicesRawConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "entity_set_indices_raw",
+        argNames: ["index", "indices"],
+      );
+
   void entitiesSetPriorityRaw(
       {required Uint8List indices,
       required Uint8List priorities,
@@ -458,20 +514,20 @@ class NativeImpl implements Native {
         argNames: [],
       );
 
-  Uint8List transformedVertices({required int batchIndex, dynamic hint}) {
+  Uint8List vertices({required int batchIndex, dynamic hint}) {
     var arg0 = api2wire_u16(batchIndex);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
-      callFfi: () => _platform.inner.wire_transformed_vertices(arg0),
+      callFfi: () => _platform.inner.wire_vertices(arg0),
       parseSuccessData: _wire2api_ZeroCopyBuffer_Uint8List,
-      constMeta: kTransformedVerticesConstMeta,
+      constMeta: kVerticesConstMeta,
       argValues: [batchIndex],
       hint: hint,
     ));
   }
 
-  FlutterRustBridgeTaskConstMeta get kTransformedVerticesConstMeta =>
+  FlutterRustBridgeTaskConstMeta get kVerticesConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
-        debugName: "transformed_vertices",
+        debugName: "vertices",
         argNames: ["batchIndex"],
       );
 

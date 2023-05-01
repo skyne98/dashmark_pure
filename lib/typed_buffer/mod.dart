@@ -55,8 +55,6 @@ abstract class TypedBuffer<T> with ListMixin<T> {
   set length(int newLength) {
     if (newLength > capacity) {
       growToFit(newLength);
-    } else {
-      shrinkToFit();
     }
   }
 

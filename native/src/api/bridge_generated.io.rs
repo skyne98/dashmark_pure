@@ -82,6 +82,22 @@ pub extern "C" fn wire_entity_set_vertices_raw(
 }
 
 #[no_mangle]
+pub extern "C" fn wire_entity_set_tex_coords_raw(
+    index: *mut wire_GenerationalIndex,
+    tex_coords: *mut wire_uint_8_list,
+) -> support::WireSyncReturn {
+    wire_entity_set_tex_coords_raw_impl(index, tex_coords)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_entity_set_indices_raw(
+    index: *mut wire_GenerationalIndex,
+    indices: *mut wire_uint_8_list,
+) -> support::WireSyncReturn {
+    wire_entity_set_indices_raw_impl(index, indices)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_entities_set_priority_raw(
     indices: *mut wire_uint_8_list,
     priorities: *mut wire_uint_8_list,
@@ -111,23 +127,23 @@ pub extern "C" fn wire_batches_count() -> support::WireSyncReturn {
 }
 
 #[no_mangle]
-pub extern "C" fn wire_transformed_vertices(batchIndex: u16) -> support::WireSyncReturn {
-    wire_transformed_vertices_impl(batchIndex)
+pub extern "C" fn wire_vertices(batch_index: u16) -> support::WireSyncReturn {
+    wire_vertices_impl(batch_index)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_tex_coords(batchIndex: u16) -> support::WireSyncReturn {
-    wire_tex_coords_impl(batchIndex)
+pub extern "C" fn wire_tex_coords(batch_index: u16) -> support::WireSyncReturn {
+    wire_tex_coords_impl(batch_index)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_indices(batchIndex: u16) -> support::WireSyncReturn {
-    wire_indices_impl(batchIndex)
+pub extern "C" fn wire_indices(batch_index: u16) -> support::WireSyncReturn {
+    wire_indices_impl(batch_index)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_colors(batchIndex: u16) -> support::WireSyncReturn {
-    wire_colors_impl(batchIndex)
+pub extern "C" fn wire_colors(batch_index: u16) -> support::WireSyncReturn {
+    wire_colors_impl(batch_index)
 }
 
 // Section: allocate functions

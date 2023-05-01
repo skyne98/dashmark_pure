@@ -35,7 +35,6 @@ pub struct Entity {
 
     // Rendering
     pub priority: i32,
-    pub color: i32,
 }
 
 impl Debug for Entity {
@@ -58,7 +57,6 @@ impl Default for Entity {
             parent: None,
             shape: None,
             priority: 0,
-            color: 0,
         }
     }
 }

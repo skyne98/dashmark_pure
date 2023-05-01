@@ -72,6 +72,19 @@ pub fn wire_entity_set_vertices_raw(
 }
 
 #[wasm_bindgen]
+pub fn wire_entity_set_tex_coords_raw(
+    index: JsValue,
+    tex_coords: Box<[u8]>,
+) -> support::WireSyncReturn {
+    wire_entity_set_tex_coords_raw_impl(index, tex_coords)
+}
+
+#[wasm_bindgen]
+pub fn wire_entity_set_indices_raw(index: JsValue, indices: Box<[u8]>) -> support::WireSyncReturn {
+    wire_entity_set_indices_raw_impl(index, indices)
+}
+
+#[wasm_bindgen]
 pub fn wire_entities_set_priority_raw(
     indices: Box<[u8]>,
     priorities: Box<[u8]>,
@@ -95,23 +108,23 @@ pub fn wire_batches_count() -> support::WireSyncReturn {
 }
 
 #[wasm_bindgen]
-pub fn wire_transformed_vertices(batchIndex: u16) -> support::WireSyncReturn {
-    wire_transformed_vertices_impl(batchIndex)
+pub fn wire_vertices(batch_index: u16) -> support::WireSyncReturn {
+    wire_vertices_impl(batch_index)
 }
 
 #[wasm_bindgen]
-pub fn wire_tex_coords(batchIndex: u16) -> support::WireSyncReturn {
-    wire_tex_coords_impl(batchIndex)
+pub fn wire_tex_coords(batch_index: u16) -> support::WireSyncReturn {
+    wire_tex_coords_impl(batch_index)
 }
 
 #[wasm_bindgen]
-pub fn wire_indices(batchIndex: u16) -> support::WireSyncReturn {
-    wire_indices_impl(batchIndex)
+pub fn wire_indices(batch_index: u16) -> support::WireSyncReturn {
+    wire_indices_impl(batch_index)
 }
 
 #[wasm_bindgen]
-pub fn wire_colors(batchIndex: u16) -> support::WireSyncReturn {
-    wire_colors_impl(batchIndex)
+pub fn wire_colors(batch_index: u16) -> support::WireSyncReturn {
+    wire_colors_impl(batch_index)
 }
 
 // Section: allocate functions

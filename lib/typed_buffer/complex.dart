@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:vector_math/vector_math_64.dart' as vector64;
@@ -14,7 +15,7 @@ abstract class ComplexTypedDataView<CT, T> extends ListBase<CT> {
 
   int elementLength();
   CT debyteify(int index);
-  void byteify(int index, CT value);
+  List<T> byteify(CT value);
 
   @override
   int get length => buffer.length ~/ elementLength();
@@ -33,7 +34,17 @@ abstract class ComplexTypedDataView<CT, T> extends ListBase<CT> {
   @override
   void operator []=(int index, CT value) {
     var start = index * elementLength();
-    byteify(start, value);
+    buffer.setRange(start, start + elementLength(), byteify(value));
+  }
+
+  @override
+  void add(CT element) {
+    buffer.addAll(byteify(element));
+  }
+
+  @override
+  void addAll(Iterable<CT> iterable) {
+    buffer.addAll(iterable.expand((v) => byteify(v)));
   }
 }
 
@@ -54,9 +65,8 @@ class VectorBuffer extends ComplexTypedDataView<vector32.Vector2, double> {
   }
 
   @override
-  void byteify(int index, vector32.Vector2 value) {
-    buffer[index] = value.x;
-    buffer[index + 1] = value.y;
+  Float32List byteify(vector32.Vector2 value) {
+    return Float32List.fromList([value.x, value.y]);
   }
 }
 
@@ -77,9 +87,8 @@ class Vector64Buffer extends ComplexTypedDataView<vector64.Vector2, double> {
   }
 
   @override
-  void byteify(int index, vector64.Vector2 value) {
-    buffer[index] = value.x;
-    buffer[index + 1] = value.y;
+  Float64List byteify(vector64.Vector2 value) {
+    return Float64List.fromList([value.x, value.y]);
   }
 }
 
@@ -103,9 +112,8 @@ class GenerationalIndexBuffer
   }
 
   @override
-  void byteify(int index, GenerationalIndex value) {
-    buffer[index] = value.field0;
-    buffer[index + 1] = value.field1;
+  Uint64List byteify(GenerationalIndex value) {
+    return Uint64List.fromList([value.field0, value.field1]);
   }
 }
 
@@ -126,7 +134,7 @@ class ColorBuffer extends ComplexTypedDataView<Color, int> {
   }
 
   @override
-  void byteify(int index, Color value) {
-    buffer[index] = value.value;
+  Int32List byteify(Color value) {
+    return Int32List.fromList([value.value]);
   }
 }

@@ -1,13 +1,13 @@
 pub mod broadphase_stack;
 pub mod entity_manager;
+pub mod rendering_resources;
 pub mod transform_manager;
-pub mod vertex_manager;
 
 use std::cell::RefCell;
 
 use self::{
     broadphase_stack::BroadphaseStack, entity_manager::EntityManager,
-    transform_manager::TransformManager, vertex_manager::VertexManager,
+    rendering_resources::RenderingResources, transform_manager::TransformManager,
 };
 
 thread_local! {
@@ -18,7 +18,7 @@ pub struct State {
     pub entities: RefCell<EntityManager>,
     pub broadphase: RefCell<BroadphaseStack>,
     pub transforms: RefCell<TransformManager>,
-    pub vertices: RefCell<VertexManager>,
+    pub rendering: RefCell<RenderingResources>,
 }
 
 // Static methods
@@ -43,13 +43,13 @@ impl State {
         let entities = RefCell::new(EntityManager::new());
         let broadphase = RefCell::new(BroadphaseStack::new());
         let transforms = RefCell::new(TransformManager::new());
-        let vertices = RefCell::new(VertexManager::new());
+        let vertices = RefCell::new(RenderingResources::new());
 
         Self {
             entities,
             broadphase,
             transforms,
-            vertices,
+            rendering: vertices,
         }
     }
 
@@ -57,8 +57,9 @@ impl State {
         let mut entities = self.entities.borrow_mut();
         let mut broadphase = self.broadphase.borrow_mut();
         let mut transforms = self.transforms.borrow_mut();
-        let mut vertices = self.vertices.borrow_mut();
+        let mut rendering = self.rendering.borrow_mut();
 
         broadphase.do_maintenance(&entities, &transforms);
+        rendering.batchify(&mut entities, &transforms);
     }
 }

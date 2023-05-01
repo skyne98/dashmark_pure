@@ -404,6 +404,45 @@ class NativeWire implements FlutterRustBridgeWireBase {
           WireSyncReturn Function(ffi.Pointer<wire_GenerationalIndex>,
               ffi.Pointer<wire_uint_8_list>)>();
 
+  WireSyncReturn wire_entity_set_tex_coords_raw(
+    ffi.Pointer<wire_GenerationalIndex> index,
+    ffi.Pointer<wire_uint_8_list> tex_coords,
+  ) {
+    return _wire_entity_set_tex_coords_raw(
+      index,
+      tex_coords,
+    );
+  }
+
+  late final _wire_entity_set_tex_coords_rawPtr = _lookup<
+          ffi.NativeFunction<
+              WireSyncReturn Function(ffi.Pointer<wire_GenerationalIndex>,
+                  ffi.Pointer<wire_uint_8_list>)>>(
+      'wire_entity_set_tex_coords_raw');
+  late final _wire_entity_set_tex_coords_raw =
+      _wire_entity_set_tex_coords_rawPtr.asFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_GenerationalIndex>,
+              ffi.Pointer<wire_uint_8_list>)>();
+
+  WireSyncReturn wire_entity_set_indices_raw(
+    ffi.Pointer<wire_GenerationalIndex> index,
+    ffi.Pointer<wire_uint_8_list> indices,
+  ) {
+    return _wire_entity_set_indices_raw(
+      index,
+      indices,
+    );
+  }
+
+  late final _wire_entity_set_indices_rawPtr = _lookup<
+      ffi.NativeFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_GenerationalIndex>,
+              ffi.Pointer<wire_uint_8_list>)>>('wire_entity_set_indices_raw');
+  late final _wire_entity_set_indices_raw =
+      _wire_entity_set_indices_rawPtr.asFunction<
+          WireSyncReturn Function(ffi.Pointer<wire_GenerationalIndex>,
+              ffi.Pointer<wire_uint_8_list>)>();
+
   WireSyncReturn wire_entities_set_priority_raw(
     ffi.Pointer<wire_uint_8_list> indices,
     ffi.Pointer<wire_uint_8_list> priorities,
@@ -469,25 +508,25 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_batches_count =
       _wire_batches_countPtr.asFunction<WireSyncReturn Function()>();
 
-  WireSyncReturn wire_transformed_vertices(
-    int batchIndex,
+  WireSyncReturn wire_vertices(
+    int batch_index,
   ) {
-    return _wire_transformed_vertices(
-      batchIndex,
+    return _wire_vertices(
+      batch_index,
     );
   }
 
-  late final _wire_transformed_verticesPtr =
+  late final _wire_verticesPtr =
       _lookup<ffi.NativeFunction<WireSyncReturn Function(ffi.Uint16)>>(
-          'wire_transformed_vertices');
-  late final _wire_transformed_vertices =
-      _wire_transformed_verticesPtr.asFunction<WireSyncReturn Function(int)>();
+          'wire_vertices');
+  late final _wire_vertices =
+      _wire_verticesPtr.asFunction<WireSyncReturn Function(int)>();
 
   WireSyncReturn wire_tex_coords(
-    int batchIndex,
+    int batch_index,
   ) {
     return _wire_tex_coords(
-      batchIndex,
+      batch_index,
     );
   }
 
@@ -498,10 +537,10 @@ class NativeWire implements FlutterRustBridgeWireBase {
       _wire_tex_coordsPtr.asFunction<WireSyncReturn Function(int)>();
 
   WireSyncReturn wire_indices(
-    int batchIndex,
+    int batch_index,
   ) {
     return _wire_indices(
-      batchIndex,
+      batch_index,
     );
   }
 
@@ -512,10 +551,10 @@ class NativeWire implements FlutterRustBridgeWireBase {
       _wire_indicesPtr.asFunction<WireSyncReturn Function(int)>();
 
   WireSyncReturn wire_colors(
-    int batchIndex,
+    int batch_index,
   ) {
     return _wire_colors(
-      batchIndex,
+      batch_index,
     );
   }
 

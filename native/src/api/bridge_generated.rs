@@ -200,6 +200,40 @@ fn wire_entity_set_vertices_raw_impl(
         },
     )
 }
+fn wire_entity_set_tex_coords_raw_impl(
+    index: impl Wire2Api<GenerationalIndex> + UnwindSafe,
+    tex_coords: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "entity_set_tex_coords_raw",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_index = index.wire2api();
+            let api_tex_coords = tex_coords.wire2api();
+            Ok(entity_set_tex_coords_raw(api_index, api_tex_coords))
+        },
+    )
+}
+fn wire_entity_set_indices_raw_impl(
+    index: impl Wire2Api<GenerationalIndex> + UnwindSafe,
+    indices: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "entity_set_indices_raw",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_index = index.wire2api();
+            let api_indices = indices.wire2api();
+            Ok(entity_set_indices_raw(api_index, api_indices))
+        },
+    )
+}
 fn wire_entities_set_priority_raw_impl(
     indices: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
     priorities: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
@@ -261,22 +295,20 @@ fn wire_batches_count_impl() -> support::WireSyncReturn {
         move || Ok(batches_count()),
     )
 }
-fn wire_transformed_vertices_impl(
-    batchIndex: impl Wire2Api<u16> + UnwindSafe,
-) -> support::WireSyncReturn {
+fn wire_vertices_impl(batch_index: impl Wire2Api<u16> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
-            debug_name: "transformed_vertices",
+            debug_name: "vertices",
             port: None,
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_batchIndex = batchIndex.wire2api();
-            Ok(transformed_vertices(api_batchIndex))
+            let api_batch_index = batch_index.wire2api();
+            Ok(vertices(api_batch_index))
         },
     )
 }
-fn wire_tex_coords_impl(batchIndex: impl Wire2Api<u16> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_tex_coords_impl(batch_index: impl Wire2Api<u16> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "tex_coords",
@@ -284,12 +316,12 @@ fn wire_tex_coords_impl(batchIndex: impl Wire2Api<u16> + UnwindSafe) -> support:
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_batchIndex = batchIndex.wire2api();
-            Ok(tex_coords(api_batchIndex))
+            let api_batch_index = batch_index.wire2api();
+            Ok(tex_coords(api_batch_index))
         },
     )
 }
-fn wire_indices_impl(batchIndex: impl Wire2Api<u16> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_indices_impl(batch_index: impl Wire2Api<u16> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "indices",
@@ -297,12 +329,12 @@ fn wire_indices_impl(batchIndex: impl Wire2Api<u16> + UnwindSafe) -> support::Wi
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_batchIndex = batchIndex.wire2api();
-            Ok(indices(api_batchIndex))
+            let api_batch_index = batch_index.wire2api();
+            Ok(indices(api_batch_index))
         },
     )
 }
-fn wire_colors_impl(batchIndex: impl Wire2Api<u16> + UnwindSafe) -> support::WireSyncReturn {
+fn wire_colors_impl(batch_index: impl Wire2Api<u16> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {
             debug_name: "colors",
@@ -310,8 +342,8 @@ fn wire_colors_impl(batchIndex: impl Wire2Api<u16> + UnwindSafe) -> support::Wir
             mode: FfiCallMode::Sync,
         },
         move || {
-            let api_batchIndex = batchIndex.wire2api();
-            Ok(colors(api_batchIndex))
+            let api_batch_index = batch_index.wire2api();
+            Ok(colors(api_batch_index))
         },
     )
 }

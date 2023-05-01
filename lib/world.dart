@@ -86,8 +86,7 @@ class World {
         _velocity.add(Vector2(vx, vy));
         _rotation.add(0.0);
         _scale.add(Vector2(1.0, 1.0));
-        final origin = Vector2(dashImage!.width / 2 * scaleToSize,
-            dashImage!.height / 2 * scaleToSize);
+        final origin = Vector2(desiredSize / 2, desiredSize / 2);
         _origin.add(origin);
 
         // Create the entity
@@ -99,11 +98,18 @@ class World {
         setOrigin(entity, origin.x, origin.y);
         final vertices = Vector64Buffer();
         vertices.add(Vector2(0.0, 0.0));
-        vertices.add(Vector2(0.0, 1.0));
-        vertices.add(Vector2(1.0, 1.0));
-        vertices.add(Vector2(1.0, 0.0));
-        api.entitySetVerticesRaw(
-            index: entity, vertices: vertices.buffer.toUint8List());
+        vertices.add(Vector2(0.0, 64.0));
+        vertices.add(Vector2(64.0, 64.0));
+        vertices.add(Vector2(64.0, 0.0));
+        rendering.setVertices(entity, vertices);
+        final texCoords = Vector64Buffer();
+        texCoords.add(Vector2(0.0, 0.0));
+        texCoords.add(Vector2(128.0, 0.0));
+        texCoords.add(Vector2(128.0, 128.0));
+        texCoords.add(Vector2(0.0, 128.0));
+        rendering.setTexCoords(entity, texCoords);
+        rendering.setIndices(entity, Uint16Buffer.fromList([0, 1, 2, 0, 2, 3]));
+        rendering.setColor(entity, Colors.red);
       }
     }
   }
@@ -143,7 +149,10 @@ class World {
 
         // Rotate slightly
         rotation += 3.14 * lastDt;
+
+        _position[i] = position;
         _rotation[i] = rotation;
+        _velocity[i] = velocity;
       }
       lastDt = t;
 
@@ -231,7 +240,7 @@ class World {
       final batchCount = rendering.batchesCount();
 
       for (var i = 0; i < batchCount; ++i) {
-        vertBatches.add(rendering.transformedVertices(i));
+        vertBatches.add(rendering.vertices(i));
         indexBatches.add(rendering.indices(i));
         texCoordBatches.add(rendering.texCoords(i));
         colorBatches.add(rendering.colors(i));
@@ -254,7 +263,7 @@ class World {
           textureCoordinates: texCoords,
           colors: colors,
         );
-        canvas.drawVertices(vertBuffer, BlendMode.srcOver, paint);
+        canvas.drawVertices(vertBuffer, BlendMode.modulate, paint);
       }
 
       // Draw status in the middle

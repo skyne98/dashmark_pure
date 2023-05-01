@@ -1,10 +1,27 @@
 import 'dart:typed_data';
-import '../ffi_export.dart';
+import 'package:flutter/material.dart';
 
-void setColor(GenerationalIndex entity, int color) {
+import '../ffi_export.dart';
+import '../typed_buffer/mod.dart';
+
+void setVertices(GenerationalIndex entity, Vector64Buffer vertices) {
+  api.entitySetVerticesRaw(
+      index: entity, vertices: vertices.buffer.toUint8List());
+}
+
+void setTexCoords(GenerationalIndex entity, Vector64Buffer texCoords) {
+  api.entitySetTexCoordsRaw(
+      index: entity, texCoords: texCoords.buffer.toUint8List());
+}
+
+void setIndices(GenerationalIndex entity, Uint16Buffer indices) {
+  api.entitySetIndicesRaw(index: entity, indices: indices.toUint8List());
+}
+
+void setColor(GenerationalIndex entity, Color color) {
   api.entitySetColor(
     index: entity,
-    color: color,
+    color: color.value,
   );
 }
 
@@ -15,8 +32,8 @@ int batchesCount() {
 
 /// Returns a [Float32List] view of the transformed vertices.
 /// Entities are already sorted by their priority/z-index.
-Float32List transformedVertices(int batchIndex) {
-  var data = api.transformedVertices(batchIndex: batchIndex);
+Float32List vertices(int batchIndex) {
+  var data = api.vertices(batchIndex: batchIndex);
   return Float32List.view(data.buffer);
 }
 
