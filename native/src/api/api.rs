@@ -55,6 +55,37 @@ pub fn drop_entity(index: GenerationalIndex) -> SyncReturn<()> {
 }
 
 // Transform
+pub fn entities_set_transform_raw(
+    indices: ZeroCopyBuffer<Vec<u8>>,
+    positions: ZeroCopyBuffer<Vec<u8>>,
+    origins: ZeroCopyBuffer<Vec<u8>>,
+    rotations: ZeroCopyBuffer<Vec<u8>>,
+    scales: ZeroCopyBuffer<Vec<u8>>,
+) -> SyncReturn<()> {
+    State::acquire_mut(|state| {
+        let start = Instant::now();
+        let indices = bytes_to_indices(indices.0.as_slice());
+        let positions = bytes_to_vector2s(positions.0.as_slice());
+        let origins = bytes_to_vector2s(origins.0.as_slice());
+        let rotations = bytes_to(rotations.0.as_slice());
+        let scales = bytes_to_vector2s(scales.0.as_slice());
+        for ((((index, position), origin), rotation), scale) in indices
+            .iter()
+            .zip(positions.iter())
+            .zip(origins.iter())
+            .zip(rotations.iter())
+            .zip(scales.iter())
+        {
+            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
+                transform.set_all(*position, *origin, *rotation, *scale);
+                state.broadphase.borrow_mut().index_updated(*index);
+            }
+        }
+        println!("set_transform_raw: {:?}", start.elapsed());
+    });
+    SyncReturn(())
+}
+
 pub fn entities_set_position_raw(
     indices: ZeroCopyBuffer<Vec<u8>>,
     positions: ZeroCopyBuffer<Vec<u8>>,

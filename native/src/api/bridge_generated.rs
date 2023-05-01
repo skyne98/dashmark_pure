@@ -73,6 +73,35 @@ fn wire_drop_entity_impl(
         },
     )
 }
+fn wire_entities_set_transform_raw_impl(
+    indices: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+    positions: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+    origins: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+    rotations: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+    scales: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "entities_set_transform_raw",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_indices = indices.wire2api();
+            let api_positions = positions.wire2api();
+            let api_origins = origins.wire2api();
+            let api_rotations = rotations.wire2api();
+            let api_scales = scales.wire2api();
+            Ok(entities_set_transform_raw(
+                api_indices,
+                api_positions,
+                api_origins,
+                api_rotations,
+                api_scales,
+            ))
+        },
+    )
+}
 fn wire_entities_set_position_raw_impl(
     indices: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,
     positions: impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> + UnwindSafe,

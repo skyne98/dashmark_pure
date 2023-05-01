@@ -5,6 +5,20 @@ import '../ffi_export.dart';
 
 import 'package:vector_math/vector_math_64.dart' as vector64;
 
+void setTransformsBulk(
+    GenerationalIndexBuffer entities,
+    Vector64Buffer positions,
+    Vector64Buffer origins,
+    Float64Buffer rotations,
+    Vector64Buffer scales) {
+  api.entitiesSetTransformRaw(
+      indices: entities.buffer.toUint8List(),
+      positions: positions.buffer.toUint8List(),
+      origins: origins.buffer.toUint8List(),
+      rotations: rotations.toUint8List(),
+      scales: scales.buffer.toUint8List());
+}
+
 // Position
 void setPosition(GenerationalIndex entity, double x, double y) {
   var indicesBuffer = GenerationalIndexBuffer();

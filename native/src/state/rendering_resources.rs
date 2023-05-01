@@ -110,6 +110,7 @@ impl RenderingResources {
     }
 
     pub fn batchify(&mut self, entities: &mut EntityManager, transforms: &TransformManager) {
+        let start = std::time::Instant::now();
         self.batches.clear();
 
         // Get all active entities from the entity manager
@@ -161,6 +162,8 @@ impl RenderingResources {
 
         // Update the batches
         self.batches = finished_batches;
+
+        println!("Batched in {:?}", start.elapsed());
     }
 }
 

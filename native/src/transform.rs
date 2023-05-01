@@ -102,6 +102,20 @@ impl Transform {
         self.dirty_isometry.replace(value);
     }
 
+    pub fn set_all(
+        &mut self,
+        position: Vector2<f64>,
+        origin: Vector2<f64>,
+        rotation: f64,
+        scale: Vector2<f64>,
+    ) {
+        self.position = position;
+        self.origin = origin;
+        self.rotation = rotation;
+        self.scale = scale;
+        self.set_dirty(true);
+    }
+
     pub fn position(&self) -> Vector2<f64> {
         self.position
     }

@@ -265,6 +265,40 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_drop_entity = _wire_drop_entityPtr.asFunction<
       WireSyncReturn Function(ffi.Pointer<wire_GenerationalIndex>)>();
 
+  WireSyncReturn wire_entities_set_transform_raw(
+    ffi.Pointer<wire_uint_8_list> indices,
+    ffi.Pointer<wire_uint_8_list> positions,
+    ffi.Pointer<wire_uint_8_list> origins,
+    ffi.Pointer<wire_uint_8_list> rotations,
+    ffi.Pointer<wire_uint_8_list> scales,
+  ) {
+    return _wire_entities_set_transform_raw(
+      indices,
+      positions,
+      origins,
+      rotations,
+      scales,
+    );
+  }
+
+  late final _wire_entities_set_transform_rawPtr = _lookup<
+          ffi.NativeFunction<
+              WireSyncReturn Function(
+                  ffi.Pointer<wire_uint_8_list>,
+                  ffi.Pointer<wire_uint_8_list>,
+                  ffi.Pointer<wire_uint_8_list>,
+                  ffi.Pointer<wire_uint_8_list>,
+                  ffi.Pointer<wire_uint_8_list>)>>(
+      'wire_entities_set_transform_raw');
+  late final _wire_entities_set_transform_raw =
+      _wire_entities_set_transform_rawPtr.asFunction<
+          WireSyncReturn Function(
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>)>();
+
   WireSyncReturn wire_entities_set_position_raw(
     ffi.Pointer<wire_uint_8_list> indices,
     ffi.Pointer<wire_uint_8_list> positions,

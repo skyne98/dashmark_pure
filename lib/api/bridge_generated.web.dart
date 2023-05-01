@@ -107,6 +107,13 @@ class NativeWasmModule implements WasmModule {
 
   external dynamic /* void */ wire_drop_entity(List<dynamic> index);
 
+  external dynamic /* void */ wire_entities_set_transform_raw(
+      Uint8List indices,
+      Uint8List positions,
+      Uint8List origins,
+      Uint8List rotations,
+      Uint8List scales);
+
   external dynamic /* void */ wire_entities_set_position_raw(
       Uint8List indices, Uint8List positions);
 
@@ -169,6 +176,15 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
 
   dynamic /* void */ wire_drop_entity(List<dynamic> index) =>
       wasmModule.wire_drop_entity(index);
+
+  dynamic /* void */ wire_entities_set_transform_raw(
+          Uint8List indices,
+          Uint8List positions,
+          Uint8List origins,
+          Uint8List rotations,
+          Uint8List scales) =>
+      wasmModule.wire_entities_set_transform_raw(
+          indices, positions, origins, rotations, scales);
 
   dynamic /* void */ wire_entities_set_position_raw(
           Uint8List indices, Uint8List positions) =>

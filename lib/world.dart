@@ -157,16 +157,19 @@ class World {
       lastDt = t;
 
       // Send all data to the native world
-      setPositionsBulk(_entityIndices, _position);
-      setRotationsBulk(_entityIndices, _rotation);
-      setScalesBulk(_entityIndices, _scale);
-      setOriginsBulk(_entityIndices, _origin);
+      var stopwatch = Stopwatch()..start();
+      setTransformsBulk(_entityIndices, _position, _origin, _rotation, _scale);
+      stopwatch.stop();
+      debugPrint('Set data in ${stopwatch.elapsedMilliseconds}ms');
 
       // Call the native world update
+      stopwatch = Stopwatch()..start();
       api.update(dt: t);
+      stopwatch.stop();
+      debugPrint('Native update in ${stopwatch.elapsedMilliseconds}ms');
 
       // Make a test query and print the count of entities
-      final stopwatch = Stopwatch()..start();
+      stopwatch = Stopwatch()..start();
       final center = Vector2(size.x / 2, size.y / 2);
       final screenThird = Vector2(size.x / 3, size.y / 3);
       final queryResults = Int32List.view(api

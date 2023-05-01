@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:typed_data';
 import 'dart:ui';
 
+import 'package:dashmark_pure/api/encoding.dart';
 import 'package:vector_math/vector_math_64.dart' as vector64;
 import 'package:vector_math/vector_math.dart' as vector32;
 
@@ -34,7 +35,10 @@ abstract class ComplexTypedDataView<CT, T> extends ListBase<CT> {
   @override
   void operator []=(int index, CT value) {
     var start = index * elementLength();
-    buffer.setRange(start, start + elementLength(), byteify(value));
+    var bytes = byteify(value);
+    for (var i = 0; i < elementLength(); i++) {
+      buffer[start + i] = bytes[i];
+    }
   }
 
   @override
@@ -61,12 +65,13 @@ class VectorBuffer extends ComplexTypedDataView<vector32.Vector2, double> {
 
   @override
   vector32.Vector2 debyteify(int index) {
-    return vector32.Vector2(buffer[index], buffer[index + 1]);
+    return vector32.Vector2.fromBuffer(
+        buffer.currentBuffer, index * Float32List.bytesPerElement);
   }
 
   @override
   Float32List byteify(vector32.Vector2 value) {
-    return Float32List.fromList([value.x, value.y]);
+    return value.storage;
   }
 }
 
@@ -83,12 +88,13 @@ class Vector64Buffer extends ComplexTypedDataView<vector64.Vector2, double> {
 
   @override
   vector64.Vector2 debyteify(int index) {
-    return vector64.Vector2(buffer[index], buffer[index + 1]);
+    return vector64.Vector2.fromBuffer(
+        buffer.currentBuffer, index * Float64List.bytesPerElement);
   }
 
   @override
   Float64List byteify(vector64.Vector2 value) {
-    return Float64List.fromList([value.x, value.y]);
+    return value.storage;
   }
 }
 

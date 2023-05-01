@@ -22,6 +22,17 @@ pub fn wire_drop_entity(index: JsValue) -> support::WireSyncReturn {
 }
 
 #[wasm_bindgen]
+pub fn wire_entities_set_transform_raw(
+    indices: Box<[u8]>,
+    positions: Box<[u8]>,
+    origins: Box<[u8]>,
+    rotations: Box<[u8]>,
+    scales: Box<[u8]>,
+) -> support::WireSyncReturn {
+    wire_entities_set_transform_raw_impl(indices, positions, origins, rotations, scales)
+}
+
+#[wasm_bindgen]
 pub fn wire_entities_set_position_raw(
     indices: Box<[u8]>,
     positions: Box<[u8]>,

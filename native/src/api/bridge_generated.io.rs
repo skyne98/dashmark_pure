@@ -22,6 +22,17 @@ pub extern "C" fn wire_drop_entity(index: *mut wire_GenerationalIndex) -> suppor
 }
 
 #[no_mangle]
+pub extern "C" fn wire_entities_set_transform_raw(
+    indices: *mut wire_uint_8_list,
+    positions: *mut wire_uint_8_list,
+    origins: *mut wire_uint_8_list,
+    rotations: *mut wire_uint_8_list,
+    scales: *mut wire_uint_8_list,
+) -> support::WireSyncReturn {
+    wire_entities_set_transform_raw_impl(indices, positions, origins, rotations, scales)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_entities_set_position_raw(
     indices: *mut wire_uint_8_list,
     positions: *mut wire_uint_8_list,
