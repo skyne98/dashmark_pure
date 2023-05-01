@@ -2,66 +2,63 @@ use generational_arena::Index;
 use rapier2d::na::Vector2;
 
 // Standard
-pub fn bytes_to<T>(bytes: &[u8]) -> &[T] {
-    let len = bytes.len();
-    if len == 0 {
+pub fn from_to<'a, F, T>(from: &'a [F]) -> &'a [T] {
+    let from_len = from.len();
+    if from_len == 0 {
         return &[];
     }
-    assert_eq!(len % std::mem::size_of::<T>(), 0);
-    let ptr = bytes.as_ptr() as *const T;
-    assert_eq!(ptr as usize % std::mem::align_of::<T>(), 0);
-    assert_eq!(len % std::mem::size_of::<T>(), 0);
-    let typed_len = len / std::mem::size_of::<T>();
-    let data = unsafe { std::slice::from_raw_parts(ptr, typed_len) };
-    data
+    let ratio = std::mem::size_of::<F>() as f32 / std::mem::size_of::<T>() as f32;
+    let len = (from_len as f32 * ratio) as usize;
+    let from_ptr = from.as_ptr() as *const T;
+    unsafe { std::slice::from_raw_parts(from_ptr, len) }
 }
-
-pub fn to_bytes<T>(data: &[T]) -> &[u8] {
-    let len = data.len();
-    if len == 0 {
-        return &[];
-    }
-    let ptr = data.as_ptr() as *const u8;
-    assert_eq!(ptr as usize % std::mem::align_of::<T>(), 0);
-    let typed_len = len * std::mem::size_of::<T>();
-    let bytes = unsafe { std::slice::from_raw_parts(ptr, typed_len) };
-    bytes
+pub fn vec_from_to<'a, F, T>(from: &'a Vec<F>) -> &'a [T] {
+    let (head, body, tail) = unsafe { from.align_to::<T>() };
+    assert!(head.is_empty());
+    assert!(tail.is_empty());
+    body
 }
 
 // Specific
-pub fn bytes_to_indices(bytes: &[u8]) -> Vec<Index> {
-    let data: &[u32] = bytes_to(bytes);
-    let indices = data
+pub fn u32s_to_indices(u32s: &[u32]) -> Vec<Index> {
+    let data = u32s
         .chunks_exact(2)
         .map(|chunk| Index::from_raw_parts(chunk[0] as usize, chunk[1] as u64))
         .collect::<Vec<_>>();
-    indices
+    data
 }
-
-pub fn bytes_to_vector2s(bytes: &[u8]) -> Vec<Vector2<f32>> {
-    let data = bytes_to(bytes);
-    let vectors = data
-        .chunks_exact(2)
-        .map(|chunk| Vector2::new(chunk[0], chunk[1]))
-        .collect::<Vec<_>>();
-    vectors
-}
-
-pub fn indices_to_bytes(indices: &[Index]) -> Vec<u8> {
+pub fn indices_to_u32s(indices: &[Index]) -> Vec<u32> {
     let data = indices
         .iter()
         .map(|index| index.into_raw_parts())
         .flat_map(|(index, gen)| vec![index as u32, gen as u32])
         .collect::<Vec<_>>();
-    let bytes = to_bytes(&data);
-    bytes.to_vec()
+    data
 }
 
-pub fn vector2s_to_bytes(vectors: &[Vector2<f32>]) -> Vec<u8> {
-    let data = vectors
-        .iter()
-        .flat_map(|vector| vec![vector.x, vector.y])
+pub fn f32s_to_vec2s(f32s: &[f32]) -> Vec<Vector2<f32>> {
+    let data = f32s
+        .chunks_exact(2)
+        .map(|chunk| Vector2::new(chunk[0], chunk[1]))
         .collect::<Vec<_>>();
-    let bytes = to_bytes(&data);
-    bytes.to_vec()
+    data
+}
+pub fn vec2s_to_f32s(vec2s: &[Vector2<f32>]) -> Vec<f32> {
+    let data = vec2s
+        .iter()
+        .flat_map(|vec2| vec![vec2.x, vec2.y])
+        .collect::<Vec<_>>();
+    data
+}
+
+pub fn f32s_to_vec2_arrays(f32s: &[f32]) -> &[[f32; 2]] {
+    let data =
+        unsafe { std::slice::from_raw_parts(f32s.as_ptr() as *const [f32; 2], f32s.len() / 2) };
+    data
+}
+pub fn vec2_arrays_to_f32s(vec2_arrays: &[[f32; 2]]) -> &[f32] {
+    let data = unsafe {
+        std::slice::from_raw_parts(vec2_arrays.as_ptr() as *const f32, vec2_arrays.len() * 2)
+    };
+    data
 }

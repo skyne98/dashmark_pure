@@ -1,4 +1,7 @@
-use crate::time::Instant;
+use crate::{
+    time::Instant,
+    typed_data::{f32s_to_vec2_arrays, f32s_to_vec2s, indices_to_u32s, u32s_to_indices},
+};
 use flutter_rust_bridge::{SyncReturn, ZeroCopyBuffer};
 pub use generational_arena::Arena;
 use rapier2d::na::Point2;
@@ -8,11 +11,8 @@ pub use std::{
 };
 
 use crate::{
-    api::shape::Shape,
-    entity::EntityShape,
-    index::GenerationalIndex,
-    state::State,
-    typed_data::{bytes_to, bytes_to_indices, bytes_to_vector2s, indices_to_bytes, to_bytes},
+    api::shape::Shape, entity::EntityShape, index::GenerationalIndex, state::State,
+    typed_data::from_to,
 };
 
 // For initialization
@@ -52,19 +52,19 @@ pub fn drop_entity(index: GenerationalIndex) -> SyncReturn<()> {
 
 // Transform
 pub fn entities_set_transform_raw(
-    indices: ZeroCopyBuffer<Vec<u8>>,
-    positions: ZeroCopyBuffer<Vec<u8>>,
-    origins: ZeroCopyBuffer<Vec<u8>>,
-    rotations: ZeroCopyBuffer<Vec<u8>>,
-    scales: ZeroCopyBuffer<Vec<u8>>,
+    indices: Vec<u32>,
+    positions: Vec<f32>,
+    origins: Vec<f32>,
+    rotations: Vec<f32>,
+    scales: Vec<f32>,
 ) -> SyncReturn<()> {
     let start = Instant::now();
     State::acquire_mut(|state| {
-        let indices = bytes_to_indices(indices.0.as_slice());
-        let positions: &[[f32; 2]] = bytes_to(positions.0.as_slice());
-        let origins: &[[f32; 2]] = bytes_to(origins.0.as_slice());
-        let rotations: &[f32] = bytes_to(rotations.0.as_slice());
-        let scales: &[[f32; 2]] = bytes_to(scales.0.as_slice());
+        let indices = u32s_to_indices(indices.as_slice());
+        let positions = f32s_to_vec2_arrays(positions.as_slice());
+        let origins = f32s_to_vec2_arrays(origins.as_slice());
+        let rotations = rotations.as_slice();
+        let scales = f32s_to_vec2_arrays(scales.as_slice());
 
         let transforms = state.transforms.borrow_mut();
         let mut broadphase = state.broadphase.borrow_mut();
@@ -79,13 +79,10 @@ pub fn entities_set_transform_raw(
     SyncReturn(())
 }
 
-pub fn entities_set_position_raw(
-    indices: ZeroCopyBuffer<Vec<u8>>,
-    positions: ZeroCopyBuffer<Vec<u8>>,
-) -> SyncReturn<()> {
+pub fn entities_set_position_raw(indices: Vec<u32>, positions: Vec<f32>) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        let indices = bytes_to_indices(indices.0.as_slice());
-        let positions: &[[f32; 2]] = bytes_to(positions.0.as_slice());
+        let indices = u32s_to_indices(indices.as_slice());
+        let positions = f32s_to_vec2_arrays(positions.as_slice());
         for (index, position) in indices.iter().zip(positions.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_position(*position);
@@ -96,13 +93,10 @@ pub fn entities_set_position_raw(
     SyncReturn(())
 }
 
-pub fn entities_set_origin_raw(
-    indices: ZeroCopyBuffer<Vec<u8>>,
-    origins: ZeroCopyBuffer<Vec<u8>>,
-) -> SyncReturn<()> {
+pub fn entities_set_origin_raw(indices: Vec<u32>, origins: Vec<f32>) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        let indices = bytes_to_indices(indices.0.as_slice());
-        let origins: &[[f32; 2]] = bytes_to(origins.0.as_slice());
+        let indices = u32s_to_indices(indices.as_slice());
+        let origins = f32s_to_vec2_arrays(origins.as_slice());
         for (index, origin) in indices.iter().zip(origins.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_origin_absolute(*origin);
@@ -113,13 +107,9 @@ pub fn entities_set_origin_raw(
     SyncReturn(())
 }
 
-pub fn entities_set_rotation_raw(
-    indices: ZeroCopyBuffer<Vec<u8>>,
-    rotations: ZeroCopyBuffer<Vec<u8>>,
-) -> SyncReturn<()> {
+pub fn entities_set_rotation_raw(indices: Vec<u32>, rotations: Vec<f32>) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        let indices = bytes_to_indices(indices.0.as_slice());
-        let rotations = bytes_to(rotations.0.as_slice());
+        let indices = u32s_to_indices(indices.as_slice());
         for (index, rotation) in indices.iter().zip(rotations.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_rotation(*rotation);
@@ -130,13 +120,10 @@ pub fn entities_set_rotation_raw(
     SyncReturn(())
 }
 
-pub fn entities_set_scale_raw(
-    indices: ZeroCopyBuffer<Vec<u8>>,
-    scales: ZeroCopyBuffer<Vec<u8>>,
-) -> SyncReturn<()> {
+pub fn entities_set_scale_raw(indices: Vec<u32>, scales: Vec<f32>) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        let indices = bytes_to_indices(indices.0.as_slice());
-        let scales: &[[f32; 2]] = bytes_to(scales.0.as_slice());
+        let indices = u32s_to_indices(indices.as_slice());
+        let scales = f32s_to_vec2_arrays(scales.as_slice());
         for (index, scale) in indices.iter().zip(scales.iter()) {
             if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_scale(*scale);
@@ -165,7 +152,7 @@ pub fn query_aabb_raw(
     y: f32,
     width: f32,
     height: f32,
-) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+) -> SyncReturn<ZeroCopyBuffer<Vec<u32>>> {
     let result = State::acquire(|state| {
         let aabb = rapier2d::parry::bounding_volume::Aabb::new(
             Point2::new(x, y),
@@ -173,17 +160,14 @@ pub fn query_aabb_raw(
         );
         state.broadphase.borrow().query_aabb(&aabb)
     });
-    let result_bytes = indices_to_bytes(&result[..]);
+    let result_bytes = indices_to_u32s(&result[..]);
     SyncReturn(ZeroCopyBuffer(result_bytes))
 }
 
 // Rendering
-pub fn entity_set_vertices_raw(
-    index: GenerationalIndex,
-    vertices: ZeroCopyBuffer<Vec<u8>>,
-) -> SyncReturn<()> {
-    State::acquire_mut(|state| {
-        let vertices = bytes_to_vector2s(vertices.0.as_slice());
+pub fn entity_set_vertices_raw(index: GenerationalIndex, vertices: Vec<f32>) -> SyncReturn<()> {
+    State::acquire_mut(|state: &mut State| {
+        let vertices = f32s_to_vec2s(vertices.as_slice());
         state
             .rendering
             .borrow_mut()
@@ -192,12 +176,9 @@ pub fn entity_set_vertices_raw(
     SyncReturn(())
 }
 
-pub fn entity_set_tex_coords_raw(
-    index: GenerationalIndex,
-    tex_coords: ZeroCopyBuffer<Vec<u8>>,
-) -> SyncReturn<()> {
+pub fn entity_set_tex_coords_raw(index: GenerationalIndex, tex_coords: Vec<f32>) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        let tex_coords = bytes_to_vector2s(tex_coords.0.as_slice());
+        let tex_coords = f32s_to_vec2s(tex_coords.as_slice());
         state
             .rendering
             .borrow_mut()
@@ -206,12 +187,9 @@ pub fn entity_set_tex_coords_raw(
     SyncReturn(())
 }
 
-pub fn entity_set_indices_raw(
-    index: GenerationalIndex,
-    indices: ZeroCopyBuffer<Vec<u8>>,
-) -> SyncReturn<()> {
+pub fn entity_set_indices_raw(index: GenerationalIndex, indices: Vec<u16>) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        let indices = bytes_to(indices.0.as_slice());
+        let indices = from_to(indices.as_slice());
         state
             .rendering
             .borrow_mut()
@@ -220,13 +198,9 @@ pub fn entity_set_indices_raw(
     SyncReturn(())
 }
 
-pub fn entities_set_priority_raw(
-    indices: ZeroCopyBuffer<Vec<u8>>,
-    priorities: ZeroCopyBuffer<Vec<u8>>,
-) -> SyncReturn<()> {
+pub fn entities_set_priority_raw(indices: Vec<u32>, priorities: Vec<i32>) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        let indices = bytes_to_indices(indices.0.as_slice());
-        let priorities = bytes_to(priorities.0.as_slice());
+        let indices = u32s_to_indices(indices.as_slice());
         for (index, priority) in indices.iter().zip(priorities.iter()) {
             if let Some(mut entity) = state.entities.borrow_mut().get_entity_mut(*index) {
                 entity.priority = *priority;
@@ -265,42 +239,38 @@ pub fn batches_count() -> SyncReturn<u64> {
     })
 }
 
-pub fn vertices(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+pub fn vertices(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<f32>>> {
     State::acquire(|state| {
         let rendering = state.rendering.borrow();
         let batch = &rendering.batches[batch_index as usize];
         let vertices = &batch.vertices;
-        let bytes = to_bytes(vertices).to_vec();
-        SyncReturn(ZeroCopyBuffer(bytes))
+        SyncReturn(ZeroCopyBuffer(vertices.clone()))
     })
 }
 
-pub fn tex_coords(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+pub fn tex_coords(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<f32>>> {
     State::acquire(|state| {
         let rendering = state.rendering.borrow();
         let batch = &rendering.batches[batch_index as usize];
         let tex_coords = &batch.tex_coords;
-        let bytes = to_bytes(tex_coords).to_vec();
-        SyncReturn(ZeroCopyBuffer(bytes))
+        SyncReturn(ZeroCopyBuffer(tex_coords.clone()))
     })
 }
 
-pub fn indices(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+pub fn indices(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u16>>> {
     State::acquire(|state| {
         let rendering = state.rendering.borrow();
         let batch = &rendering.batches[batch_index as usize];
         let indices = &batch.indices;
-        let bytes = to_bytes(indices).to_vec();
-        SyncReturn(ZeroCopyBuffer(bytes))
+        SyncReturn(ZeroCopyBuffer(indices.clone()))
     })
 }
 
-pub fn colors(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<u8>>> {
+pub fn colors(batch_index: u16) -> SyncReturn<ZeroCopyBuffer<Vec<i32>>> {
     State::acquire(|state| {
         let rendering = state.rendering.borrow();
         let batch = &rendering.batches[batch_index as usize];
         let colors = &batch.colors;
-        let bytes = to_bytes(colors).to_vec();
-        SyncReturn(ZeroCopyBuffer(bytes))
+        SyncReturn(ZeroCopyBuffer(colors.clone()))
     })
 }

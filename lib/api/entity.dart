@@ -7,13 +7,13 @@ void setPriority(GenerationalIndex entity, int priority) {
   var intBuffer = Int32Buffer();
   intBuffer.add(priority);
   api.entitiesSetPriorityRaw(
-      indices: indicesBuffer.buffer.toUint8List(),
-      priorities: intBuffer.toUint8List());
+      indices: indicesBuffer.buffer.toUint32List(),
+      priorities: intBuffer.toInt32List());
 }
 
 void setPrioritiesBulk(
     GenerationalIndexBuffer entities, Int32Buffer priorities) {
   api.entitiesSetPriorityRaw(
-      indices: entities.buffer.toUint8List(),
-      priorities: priorities.toUint8List());
+      indices: entities.buffer.toUint32List(),
+      priorities: priorities.toInt32List());
 }

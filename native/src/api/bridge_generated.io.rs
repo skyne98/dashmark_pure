@@ -23,43 +23,43 @@ pub extern "C" fn wire_drop_entity(index: *mut wire_GenerationalIndex) -> suppor
 
 #[no_mangle]
 pub extern "C" fn wire_entities_set_transform_raw(
-    indices: *mut wire_uint_8_list,
-    positions: *mut wire_uint_8_list,
-    origins: *mut wire_uint_8_list,
-    rotations: *mut wire_uint_8_list,
-    scales: *mut wire_uint_8_list,
+    indices: *mut wire_uint_32_list,
+    positions: *mut wire_float_32_list,
+    origins: *mut wire_float_32_list,
+    rotations: *mut wire_float_32_list,
+    scales: *mut wire_float_32_list,
 ) -> support::WireSyncReturn {
     wire_entities_set_transform_raw_impl(indices, positions, origins, rotations, scales)
 }
 
 #[no_mangle]
 pub extern "C" fn wire_entities_set_position_raw(
-    indices: *mut wire_uint_8_list,
-    positions: *mut wire_uint_8_list,
+    indices: *mut wire_uint_32_list,
+    positions: *mut wire_float_32_list,
 ) -> support::WireSyncReturn {
     wire_entities_set_position_raw_impl(indices, positions)
 }
 
 #[no_mangle]
 pub extern "C" fn wire_entities_set_origin_raw(
-    indices: *mut wire_uint_8_list,
-    origins: *mut wire_uint_8_list,
+    indices: *mut wire_uint_32_list,
+    origins: *mut wire_float_32_list,
 ) -> support::WireSyncReturn {
     wire_entities_set_origin_raw_impl(indices, origins)
 }
 
 #[no_mangle]
 pub extern "C" fn wire_entities_set_rotation_raw(
-    indices: *mut wire_uint_8_list,
-    rotations: *mut wire_uint_8_list,
+    indices: *mut wire_uint_32_list,
+    rotations: *mut wire_float_32_list,
 ) -> support::WireSyncReturn {
     wire_entities_set_rotation_raw_impl(indices, rotations)
 }
 
 #[no_mangle]
 pub extern "C" fn wire_entities_set_scale_raw(
-    indices: *mut wire_uint_8_list,
-    scales: *mut wire_uint_8_list,
+    indices: *mut wire_uint_32_list,
+    scales: *mut wire_float_32_list,
 ) -> support::WireSyncReturn {
     wire_entities_set_scale_raw_impl(indices, scales)
 }
@@ -87,7 +87,7 @@ pub extern "C" fn wire_query_aabb_raw(
 #[no_mangle]
 pub extern "C" fn wire_entity_set_vertices_raw(
     index: *mut wire_GenerationalIndex,
-    vertices: *mut wire_uint_8_list,
+    vertices: *mut wire_float_32_list,
 ) -> support::WireSyncReturn {
     wire_entity_set_vertices_raw_impl(index, vertices)
 }
@@ -95,7 +95,7 @@ pub extern "C" fn wire_entity_set_vertices_raw(
 #[no_mangle]
 pub extern "C" fn wire_entity_set_tex_coords_raw(
     index: *mut wire_GenerationalIndex,
-    tex_coords: *mut wire_uint_8_list,
+    tex_coords: *mut wire_float_32_list,
 ) -> support::WireSyncReturn {
     wire_entity_set_tex_coords_raw_impl(index, tex_coords)
 }
@@ -103,15 +103,15 @@ pub extern "C" fn wire_entity_set_tex_coords_raw(
 #[no_mangle]
 pub extern "C" fn wire_entity_set_indices_raw(
     index: *mut wire_GenerationalIndex,
-    indices: *mut wire_uint_8_list,
+    indices: *mut wire_uint_16_list,
 ) -> support::WireSyncReturn {
     wire_entity_set_indices_raw_impl(index, indices)
 }
 
 #[no_mangle]
 pub extern "C" fn wire_entities_set_priority_raw(
-    indices: *mut wire_uint_8_list,
-    priorities: *mut wire_uint_8_list,
+    indices: *mut wire_uint_32_list,
+    priorities: *mut wire_int_32_list,
 ) -> support::WireSyncReturn {
     wire_entities_set_priority_raw_impl(indices, priorities)
 }
@@ -170,6 +170,24 @@ pub extern "C" fn new_box_autoadd_shape_0() -> *mut wire_Shape {
 }
 
 #[no_mangle]
+pub extern "C" fn new_float_32_list_0(len: i32) -> *mut wire_float_32_list {
+    let ans = wire_float_32_list {
+        ptr: support::new_leak_vec_ptr(Default::default(), len),
+        len,
+    };
+    support::new_leak_box_ptr(ans)
+}
+
+#[no_mangle]
+pub extern "C" fn new_int_32_list_0(len: i32) -> *mut wire_int_32_list {
+    let ans = wire_int_32_list {
+        ptr: support::new_leak_vec_ptr(Default::default(), len),
+        len,
+    };
+    support::new_leak_box_ptr(ans)
+}
+
+#[no_mangle]
 pub extern "C" fn new_list_shape_0(len: i32) -> *mut wire_list_shape {
     let wrap = wire_list_shape {
         ptr: support::new_leak_vec_ptr(<wire_Shape>::new_with_null_ptr(), len),
@@ -188,8 +206,17 @@ pub extern "C" fn new_list_shape_transform_0(len: i32) -> *mut wire_list_shape_t
 }
 
 #[no_mangle]
-pub extern "C" fn new_uint_8_list_0(len: i32) -> *mut wire_uint_8_list {
-    let ans = wire_uint_8_list {
+pub extern "C" fn new_uint_16_list_0(len: i32) -> *mut wire_uint_16_list {
+    let ans = wire_uint_16_list {
+        ptr: support::new_leak_vec_ptr(Default::default(), len),
+        len,
+    };
+    support::new_leak_box_ptr(ans)
+}
+
+#[no_mangle]
+pub extern "C" fn new_uint_32_list_0(len: i32) -> *mut wire_uint_32_list {
+    let ans = wire_uint_32_list {
         ptr: support::new_leak_vec_ptr(Default::default(), len),
         len,
     };
@@ -200,11 +227,6 @@ pub extern "C" fn new_uint_8_list_0(len: i32) -> *mut wire_uint_8_list {
 
 // Section: impl Wire2Api
 
-impl Wire2Api<ZeroCopyBuffer<Vec<u8>>> for *mut wire_uint_8_list {
-    fn wire2api(self) -> ZeroCopyBuffer<Vec<u8>> {
-        ZeroCopyBuffer(self.wire2api())
-    }
-}
 impl Wire2Api<GenerationalIndex> for *mut wire_GenerationalIndex {
     fn wire2api(self) -> GenerationalIndex {
         let wrap = unsafe { support::box_from_leak_ptr(self) };
@@ -218,12 +240,28 @@ impl Wire2Api<Shape> for *mut wire_Shape {
     }
 }
 
+impl Wire2Api<Vec<f32>> for *mut wire_float_32_list {
+    fn wire2api(self) -> Vec<f32> {
+        unsafe {
+            let wrap = support::box_from_leak_ptr(self);
+            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
+        }
+    }
+}
 impl Wire2Api<GenerationalIndex> for wire_GenerationalIndex {
     fn wire2api(self) -> GenerationalIndex {
         GenerationalIndex(self.field0.wire2api(), self.field1.wire2api())
     }
 }
 
+impl Wire2Api<Vec<i32>> for *mut wire_int_32_list {
+    fn wire2api(self) -> Vec<i32> {
+        unsafe {
+            let wrap = support::box_from_leak_ptr(self);
+            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
+        }
+    }
+}
 impl Wire2Api<Vec<Shape>> for *mut wire_list_shape {
     fn wire2api(self) -> Vec<Shape> {
         let vec = unsafe {
@@ -276,8 +314,16 @@ impl Wire2Api<ShapeTransform> for wire_ShapeTransform {
     }
 }
 
-impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
-    fn wire2api(self) -> Vec<u8> {
+impl Wire2Api<Vec<u16>> for *mut wire_uint_16_list {
+    fn wire2api(self) -> Vec<u16> {
+        unsafe {
+            let wrap = support::box_from_leak_ptr(self);
+            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
+        }
+    }
+}
+impl Wire2Api<Vec<u32>> for *mut wire_uint_32_list {
+    fn wire2api(self) -> Vec<u32> {
         unsafe {
             let wrap = support::box_from_leak_ptr(self);
             support::vec_from_leak_ptr(wrap.ptr, wrap.len)
@@ -289,9 +335,23 @@ impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
 
 #[repr(C)]
 #[derive(Clone)]
+pub struct wire_float_32_list {
+    ptr: *mut f32,
+    len: i32,
+}
+
+#[repr(C)]
+#[derive(Clone)]
 pub struct wire_GenerationalIndex {
     field0: usize,
     field1: u64,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct wire_int_32_list {
+    ptr: *mut i32,
+    len: i32,
 }
 
 #[repr(C)]
@@ -320,8 +380,15 @@ pub struct wire_ShapeTransform {
 
 #[repr(C)]
 #[derive(Clone)]
-pub struct wire_uint_8_list {
-    ptr: *mut u8,
+pub struct wire_uint_16_list {
+    ptr: *mut u16,
+    len: i32,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct wire_uint_32_list {
+    ptr: *mut u32,
     len: i32,
 }
 
