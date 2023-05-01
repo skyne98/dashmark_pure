@@ -7,68 +7,50 @@ use generational_arena::Index;
 
 use crate::transform::Transform;
 
+use super::entity_manager;
+
 pub struct TransformManager {
-    transforms: Vec<RefCell<Transform>>,
-    dirty: HashSet<usize>,
+    transforms: Vec<Transform>,
 }
 
 impl TransformManager {
     pub fn new() -> Self {
         Self {
             transforms: Vec::new(),
-            dirty: HashSet::new(),
         }
     }
 
-    pub fn transform(&self, index: Index) -> Option<Ref<Transform>> {
+    pub fn transform(&self, index: Index) -> Option<&Transform> {
         let index = index.into_raw_parts().0;
-        self.transforms.get(index).map(|t| t.borrow())
+        self.transforms.get(index)
     }
 
-    pub fn transform_mut(&self, index: Index) -> Option<RefMut<Transform>> {
+    pub fn transform_mut(&mut self, index: Index) -> Option<&mut Transform> {
         let index = index.into_raw_parts().0;
-        self.transforms.get(index).map(|t| t.borrow_mut())
+        self.transforms.get_mut(index)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (usize, Ref<Transform>)> {
-        self.transforms
-            .iter()
-            .enumerate()
-            .map(|(i, t)| (i, t.borrow()))
-    }
-
-    pub fn index_iter(&self) -> Vec<usize> {
-        self.transforms.iter().enumerate().map(|(i, _)| i).collect()
-    }
-
-    pub fn upsert(&mut self, index: Index, transform: Transform) {
-        let index = index.into_raw_parts().0;
-        if index >= self.transforms.len() {
-            // Insert
-            self.transforms.insert(index, RefCell::new(transform));
-        } else {
-            // Update
-            let mut t = self.transforms.get_mut(index).unwrap();
-            *t.borrow_mut() = transform;
+    pub fn sweep(&mut self, entity_manager: &entity_manager::EntityManager) {
+        // Sweep the dirty matrices
+        for transform in self.transforms.iter_mut() {
+            if transform.dirty_matrix {
+                transform.update_matrix();
+            }
         }
-    }
-
-    pub fn add_dirty(&mut self, index: Index) {
-        let index = index.into_raw_parts().0;
-        self.dirty.insert(index);
-    }
-
-    pub fn remove_dirty(&mut self, index: Index) {
-        let index = index.into_raw_parts().0;
-        self.dirty.remove(&index);
+        // Sweep the dirty isometries matrices
+        for (index, transform) in self.transforms.iter_mut().enumerate() {
+            if transform.dirty_isometry {
+                let entity = entity_manager.get_entity_unknown_gen(index).unwrap();
+                transform.update_isometry(entity.get_shape_natural_offset());
+            }
+        }
     }
 }
 
 impl TransformManager {
     pub fn index_added(&mut self, index: Index) {
         let index = index.into_raw_parts().0;
-        self.transforms
-            .insert(index, RefCell::new(Transform::default()));
+        self.transforms.insert(index, Transform::default());
     }
 
     pub fn index_removed(&mut self, index: Index) {

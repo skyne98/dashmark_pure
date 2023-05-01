@@ -2,10 +2,9 @@ import 'dart:typed_data';
 
 import 'mod.dart';
 
-class Uint8Buffer extends TypedBuffer<int> {
+class Uint8Buffer extends DynamicByteBuffer<int> {
   Uint8Buffer() : super();
   Uint8Buffer.fromBuffer(Uint8Buffer buffer) : super.fromBuffer(buffer);
-  Uint8Buffer.fromList(List<int> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -18,15 +17,19 @@ class Uint8Buffer extends TypedBuffer<int> {
   }
 
   @override
-  List<int> asList() {
-    return Uint8List.view(currentBuffer);
+  int get(int index) {
+    return currentData.getUint8(index * byteElementSize());
+  }
+
+  @override
+  void set(int index, int value) {
+    currentData.setUint8(index * byteElementSize(), value);
   }
 }
 
-class Uint16Buffer extends TypedBuffer<int> {
+class Uint16Buffer extends DynamicByteBuffer<int> {
   Uint16Buffer() : super();
   Uint16Buffer.fromBuffer(Uint16Buffer buffer) : super.fromBuffer(buffer);
-  Uint16Buffer.fromList(List<int> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -39,15 +42,19 @@ class Uint16Buffer extends TypedBuffer<int> {
   }
 
   @override
-  List<int> asList() {
-    return Uint16List.view(currentBuffer);
+  int get(int index) {
+    return currentData.getUint16(index * byteElementSize(), endian);
+  }
+
+  @override
+  void set(int index, int value) {
+    currentData.setUint16(index * byteElementSize(), value, endian);
   }
 }
 
-class Uint32Buffer extends TypedBuffer<int> {
+class Uint32Buffer extends DynamicByteBuffer<int> {
   Uint32Buffer() : super();
   Uint32Buffer.fromBuffer(Uint32Buffer buffer) : super.fromBuffer(buffer);
-  Uint32Buffer.fromList(List<int> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -60,15 +67,19 @@ class Uint32Buffer extends TypedBuffer<int> {
   }
 
   @override
-  List<int> asList() {
-    return Uint32List.view(currentBuffer);
+  int get(int index) {
+    return currentData.getUint32(index * byteElementSize(), endian);
+  }
+
+  @override
+  void set(int index, int value) {
+    currentData.setUint32(index * byteElementSize(), value, endian);
   }
 }
 
-class Uint64Buffer extends TypedBuffer<int> {
+class Uint64Buffer extends DynamicByteBuffer<int> {
   Uint64Buffer() : super();
   Uint64Buffer.fromBuffer(Uint64Buffer buffer) : super.fromBuffer(buffer);
-  Uint64Buffer.fromList(List<int> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -81,15 +92,19 @@ class Uint64Buffer extends TypedBuffer<int> {
   }
 
   @override
-  List<int> asList() {
-    return Uint64List.view(currentBuffer);
+  int get(int index) {
+    return currentData.getUint64(index * byteElementSize(), endian);
+  }
+
+  @override
+  void set(int index, int value) {
+    currentData.setUint64(index * byteElementSize(), value, endian);
   }
 }
 
-class Int8Buffer extends TypedBuffer<int> {
+class Int8Buffer extends DynamicByteBuffer<int> {
   Int8Buffer() : super();
   Int8Buffer.fromBuffer(Int8Buffer buffer) : super.fromBuffer(buffer);
-  Int8Buffer.fromList(List<int> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -102,15 +117,19 @@ class Int8Buffer extends TypedBuffer<int> {
   }
 
   @override
-  List<int> asList() {
-    return Int8List.view(currentBuffer);
+  int get(int index) {
+    return currentData.getInt8(index);
+  }
+
+  @override
+  void set(int index, int value) {
+    currentData.setInt8(index, value);
   }
 }
 
-class Int16Buffer extends TypedBuffer<int> {
+class Int16Buffer extends DynamicByteBuffer<int> {
   Int16Buffer() : super();
   Int16Buffer.fromBuffer(Int16Buffer buffer) : super.fromBuffer(buffer);
-  Int16Buffer.fromList(List<int> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -123,15 +142,19 @@ class Int16Buffer extends TypedBuffer<int> {
   }
 
   @override
-  List<int> asList() {
-    return Int16List.view(currentBuffer);
+  int get(int index) {
+    return currentData.getInt16(index * byteElementSize(), endian);
+  }
+
+  @override
+  void set(int index, int value) {
+    currentData.setInt16(index * byteElementSize(), value, endian);
   }
 }
 
-class Int32Buffer extends TypedBuffer<int> {
+class Int32Buffer extends DynamicByteBuffer<int> {
   Int32Buffer() : super();
   Int32Buffer.fromBuffer(Int32Buffer buffer) : super.fromBuffer(buffer);
-  Int32Buffer.fromList(List<int> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -144,15 +167,19 @@ class Int32Buffer extends TypedBuffer<int> {
   }
 
   @override
-  List<int> asList() {
-    return Int32List.view(currentBuffer);
+  int get(int index) {
+    return currentData.getInt32(index * byteElementSize(), endian);
+  }
+
+  @override
+  void set(int index, int value) {
+    currentData.setInt32(index * byteElementSize(), value, endian);
   }
 }
 
-class Int64Buffer extends TypedBuffer<int> {
+class Int64Buffer extends DynamicByteBuffer<int> {
   Int64Buffer() : super();
   Int64Buffer.fromBuffer(Int64Buffer buffer) : super.fromBuffer(buffer);
-  Int64Buffer.fromList(List<int> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -165,7 +192,12 @@ class Int64Buffer extends TypedBuffer<int> {
   }
 
   @override
-  List<int> asList() {
-    return Int64List.view(currentBuffer);
+  int get(int index) {
+    return currentData.getInt64(index * byteElementSize(), endian);
+  }
+
+  @override
+  void set(int index, int value) {
+    currentData.setInt64(index * byteElementSize(), value, endian);
   }
 }

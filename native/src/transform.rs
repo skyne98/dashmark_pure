@@ -1,6 +1,6 @@
 use std::cell::{Ref, RefCell};
 
-use rapier2d::na::{Isometry2, Matrix2x3, Point2, UnitComplex, Vector2};
+use rapier2d::na::{Isometry2, Matrix2x3, Point2, UnitComplex, Vector1, Vector2};
 
 use crate::matrix::TransformMatrix;
 
@@ -62,10 +62,10 @@ pub struct Transform {
     scale: [f32; 2],
     /// Absolute origin of the transform
     origin: [f32; 2],
-    matrix: RefCell<TransformMatrix>,
-    dirty_matrix: RefCell<bool>,
-    isometry: RefCell<Isometry2<f32>>,
-    dirty_isometry: RefCell<bool>,
+    matrix: TransformMatrix,
+    pub dirty_matrix: bool,
+    isometry: Isometry2<f32>,
+    pub dirty_isometry: bool,
 }
 
 impl Default for Transform {
@@ -75,10 +75,10 @@ impl Default for Transform {
             rotation: Default::default(),
             scale: [1.0, 1.0],
             origin: Default::default(),
-            matrix: RefCell::new(TransformMatrix::default()),
-            dirty_matrix: RefCell::new(true),
-            isometry: RefCell::new(Isometry2::identity()),
-            dirty_isometry: RefCell::new(true),
+            matrix: TransformMatrix::default(),
+            dirty_matrix: true,
+            isometry: Isometry2::identity(),
+            dirty_isometry: true,
         }
     }
 }
@@ -94,8 +94,8 @@ impl Transform {
     }
 
     pub fn set_dirty(&mut self, value: bool) {
-        self.dirty_matrix.replace(value);
-        self.dirty_isometry.replace(value);
+        self.dirty_matrix = value;
+        self.dirty_isometry = value;
     }
 
     pub fn set_all(
@@ -153,32 +153,33 @@ impl Transform {
         self.set_dirty(true);
     }
 
-    pub fn transform_matrix(&self) -> Ref<TransformMatrix> {
-        if *self.dirty_matrix.borrow() {
-            let mut matrix = self.matrix.borrow_mut();
-            matrix.build_transform(self.position, self.rotation, self.scale, self.origin);
-            self.dirty_matrix.replace(false);
-        }
-        self.matrix.borrow()
+    pub fn transform_matrix(&self) -> &TransformMatrix {
+        &self.matrix
     }
 
-    pub fn matrix(&self) -> Matrix2x3<f32> {
-        self.transform_matrix().matrix
+    pub fn matrix(&self) -> &Matrix2x3<f32> {
+        &self.transform_matrix().matrix
     }
 
-    pub fn isometry(&self, natural_offset: Vector2<f32>) -> Ref<Isometry2<f32>> {
-        if *self.dirty_isometry.borrow() {
-            let mut isometry = self.isometry.borrow_mut();
-            let position: Vector2<f32> = self.position.into();
-            let origin: Vector2<f32> = self.origin.into();
-            isometry.translation.vector = position - origin + natural_offset;
-            isometry.rotation = UnitComplex::new(0.0);
-            isometry.append_rotation_wrt_point_mut(
-                &UnitComplex::new(self.rotation),
-                &Point2::from(self.position),
-            );
-            self.dirty_isometry.replace(false);
-        }
-        self.isometry.borrow()
+    pub fn isometry(&self, natural_offset: Vector2<f32>) -> &Isometry2<f32> {
+        &self.isometry
+    }
+
+    pub fn update_matrix(&mut self) {
+        self.matrix
+            .build_transform(self.position, self.rotation, self.scale, self.origin);
+        self.dirty_matrix = false;
+    }
+
+    pub fn update_isometry(&mut self, natural_offset: Vector2<f32>) {
+        let position: Vector2<f32> = self.position.into();
+        let origin: Vector2<f32> = self.origin.into();
+        self.isometry.translation.vector = position - origin + natural_offset;
+        self.isometry.rotation = UnitComplex::new(0.0);
+        self.isometry.append_rotation_wrt_point_mut(
+            &UnitComplex::new(self.rotation),
+            &Point2::from(self.position),
+        );
+        self.dirty_isometry = false;
     }
 }

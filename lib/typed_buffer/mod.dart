@@ -5,10 +5,20 @@ export 'integer.dart';
 export 'float.dart';
 export 'complex.dart';
 
-abstract class TypedBuffer<T> with ListMixin<T> {
+void _copyByteBuffer(ByteBuffer source, ByteBuffer destination) {
+  final sourceData = source.asByteData();
+  final destinationData = destination.asByteData();
+
+  for (var i = 0; i < source.lengthInBytes; i++) {
+    destinationData.setUint8(i, sourceData.getUint8(i));
+  }
+}
+
+abstract class DynamicByteBuffer<T> extends ListBase<T> {
   late ByteBuffer currentBuffer;
-  late List<T> _list;
+  late ByteData currentData;
   int _count = 0;
+  Endian endian = Endian.host;
 
   int get capacity => currentBuffer.lengthInBytes ~/ byteElementSize();
   int get byteLength => _count * byteElementSize();
@@ -16,66 +26,36 @@ abstract class TypedBuffer<T> with ListMixin<T> {
 
   int byteElementSize();
   ByteBuffer createByteBuffer(int length);
-  List<T> asList();
+  T get(int index);
+  void set(int index, T value);
 
   // Constructors
-  TypedBuffer() {
+  DynamicByteBuffer() {
     currentBuffer = createByteBuffer(0);
-    _list = asList();
+    currentData = currentBuffer.asByteData();
   }
 
-  TypedBuffer.fromBuffer(TypedBuffer<T> buffer) {
+  DynamicByteBuffer.fromByteBuffer(ByteBuffer buffer, [int count = 0]) {
+    // Copy the buffer
+    currentBuffer = createByteBuffer(buffer.lengthInBytes);
+    currentData = currentBuffer.asByteData();
+    _copyByteBuffer(buffer, currentBuffer);
+    // Set the count
+    _count = count;
+  }
+
+  DynamicByteBuffer.fromBuffer(DynamicByteBuffer buffer) {
     currentBuffer = createByteBuffer(buffer.capacity);
-    _list = asList();
-    var otherList = buffer._list;
-    _list.setAll(0, otherList);
-  }
-
-  TypedBuffer.fromList(List<T> list) {
-    currentBuffer = createByteBuffer(list.length);
-    _list = asList();
-    _list.setAll(0, list);
-    _count = list.length;
-  }
-
-  // List implementation
-  @override
-  T operator [](int index) {
-    return _list[index];
-  }
-
-  @override
-  void operator []=(int index, T value) {
-    _list[index] = value;
+    currentData = currentBuffer.asByteData();
+    _copyByteBuffer(buffer.currentBuffer, currentBuffer);
   }
 
   @override
   int get length => _count;
   @override
   set length(int newLength) {
-    if (newLength > capacity) {
-      growToFit(newLength);
-    }
-  }
-
-  @override
-  void add(T element) {
-    growToFit(_count + 1);
-    _list[_count] = element;
-    _count++;
-  }
-
-  @override
-  void addAll(Iterable<T> iterable) {
-    final length = iterable.length;
-    growToFit(_count + length);
-    _list.setAll(_count, iterable);
-    _count += length;
-  }
-
-  @override
-  void clear() {
-    _count = 0;
+    growToFit(newLength);
+    _count = newLength;
   }
 
   // Capacity management
@@ -83,44 +63,90 @@ abstract class TypedBuffer<T> with ListMixin<T> {
     if (count > capacity) {
       final newSize = (count * 1.5).ceil();
       final newBuffer = Uint8List(newSize * byteElementSize());
-      final originalBuffer = currentBuffer.asUint8List();
-      newBuffer.setAll(0, originalBuffer);
+      _copyByteBuffer(currentBuffer, newBuffer.buffer);
       currentBuffer = newBuffer.buffer;
-      _list = asList();
+      currentData = currentBuffer.asByteData();
     }
   }
 
-  void shrinkToFit() {
-    if (_count < capacity) {
-      final newBuffer = Uint8List(_count * byteElementSize());
-      final originalBuffer = currentBuffer.asUint8List();
-      newBuffer.setAll(0, originalBuffer);
-      currentBuffer = newBuffer.buffer;
-      _list = asList();
+  // List methods
+  @override
+  void clear() {
+    _count = 0;
+  }
+
+  @override
+  void add(T element) {
+    var oldLength = length;
+    length++;
+    set(oldLength, element);
+  }
+
+  @override
+  void addAll(Iterable<T> iterable) {
+    var oldLength = length;
+    length += iterable.length;
+    int i = 0;
+    for (var element in iterable) {
+      set(oldLength + i, element);
+      i++;
     }
+  }
+
+  T pop() {
+    var value = get(length - 1);
+    length--;
+    return value;
+  }
+
+  @override
+  void insert(int index, T element) {
+    if (index >= length) {
+      length = index + 1;
+    }
+    set(index, element);
+  }
+
+  // Operators
+  @override
+  T operator [](int index) {
+    return get(index);
+  }
+
+  @override
+  void operator []=(int index, T value) {
+    set(index, value);
   }
 
   // Utility methods
-  void cloneFrom(TypedBuffer<T> buffer) {
+  void cloneFrom(DynamicByteBuffer buffer) {
     if (buffer.byteLength > byteCapacity) {
       currentBuffer = createByteBuffer(buffer.capacity);
-      _list = asList();
+      currentData = currentBuffer.asByteData();
     }
-    final otherList = buffer._list;
-    _list.setAll(0, otherList);
-    _count = buffer._count;
+    _copyByteBuffer(buffer.currentBuffer, currentBuffer);
   }
 
-  void cloneInto(TypedBuffer<T> buffer) {
+  void cloneFromIterable(Iterable<T> iterable) {
+    clear();
+    length += iterable.length;
+    int i = 0;
+    for (var element in iterable) {
+      set(i, element);
+      i++;
+    }
+  }
+
+  void cloneInto(DynamicByteBuffer buffer) {
     buffer.cloneFrom(this);
   }
 
-  ByteBuffer toByteBuffer() {
+  ByteBuffer byteBuffer() {
     return currentBuffer;
   }
 
-  ByteData toByteData() {
-    return ByteData.view(currentBuffer);
+  ByteData byteData() {
+    return currentData;
   }
 
   Float32List toFloat32List() {
@@ -161,5 +187,86 @@ abstract class TypedBuffer<T> with ListMixin<T> {
 
   Int64List toInt64List() {
     return Int64List.view(currentBuffer, 0, byteLength ~/ 8);
+  }
+
+  // Getters and setters
+  int getUint8(int index) {
+    return currentData.getUint8(index);
+  }
+
+  void setUint8(int index, int value) {
+    currentData.setUint8(index, value);
+  }
+
+  int getInt8(int index) {
+    return currentData.getInt8(index);
+  }
+
+  void setInt8(int index, int value) {
+    currentData.setInt8(index, value);
+  }
+
+  int getUint16(int index) {
+    return currentData.getUint16(index, endian);
+  }
+
+  void setUint16(int index, int value) {
+    currentData.setUint16(index, value, endian);
+  }
+
+  int getInt16(int index) {
+    return currentData.getInt16(index, endian);
+  }
+
+  void setInt16(int index, int value) {
+    currentData.setInt16(index, value, endian);
+  }
+
+  int getUint32(int index) {
+    return currentData.getUint32(index, endian);
+  }
+
+  void setUint32(int index, int value) {
+    currentData.setUint32(index, value, endian);
+  }
+
+  int getInt32(int index) {
+    return currentData.getInt32(index, endian);
+  }
+
+  void setInt32(int index, int value) {
+    currentData.setInt32(index, value, endian);
+  }
+
+  int getUint64(int index) {
+    return currentData.getUint64(index, endian);
+  }
+
+  void setUint64(int index, int value) {
+    currentData.setUint64(index, value, endian);
+  }
+
+  int getInt64(int index) {
+    return currentData.getInt64(index, endian);
+  }
+
+  void setInt64(int index, int value) {
+    currentData.setInt64(index, value, endian);
+  }
+
+  double getFloat32(int index) {
+    return currentData.getFloat32(index, endian);
+  }
+
+  void setFloat32(int index, double value) {
+    currentData.setFloat32(index, value, endian);
+  }
+
+  double getFloat64(int index) {
+    return currentData.getFloat64(index, endian);
+  }
+
+  void setFloat64(int index, double value) {
+    currentData.setFloat64(index, value, endian);
   }
 }

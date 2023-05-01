@@ -19,6 +19,10 @@ impl EntityManager {
         self.entities.get(index).map(|e| e.borrow())
     }
 
+    pub fn get_entity_unknown_gen(&self, index: usize) -> Option<Ref<Entity>> {
+        self.entities.get_unknown_gen(index).map(|e| e.0.borrow())
+    }
+
     pub fn get_entity_mut(&self, index: Index) -> Option<RefMut<Entity>> {
         self.entities.get(index).map(|e| e.borrow_mut())
     }

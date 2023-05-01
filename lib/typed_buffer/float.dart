@@ -2,10 +2,9 @@ import 'dart:typed_data';
 
 import 'mod.dart';
 
-class Float32Buffer extends TypedBuffer<double> {
+class Float32Buffer extends DynamicByteBuffer<double> {
   Float32Buffer() : super();
   Float32Buffer.fromBuffer(Float32Buffer buffer) : super.fromBuffer(buffer);
-  Float32Buffer.fromList(List<double> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -18,15 +17,19 @@ class Float32Buffer extends TypedBuffer<double> {
   }
 
   @override
-  List<double> asList() {
-    return Float32List.view(currentBuffer);
+  double get(int index) {
+    return currentData.getFloat32(index * byteElementSize(), endian);
+  }
+
+  @override
+  void set(int index, double value) {
+    currentData.setFloat32(index * byteElementSize(), value, endian);
   }
 }
 
-class Float64Buffer extends TypedBuffer<double> {
+class Float64Buffer extends DynamicByteBuffer<double> {
   Float64Buffer() : super();
   Float64Buffer.fromBuffer(Float64Buffer buffer) : super.fromBuffer(buffer);
-  Float64Buffer.fromList(List<double> list) : super.fromList(list);
 
   @override
   int byteElementSize() {
@@ -39,7 +42,12 @@ class Float64Buffer extends TypedBuffer<double> {
   }
 
   @override
-  List<double> asList() {
-    return Float64List.view(currentBuffer);
+  double get(int index) {
+    return currentData.getFloat64(index * byteElementSize(), endian);
+  }
+
+  @override
+  void set(int index, double value) {
+    currentData.setFloat64(index * byteElementSize(), value, endian);
   }
 }

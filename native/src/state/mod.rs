@@ -59,6 +59,7 @@ impl State {
         let mut transforms = self.transforms.borrow_mut();
         let mut rendering = self.rendering.borrow_mut();
 
+        transforms.sweep(&entities);
         broadphase.do_maintenance(&entities, &transforms);
         rendering.batchify(&mut entities, &transforms);
     }

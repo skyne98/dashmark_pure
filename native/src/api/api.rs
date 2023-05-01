@@ -65,10 +65,10 @@ pub fn entities_set_transform_raw(
         let rotations = rotations.as_slice();
         let scales = f32s_to_vec2_arrays(scales.as_slice());
 
-        let transforms = state.transforms.borrow_mut();
+        let mut transforms = state.transforms.borrow_mut();
         let mut broadphase = state.broadphase.borrow_mut();
         for (i, index) in indices.iter().enumerate() {
-            if let Some(mut transform) = transforms.transform_mut(*index) {
+            if let Some(transform) = transforms.transform_mut(*index) {
                 transform.set_all(positions[i], origins[i], rotations[i], scales[i]);
                 broadphase.index_updated(*index);
             }
@@ -82,7 +82,7 @@ pub fn entities_set_position_raw(indices: Vec<u32>, positions: Vec<f32>) -> Sync
         let indices = u32s_to_indices(indices.as_slice());
         let positions = f32s_to_vec2_arrays(positions.as_slice());
         for (index, position) in indices.iter().zip(positions.iter()) {
-            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
+            if let Some(transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_position(*position);
                 state.broadphase.borrow_mut().index_updated(*index);
             }
@@ -96,7 +96,7 @@ pub fn entities_set_origin_raw(indices: Vec<u32>, origins: Vec<f32>) -> SyncRetu
         let indices = u32s_to_indices(indices.as_slice());
         let origins = f32s_to_vec2_arrays(origins.as_slice());
         for (index, origin) in indices.iter().zip(origins.iter()) {
-            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
+            if let Some(transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_origin_absolute(*origin);
                 state.broadphase.borrow_mut().index_updated(*index);
             }
@@ -109,7 +109,7 @@ pub fn entities_set_rotation_raw(indices: Vec<u32>, rotations: Vec<f32>) -> Sync
     State::acquire_mut(|state| {
         let indices = u32s_to_indices(indices.as_slice());
         for (index, rotation) in indices.iter().zip(rotations.iter()) {
-            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
+            if let Some(transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_rotation(*rotation);
                 state.broadphase.borrow_mut().index_updated(*index);
             }
@@ -123,7 +123,7 @@ pub fn entities_set_scale_raw(indices: Vec<u32>, scales: Vec<f32>) -> SyncReturn
         let indices = u32s_to_indices(indices.as_slice());
         let scales = f32s_to_vec2_arrays(scales.as_slice());
         for (index, scale) in indices.iter().zip(scales.iter()) {
-            if let Some(mut transform) = state.transforms.borrow_mut().transform_mut(*index) {
+            if let Some(transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_scale(*scale);
                 state.broadphase.borrow_mut().index_updated(*index);
             }

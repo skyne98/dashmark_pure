@@ -19,6 +19,15 @@
             }
         },
         {
+            "name": "dashmark_pure @ aarch64 (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "env": {
+                "RUSTFLAGS": "-O -C target-feature=+neon"
+            }
+        },
+        {
             "name": "dashmark_pure (release mode)",
             "request": "launch",
             "type": "dart",

@@ -4,8 +4,12 @@ import '../ffi_export.dart';
 
 import 'package:vector_math/vector_math_64.dart' as vector64;
 
-void setTransformsBulk(GenerationalIndexBuffer entities, VectorBuffer positions,
-    VectorBuffer origins, Float32Buffer rotations, VectorBuffer scales) {
+void setTransformsBulk(
+    GenerationalIndexBuffer entities,
+    Vector32Buffer positions,
+    Vector32Buffer origins,
+    Float32Buffer rotations,
+    Vector32Buffer scales) {
   api.entitiesSetTransformRaw(
       indices: entities.buffer.toUint32List(),
       positions: positions.buffer.toFloat32List(),

@@ -29,12 +29,12 @@ class World {
   final GenerationalIndexBuffer _entityIndices = GenerationalIndexBuffer();
   final Int32Buffer _priorities = Int32Buffer();
   final ColorBuffer _colors = ColorBuffer();
-  final VectorBuffer _velocity = VectorBuffer();
-  final VectorBuffer _position = VectorBuffer();
+  final Vector32Buffer _velocity = Vector32Buffer();
+  final Vector32Buffer _position = Vector32Buffer();
   final Float32Buffer _rotation = Float32Buffer();
-  final VectorBuffer _scale = VectorBuffer();
-  final VectorBuffer _origin = VectorBuffer();
-  final VectorBuffer _size = VectorBuffer();
+  final Vector32Buffer _scale = Vector32Buffer();
+  final Vector32Buffer _origin = Vector32Buffer();
+  final Vector32Buffer _size = Vector32Buffer();
 
   // FPS
   final _lastFrameTimes = List.filled(60, 0.0, growable: true);
@@ -96,19 +96,20 @@ class World {
         const shape = Shape.ball(radius: World.desiredSize / 2);
         api.entitySetShape(index: entity, shape: shape);
         setOrigin(entity, origin.x, origin.y);
-        final vertices = VectorBuffer();
+        final vertices = Vector32Buffer();
         vertices.add(Vector2(0.0, 0.0));
         vertices.add(Vector2(0.0, 64.0));
         vertices.add(Vector2(64.0, 64.0));
         vertices.add(Vector2(64.0, 0.0));
         rendering.setVertices(entity, vertices);
-        final texCoords = VectorBuffer();
+        final texCoords = Vector32Buffer();
         texCoords.add(Vector2(0.0, 0.0));
         texCoords.add(Vector2(128.0, 0.0));
         texCoords.add(Vector2(128.0, 128.0));
         texCoords.add(Vector2(0.0, 128.0));
         rendering.setTexCoords(entity, texCoords);
-        rendering.setIndices(entity, Uint16Buffer.fromList([0, 1, 2, 0, 2, 3]));
+        rendering.setIndices(
+            entity, Uint16Buffer()..cloneFromIterable([0, 1, 2, 0, 2, 3]));
         rendering.setColor(entity, Colors.red);
       }
     }

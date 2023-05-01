@@ -2,145 +2,134 @@ import 'dart:collection';
 import 'dart:typed_data';
 import 'dart:ui';
 
-import 'package:dashmark_pure/api/encoding.dart';
 import 'package:vector_math/vector_math_64.dart' as vector64;
 import 'package:vector_math/vector_math.dart' as vector32;
 
 import '../api/bridge_generated.dart';
 import 'mod.dart';
 
-abstract class ComplexTypedDataView<CT, T> extends ListBase<CT> {
-  late TypedBuffer<T> buffer;
+/// A buffer for storing [Vector2] values.
+class Vector32Buffer extends ListBase<vector32.Vector2> {
+  final Float32Buffer buffer;
 
-  ComplexTypedDataView(this.buffer);
+  Vector32Buffer() : buffer = Float32Buffer();
 
-  int elementLength();
-  CT debyteify(int index);
-  List<T> byteify(CT value);
+  Vector32Buffer.fromBuffer(Vector32Buffer buffer)
+      : buffer = Float32Buffer.fromBuffer(buffer.buffer);
 
   @override
-  int get length => buffer.length ~/ elementLength();
-
+  int get length => buffer.length ~/ 2;
   @override
   set length(int newLength) {
-    buffer.length = newLength * elementLength();
+    buffer.length = newLength * 2;
   }
 
   @override
-  CT operator [](int index) {
-    var start = index * elementLength();
-    return debyteify(start);
+  vector32.Vector2 operator [](int index) {
+    var indexByTwo = index * 2;
+    return vector32.Vector2(
+      buffer[indexByTwo],
+      buffer[indexByTwo + 1],
+    );
   }
 
   @override
-  void operator []=(int index, CT value) {
-    var start = index * elementLength();
-    var bytes = byteify(value);
-    for (var i = 0; i < elementLength(); i++) {
-      buffer[start + i] = bytes[i];
-    }
-  }
-
-  @override
-  void add(CT element) {
-    buffer.addAll(byteify(element));
-  }
-
-  @override
-  void addAll(Iterable<CT> iterable) {
-    buffer.addAll(iterable.expand((v) => byteify(v)));
+  void operator []=(int index, vector32.Vector2 value) {
+    var indexByTwo = index * 2;
+    buffer[indexByTwo] = value.x;
+    buffer[indexByTwo + 1] = value.y;
   }
 }
 
-class VectorBuffer extends ComplexTypedDataView<vector32.Vector2, double> {
-  VectorBuffer() : super(Float32Buffer());
-  VectorBuffer.fromBuffer(VectorBuffer buffer) : super(buffer.buffer);
-  VectorBuffer.fromList(List<vector32.Vector2> list)
-      : super(Float32Buffer.fromList(list.expand((v) => [v.x, v.y]).toList()));
+/// A buffer for storing [Vector2 x 64] values.
+class Vector64Buffer extends ListBase<vector64.Vector2> {
+  final Float64Buffer buffer;
+
+  Vector64Buffer() : buffer = Float64Buffer();
+
+  Vector64Buffer.fromBuffer(Vector64Buffer buffer)
+      : buffer = Float64Buffer.fromBuffer(buffer.buffer);
 
   @override
-  int elementLength() {
-    return 2;
+  int get length => buffer.length ~/ 2;
+  @override
+  set length(int newLength) {
+    buffer.length = newLength * 2;
   }
 
   @override
-  vector32.Vector2 debyteify(int index) {
-    return vector32.Vector2.fromBuffer(
-        buffer.currentBuffer, index * Float32List.bytesPerElement);
+  vector64.Vector2 operator [](int index) {
+    var indexByTwo = index * 2;
+    return vector64.Vector2(
+      buffer[indexByTwo],
+      buffer[indexByTwo + 1],
+    );
   }
 
   @override
-  Float32List byteify(vector32.Vector2 value) {
-    return value.storage;
-  }
-}
-
-class Vector64Buffer extends ComplexTypedDataView<vector64.Vector2, double> {
-  Vector64Buffer() : super(Float64Buffer());
-  Vector64Buffer.fromBuffer(Vector64Buffer buffer) : super(buffer.buffer);
-  Vector64Buffer.fromList(List<vector64.Vector2> list)
-      : super(Float64Buffer.fromList(list.expand((v) => [v.x, v.y]).toList()));
-
-  @override
-  int elementLength() {
-    return 2;
-  }
-
-  @override
-  vector64.Vector2 debyteify(int index) {
-    return vector64.Vector2.fromBuffer(
-        buffer.currentBuffer, index * Float64List.bytesPerElement);
-  }
-
-  @override
-  Float64List byteify(vector64.Vector2 value) {
-    return value.storage;
+  void operator []=(int index, vector64.Vector2 value) {
+    var indexByTwo = index * 2;
+    buffer[indexByTwo] = value.x;
+    buffer[indexByTwo + 1] = value.y;
   }
 }
 
-class GenerationalIndexBuffer
-    extends ComplexTypedDataView<GenerationalIndex, int> {
-  GenerationalIndexBuffer() : super(Uint32Buffer());
+/// A buffer for storing [Color] values.
+class ColorBuffer extends ListBase<int> {
+  final Int32Buffer buffer;
+
+  ColorBuffer() : buffer = Int32Buffer();
+
+  ColorBuffer.fromBuffer(ColorBuffer buffer)
+      : buffer = Int32Buffer.fromBuffer(buffer.buffer);
+
+  @override
+  int get length => buffer.length;
+  @override
+  set length(int newLength) {
+    buffer.length = newLength;
+  }
+
+  @override
+  int operator [](int index) {
+    return buffer[index];
+  }
+
+  @override
+  void operator []=(int index, int value) {
+    buffer[index] = value;
+  }
+}
+
+/// A buffer for storing [GenerationalIndex] values.
+class GenerationalIndexBuffer extends ListBase<GenerationalIndex> {
+  final Uint32Buffer buffer;
+
+  GenerationalIndexBuffer() : buffer = Uint32Buffer();
+
   GenerationalIndexBuffer.fromBuffer(GenerationalIndexBuffer buffer)
-      : super(buffer.buffer);
-  GenerationalIndexBuffer.fromList(List<GenerationalIndex> list)
-      : super(Uint32Buffer.fromList(
-            list.expand((v) => [v.field0, v.field1]).toList()));
+      : buffer = Uint32Buffer.fromBuffer(buffer.buffer);
 
   @override
-  int elementLength() {
-    return 2;
+  int get length => buffer.length ~/ 2;
+  @override
+  set length(int newLength) {
+    buffer.length = newLength * 2;
   }
 
   @override
-  GenerationalIndex debyteify(int index) {
-    return GenerationalIndex(field0: buffer[index], field1: buffer[index + 1]);
+  GenerationalIndex operator [](int index) {
+    var indexByTwo = index * 2;
+    return GenerationalIndex(
+      field0: buffer[indexByTwo],
+      field1: buffer[indexByTwo + 1],
+    );
   }
 
   @override
-  Uint32List byteify(GenerationalIndex value) {
-    return Uint32List.fromList([value.field0, value.field1]);
-  }
-}
-
-class ColorBuffer extends ComplexTypedDataView<Color, int> {
-  ColorBuffer() : super(Int32Buffer());
-  ColorBuffer.fromBuffer(ColorBuffer buffer) : super(buffer.buffer);
-  ColorBuffer.fromList(List<Color> list)
-      : super(Int32Buffer.fromList(list.map((e) => e.value).toList()));
-
-  @override
-  int elementLength() {
-    return 1;
-  }
-
-  @override
-  Color debyteify(int index) {
-    return Color(buffer[index]);
-  }
-
-  @override
-  Int32List byteify(Color value) {
-    return Int32List.fromList([value.value]);
+  void operator []=(int index, GenerationalIndex value) {
+    var indexByTwo = index * 2;
+    buffer[indexByTwo] = value.field0;
+    buffer[indexByTwo + 1] = value.field1;
   }
 }

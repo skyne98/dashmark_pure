@@ -101,16 +101,21 @@ impl TransformMatrix {
         scale: [f32; 2],
         origin: [f32; 2],
     ) {
+        let origin0 = origin[0];
+        let origin1 = origin[1];
+        let scale0 = scale[0];
+        let scale1 = scale[1];
+
         let c = angle.cos();
         let s = angle.sin();
-        let tx = translation[0] - origin[0] * scale[0] * c + origin[1] * scale[1] * s;
-        let ty = translation[1] - origin[0] * scale[0] * s - origin[1] * scale[1] * c;
+        let tx = translation[0] - origin0 * scale0 * c + origin1 * scale1 * s;
+        let ty = translation[1] - origin0 * scale0 * s - origin1 * scale1 * c;
 
-        self.matrix[(0, 0)] = scale[0] * c;
-        self.matrix[(0, 1)] = -scale[1] * s;
+        self.matrix[(0, 0)] = scale0 * c;
+        self.matrix[(0, 1)] = -scale1 * s;
         self.matrix[(0, 2)] = tx;
-        self.matrix[(1, 0)] = scale[0] * s;
-        self.matrix[(1, 1)] = scale[1] * c;
+        self.matrix[(1, 0)] = scale0 * s;
+        self.matrix[(1, 1)] = scale1 * c;
         self.matrix[(1, 2)] = ty;
     }
 

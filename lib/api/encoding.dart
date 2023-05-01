@@ -135,7 +135,7 @@ class ByteEncoder {
       writeF32Array(value);
     } else if (value is Float64List) {
       writeF64Array(value);
-    } else if (value is TypedBuffer) {
+    } else if (value is DynamicByteBuffer) {
       writeTypedBuffer(value);
     } else {
       throw Exception('Unsupported type: ${value.runtimeType}');
@@ -222,7 +222,7 @@ class ByteEncoder {
     _counter += array.length * 8;
   }
 
-  void writeTypedBuffer<T>(TypedBuffer<T> buffer) {
+  void writeTypedBuffer<T>(DynamicByteBuffer<T> buffer) {
     writeU64(buffer.length);
     for (final element in buffer) {
       writeGeneric(element);
