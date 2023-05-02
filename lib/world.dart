@@ -14,7 +14,7 @@ import 'ffi_export.dart';
 import 'typed_buffer/mod.dart';
 
 class World {
-  static const double desiredSize = 64.0;
+  static const double desiredSize = 16.0;
 
   Vector2 size = Vector2(0.0, 0.0);
   double lastDt = 0.0;
@@ -44,7 +44,7 @@ class World {
 
   World() {
     debugPrint('World created');
-    rootBundle.load('assets/images/dash_128.png').then((data) {
+    rootBundle.load('assets/images/dash_16.png').then((data) {
       final asUInt8List = Uint8List.view(data.buffer);
       decodeImageFromList(asUInt8List).then((result) {
         dashImage = result;
@@ -69,7 +69,7 @@ class World {
 
   void input(double x, double y) {
     if (dashImage != null && fragmentShader != null) {
-      const amountPerSecond = 15000;
+      const amountPerSecond = 100;
       var amount = (amountPerSecond * lastDt).toInt();
       if (amount > amountPerSecond) {
         amount = amountPerSecond;
@@ -98,15 +98,15 @@ class World {
         setOrigin(entity, origin.x, origin.y);
         final vertices = Vector32Buffer();
         vertices.add(Vector2(0.0, 0.0));
-        vertices.add(Vector2(0.0, 64.0));
-        vertices.add(Vector2(64.0, 64.0));
-        vertices.add(Vector2(64.0, 0.0));
+        vertices.add(Vector2(0.0, desiredSize));
+        vertices.add(Vector2(desiredSize, desiredSize));
+        vertices.add(Vector2(desiredSize, 0.0));
         rendering.setVertices(entity, vertices);
         final texCoords = Vector32Buffer();
         texCoords.add(Vector2(0.0, 0.0));
-        texCoords.add(Vector2(128.0, 0.0));
-        texCoords.add(Vector2(128.0, 128.0));
-        texCoords.add(Vector2(0.0, 128.0));
+        texCoords.add(Vector2(desiredSize, 0.0));
+        texCoords.add(Vector2(desiredSize, desiredSize));
+        texCoords.add(Vector2(0.0, desiredSize));
         rendering.setTexCoords(entity, texCoords);
         rendering.setIndices(
             entity, Uint16Buffer()..cloneFromIterable([0, 1, 2, 0, 2, 3]));
@@ -119,42 +119,42 @@ class World {
     _spawnedThisFrame = 0;
     if (dashImage != null && fragmentShader != null) {
       // Jump around the dashes
-      final length = _velocity.length;
-      for (var i = 0; i < length; ++i) {
-        var position = _position[i];
-        var rotation = _rotation[i];
-        var velocity = _velocity[i];
+      // final length = _velocity.length;
+      // for (var i = 0; i < length; ++i) {
+      //   var position = _position[i];
+      //   var rotation = _rotation[i];
+      //   var velocity = _velocity[i];
 
-        // Move the dash
-        position += velocity;
+      //   // Move the dash
+      //   position += velocity;
 
-        // Bounce off walls
-        if (position.x < 0) {
-          position.x = 0;
-          velocity.x = -velocity.x;
-        } else if (position.x > size.x) {
-          position.x = size.x;
-          velocity.x = -velocity.x;
-        }
+      //   // Bounce off walls
+      //   if (position.x < 0) {
+      //     position.x = 0;
+      //     velocity.x = -velocity.x;
+      //   } else if (position.x > size.x) {
+      //     position.x = size.x;
+      //     velocity.x = -velocity.x;
+      //   }
 
-        if (position.y < 0) {
-          position.y = 0;
-          velocity.y = -velocity.y;
-        } else if (position.y > size.y) {
-          position.y = size.y;
-          velocity.y = -velocity.y;
-        }
+      //   if (position.y < 0) {
+      //     position.y = 0;
+      //     velocity.y = -velocity.y;
+      //   } else if (position.y > size.y) {
+      //     position.y = size.y;
+      //     velocity.y = -velocity.y;
+      //   }
 
-        // Add gravity
-        velocity.y += 0.3;
+      //   // Add gravity
+      //   velocity.y += 0.3;
 
-        // Rotate slightly
-        rotation += 3.14 * lastDt;
+      //   // Rotate slightly
+      //   rotation += 3.14 * lastDt;
 
-        _position[i] = position;
-        _rotation[i] = rotation;
-        _velocity[i] = velocity;
-      }
+      //   _position[i] = position;
+      //   _rotation[i] = rotation;
+      //   _velocity[i] = velocity;
+      // }
       lastDt = t;
 
       // Send all data to the native world

@@ -14,3 +14,4 @@ pub mod state;
 pub mod time;
 pub mod transform;
 pub mod typed_data;
+pub mod verlet;

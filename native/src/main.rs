@@ -14,6 +14,7 @@ mod state;
 mod time;
 mod transform;
 mod typed_data;
+mod verlet;
 
 struct Data {
     a: i64,

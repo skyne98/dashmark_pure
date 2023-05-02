@@ -2,12 +2,14 @@ pub mod broadphase_stack;
 pub mod entity_manager;
 pub mod rendering_resources;
 pub mod transform_manager;
+pub mod verlet_system;
 
 use std::cell::RefCell;
 
 use self::{
     broadphase_stack::BroadphaseStack, entity_manager::EntityManager,
     rendering_resources::RenderingResources, transform_manager::TransformManager,
+    verlet_system::VerletSystem,
 };
 
 thread_local! {
@@ -19,6 +21,7 @@ pub struct State {
     pub broadphase: RefCell<BroadphaseStack>,
     pub transforms: RefCell<TransformManager>,
     pub rendering: RefCell<RenderingResources>,
+    pub verlet: RefCell<VerletSystem>,
 }
 
 // Static methods
@@ -44,12 +47,14 @@ impl State {
         let broadphase = RefCell::new(BroadphaseStack::new());
         let transforms = RefCell::new(TransformManager::new());
         let vertices = RefCell::new(RenderingResources::new());
+        let verlet = RefCell::new(VerletSystem::new());
 
         Self {
             entities,
             broadphase,
             transforms,
             rendering: vertices,
+            verlet,
         }
     }
 
@@ -58,6 +63,12 @@ impl State {
         let mut broadphase = self.broadphase.borrow_mut();
         let mut transforms = self.transforms.borrow_mut();
         let mut rendering = self.rendering.borrow_mut();
+        let mut verlet = self.verlet.borrow_mut();
+
+        verlet.apply_basic_physics(dt);
+        verlet.apply_interaction_physics_substep(dt, 1000.0, 1000.0);
+        verlet.apply_constraints(1000.0, 1000.0);
+        verlet.apply_to_transforms(&mut transforms);
 
         transforms.sweep(&entities);
         broadphase.do_maintenance(&entities, &transforms);

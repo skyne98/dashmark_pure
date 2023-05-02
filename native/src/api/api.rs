@@ -1,6 +1,7 @@
 use crate::{
     time::Instant,
     typed_data::{f32s_to_vec2_arrays, f32s_to_vec2s, indices_to_u32s, u32s_to_indices},
+    verlet::Body,
 };
 use flutter_rust_bridge::{SyncReturn, ZeroCopyBuffer};
 pub use generational_arena::Arena;
@@ -33,6 +34,7 @@ pub fn create_entity() -> SyncReturn<GenerationalIndex> {
         state.broadphase.borrow_mut().index_added(index);
         state.rendering.borrow_mut().index_added(index);
         state.transforms.borrow_mut().index_added(index);
+        state.verlet.borrow_mut().add_body(Body::default());
         index
     });
     SyncReturn(index.into())
@@ -85,6 +87,13 @@ pub fn entities_set_position_raw(indices: Vec<u32>, positions: Vec<f32>) -> Sync
             if let Some(transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_position(*position);
                 state.broadphase.borrow_mut().index_updated(*index);
+                state.verlet.borrow_mut().body_mut(*index).unwrap().position = (*position).into();
+                state
+                    .verlet
+                    .borrow_mut()
+                    .body_mut(*index)
+                    .unwrap()
+                    .initialized = true;
             }
         }
     });
