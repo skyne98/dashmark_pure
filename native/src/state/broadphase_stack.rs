@@ -64,10 +64,8 @@ impl BroadphaseStack {
                 .expect("BVH is already being rebuilt, this should not happen");
             let new_entities = entities.iter();
             let new_entities_with_aabbs = new_entities
-                .map(|(index, entity)| {
-                    let transform = transforms
-                        .transform(index)
-                        .expect("Entity has no transform");
+                .zip(transforms.iter())
+                .map(|((index, entity), transform)| {
                     let aabb = entity
                         .get_global_aabb(&transform)
                         .expect("Entity has no AABB");

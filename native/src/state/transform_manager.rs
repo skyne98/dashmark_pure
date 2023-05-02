@@ -30,6 +30,14 @@ impl TransformManager {
         self.transforms.get_mut(index)
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = &Transform> {
+        self.transforms.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Transform> {
+        self.transforms.iter_mut()
+    }
+
     pub fn sweep(&mut self, entity_manager: &entity_manager::EntityManager) {
         // Sweep the dirty matrices
         for transform in self.transforms.iter_mut() {
