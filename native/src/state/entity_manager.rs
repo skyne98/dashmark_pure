@@ -5,7 +5,7 @@ use generational_arena::{Arena, Index};
 use crate::entity::Entity;
 
 pub struct EntityManager {
-    entities: Arena<RefCell<Entity>>,
+    entities: Arena<Entity>,
 }
 
 impl EntityManager {
@@ -15,24 +15,28 @@ impl EntityManager {
         }
     }
 
-    pub fn get_entity(&self, index: Index) -> Option<Ref<Entity>> {
-        self.entities.get(index).map(|e| e.borrow())
+    pub fn get_entity(&self, index: Index) -> Option<&Entity> {
+        self.entities.get(index)
     }
 
-    pub fn get_entity_unknown_gen(&self, index: usize) -> Option<Ref<Entity>> {
-        self.entities.get_unknown_gen(index).map(|e| e.0.borrow())
+    pub fn get_entity_unknown_gen(&self, index: usize) -> Option<(&Entity, Index)> {
+        self.entities.get_unknown_gen(index)
     }
 
-    pub fn get_entity_mut(&self, index: Index) -> Option<RefMut<Entity>> {
-        self.entities.get(index).map(|e| e.borrow_mut())
+    pub fn get_entity_mut(&mut self, index: Index) -> Option<&mut Entity> {
+        self.entities.get_mut(index)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (Index, Ref<Entity>)> {
-        self.entities.iter().map(|(i, e)| (i, e.borrow()))
+    pub fn iter(&self) -> impl Iterator<Item = (Index, &Entity)> {
+        self.entities.iter()
     }
 
-    pub fn index_iter(&self) -> Vec<Index> {
-        self.entities.iter().map(|(i, _)| i).collect()
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Index, &mut Entity)> {
+        self.entities.iter_mut()
+    }
+
+    pub fn index_iter(&self) -> impl Iterator<Item = Index> + '_ {
+        self.entities.iter().map(|(i, _)| i)
     }
 
     pub fn len(&self) -> usize {
@@ -40,13 +44,13 @@ impl EntityManager {
     }
 
     pub fn create_entity(&mut self) -> Index {
-        let index = self.entities.insert(RefCell::new(Entity::default()));
+        let index = self.entities.insert(Entity::default());
         let mut entity = self.get_entity_mut(index).unwrap();
         entity.index = index;
         index
     }
 
     pub fn remove_entity(&mut self, index: Index) -> Option<Entity> {
-        self.entities.remove(index).map(|e| e.into_inner())
+        self.entities.remove(index)
     }
 }

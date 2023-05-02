@@ -62,18 +62,16 @@ impl BroadphaseStack {
                 .buffer_bvh
                 .take()
                 .expect("BVH is already being rebuilt, this should not happen");
-            let new_entities = entities.index_iter();
+            let new_entities = entities.iter();
             let new_entities_with_aabbs = new_entities
-                .iter()
-                .map(|index| {
-                    let entity = entities.get_entity(*index).expect("Entity not found");
+                .map(|(index, entity)| {
                     let transform = transforms
-                        .transform(*index)
+                        .transform(index)
                         .expect("Entity has no transform");
                     let aabb = entity
                         .get_global_aabb(&transform)
                         .expect("Entity has no AABB");
-                    (IndexWrapper::from(*index), aabb)
+                    (IndexWrapper::from(index), aabb)
                 })
                 .collect::<Vec<_>>();
 

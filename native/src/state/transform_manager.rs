@@ -40,7 +40,7 @@ impl TransformManager {
         // Sweep the dirty isometries matrices
         for (index, transform) in self.transforms.iter_mut().enumerate() {
             if transform.dirty_isometry {
-                let entity = entity_manager.get_entity_unknown_gen(index).unwrap();
+                let (entity, index) = entity_manager.get_entity_unknown_gen(index).unwrap();
                 transform.update_isometry(entity.get_shape_natural_offset());
             }
         }
