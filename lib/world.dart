@@ -69,7 +69,7 @@ class World {
 
   void input(double x, double y) {
     if (dashImage != null && fragmentShader != null) {
-      const amountPerSecond = 100;
+      const amountPerSecond = 1000;
       var amount = (amountPerSecond * lastDt).toInt();
       if (amount > amountPerSecond) {
         amount = amountPerSecond;
@@ -110,9 +110,51 @@ class World {
         rendering.setTexCoords(entity, texCoords);
         rendering.setIndices(
             entity, Uint16Buffer()..cloneFromIterable([0, 1, 2, 0, 2, 3]));
-        rendering.setColor(entity, Colors.red);
+
+        // Create a rainbow color (RGB) over time
+        final time = DateTime.now().millisecondsSinceEpoch;
+        final color = generateRainbowColor(time, saturation: 0.8);
+        rendering.setColor(entity, color);
       }
     }
+  }
+
+  Color generateRainbowColor(int timeMs,
+      {double saturation = 1.0, double lightness = 0.5}) {
+    int hue = (timeMs ~/ 10) % 360; // Change hue value over time
+    double h = hue / 360;
+    return Color.fromARGB(
+        255,
+        (hslToRgb(h, saturation, lightness, 0) * 255).round(),
+        (hslToRgb(h, saturation, lightness, 1) * 255).round(),
+        (hslToRgb(h, saturation, lightness, 2) * 255).round());
+  }
+
+  // HSL to RGB conversion
+  double hslToRgb(double h, double s, double l, int rgbIndex) {
+    double t1, t2, tRgb;
+    if (s == 0.0) {
+      return l;
+    }
+    if (l < 0.5) {
+      t2 = l * (1.0 + s);
+    } else {
+      t2 = l + s - l * s;
+    }
+    t1 = 2.0 * l - t2;
+    double hue = h + rgbIndex / 3.0;
+    if (hue < 0) hue += 1;
+    if (hue > 1) hue -= 1;
+    if (6 * hue < 1) {
+      tRgb = t1 + (t2 - t1) * 6 * hue;
+    } else if (2 * hue < 1) {
+      tRgb = t2;
+    } else if (3 * hue < 2) {
+      tRgb = t1 + (t2 - t1) * (2 / 3 - hue) * 6;
+    } else {
+      tRgb = t1;
+    }
+    return tRgb;
   }
 
   void update(double t) {
@@ -159,6 +201,9 @@ class World {
 
       // Send all data to the native world
       setTransformsBulk(_entityIndices, _position, _origin, _rotation, _scale);
+
+      // Update the screen size
+      api.screenSizeChanged(width: size.x, height: size.y);
 
       // Call the native world update
       api.update(dt: t);

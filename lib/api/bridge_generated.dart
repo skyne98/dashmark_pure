@@ -24,6 +24,11 @@ abstract class Native {
 
   FlutterRustBridgeTaskConstMeta get kSayHelloConstMeta;
 
+  void screenSizeChanged(
+      {required double width, required double height, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kScreenSizeChangedConstMeta;
+
   void update({required double dt, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kUpdateConstMeta;
@@ -209,6 +214,25 @@ class NativeImpl implements Native {
       const FlutterRustBridgeTaskConstMeta(
         debugName: "say_hello",
         argNames: [],
+      );
+
+  void screenSizeChanged(
+      {required double width, required double height, dynamic hint}) {
+    var arg0 = api2wire_f32(width);
+    var arg1 = api2wire_f32(height);
+    return _platform.executeSync(FlutterRustBridgeSyncTask(
+      callFfi: () => _platform.inner.wire_screen_size_changed(arg0, arg1),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kScreenSizeChangedConstMeta,
+      argValues: [width, height],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kScreenSizeChangedConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "screen_size_changed",
+        argNames: ["width", "height"],
       );
 
   void update({required double dt, dynamic hint}) {
@@ -411,7 +435,7 @@ class NativeImpl implements Native {
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () =>
           _platform.inner.wire_query_aabb_raw(arg0, arg1, arg2, arg3),
-      parseSuccessData: _wire2api_ZeroCopyBuffer_Uint32List,
+      parseSuccessData: _wire2api_uint_32_list,
       constMeta: kQueryAabbRawConstMeta,
       argValues: [x, y, width, height],
       hint: hint,
@@ -566,7 +590,7 @@ class NativeImpl implements Native {
     var arg0 = api2wire_u16(batchIndex);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_vertices(arg0),
-      parseSuccessData: _wire2api_ZeroCopyBuffer_Float32List,
+      parseSuccessData: _wire2api_float_32_list,
       constMeta: kVerticesConstMeta,
       argValues: [batchIndex],
       hint: hint,
@@ -583,7 +607,7 @@ class NativeImpl implements Native {
     var arg0 = api2wire_u16(batchIndex);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_tex_coords(arg0),
-      parseSuccessData: _wire2api_ZeroCopyBuffer_Float32List,
+      parseSuccessData: _wire2api_float_32_list,
       constMeta: kTexCoordsConstMeta,
       argValues: [batchIndex],
       hint: hint,
@@ -600,7 +624,7 @@ class NativeImpl implements Native {
     var arg0 = api2wire_u16(batchIndex);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_indices(arg0),
-      parseSuccessData: _wire2api_ZeroCopyBuffer_Uint16List,
+      parseSuccessData: _wire2api_uint_16_list,
       constMeta: kIndicesConstMeta,
       argValues: [batchIndex],
       hint: hint,
@@ -617,7 +641,7 @@ class NativeImpl implements Native {
     var arg0 = api2wire_u16(batchIndex);
     return _platform.executeSync(FlutterRustBridgeSyncTask(
       callFfi: () => _platform.inner.wire_colors(arg0),
-      parseSuccessData: _wire2api_ZeroCopyBuffer_Int32List,
+      parseSuccessData: _wire2api_int_32_list,
       constMeta: kColorsConstMeta,
       argValues: [batchIndex],
       hint: hint,
@@ -637,22 +661,6 @@ class NativeImpl implements Native {
 
   String _wire2api_String(dynamic raw) {
     return raw as String;
-  }
-
-  Float32List _wire2api_ZeroCopyBuffer_Float32List(dynamic raw) {
-    return raw as Float32List;
-  }
-
-  Int32List _wire2api_ZeroCopyBuffer_Int32List(dynamic raw) {
-    return raw as Int32List;
-  }
-
-  Uint16List _wire2api_ZeroCopyBuffer_Uint16List(dynamic raw) {
-    return raw as Uint16List;
-  }
-
-  Uint32List _wire2api_ZeroCopyBuffer_Uint32List(dynamic raw) {
-    return raw as Uint32List;
   }
 
   double _wire2api_f32(dynamic raw) {

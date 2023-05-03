@@ -1,11 +1,10 @@
 use crate::{
-    time::Instant,
     typed_data::{f32s_to_vec2_arrays, f32s_to_vec2s, indices_to_u32s, u32s_to_indices},
     verlet::Body,
 };
-use flutter_rust_bridge::{SyncReturn, ZeroCopyBuffer};
+use flutter_rust_bridge::SyncReturn;
 pub use generational_arena::Arena;
-use rapier2d::na::Point2;
+use rapier2d::na::{Point2, Vector2};
 pub use std::{
     ops::Deref,
     sync::{Mutex, RwLock},
@@ -16,9 +15,16 @@ use crate::{
     typed_data::from_to,
 };
 
-// For initialization
+// Initialization & environment
 pub fn say_hello() -> String {
     "Hello, world!".to_string()
+}
+
+pub fn screen_size_changed(width: f32, height: f32) -> SyncReturn<()> {
+    State::acquire_mut(|state| {
+        state.verlet.borrow_mut().screen_size = Vector2::new(width, height);
+    });
+    SyncReturn(())
 }
 
 // Main loop
@@ -73,6 +79,10 @@ pub fn entities_set_transform_raw(
             if let Some(transform) = transforms.transform_mut(*index) {
                 transform.set_all(positions[i], origins[i], rotations[i], scales[i]);
                 broadphase.index_updated(*index);
+                state
+                    .verlet
+                    .borrow_mut()
+                    .initialize_body(index.into_raw_parts().0, positions[i].into());
             }
         }
     });
@@ -91,9 +101,7 @@ pub fn entities_set_position_raw(indices: Vec<u32>, positions: Vec<f32>) -> Sync
                 state
                     .verlet
                     .borrow_mut()
-                    .body_mut(*index)
-                    .unwrap()
-                    .initialized = true;
+                    .initialize_body(index.into_raw_parts().0, (*position).into());
             }
         }
     });

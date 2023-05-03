@@ -65,11 +65,8 @@ impl State {
         let mut rendering = self.rendering.borrow_mut();
         let mut verlet = self.verlet.borrow_mut();
 
-        verlet.apply_basic_physics(dt);
-        verlet.apply_interaction_physics_substep(dt, 1000.0, 1000.0);
-        verlet.apply_constraints(1000.0, 1000.0);
+        verlet.simulate(dt);
         verlet.apply_to_transforms(&mut transforms);
-
         transforms.sweep(&entities);
         broadphase.do_maintenance(&entities, &transforms);
         rendering.batchify(&mut entities, &transforms);

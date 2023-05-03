@@ -111,6 +111,9 @@ class NativeWasmModule implements WasmModule {
   external NativeWasmModule bind(dynamic thisArg, String moduleName);
   external dynamic /* void */ wire_say_hello(NativePortType port_);
 
+  external dynamic /* void */ wire_screen_size_changed(
+      double width, double height);
+
   external dynamic /* void */ wire_update(double dt);
 
   external dynamic /* List<dynamic> */ wire_create_entity();
@@ -178,6 +181,9 @@ class NativeWire extends FlutterRustBridgeWasmWireBase<NativeWasmModule> {
       : super(WasmModule.cast<NativeWasmModule>(module));
 
   void wire_say_hello(NativePortType port_) => wasmModule.wire_say_hello(port_);
+
+  dynamic /* void */ wire_screen_size_changed(double width, double height) =>
+      wasmModule.wire_screen_size_changed(width, height);
 
   dynamic /* void */ wire_update(double dt) => wasmModule.wire_update(dt);
 

@@ -35,6 +35,23 @@ fn wire_say_hello_impl(port_: MessagePort) {
         move || move |task_callback| Ok(say_hello()),
     )
 }
+fn wire_screen_size_changed_impl(
+    width: impl Wire2Api<f32> + UnwindSafe,
+    height: impl Wire2Api<f32> + UnwindSafe,
+) -> support::WireSyncReturn {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
+        WrapInfo {
+            debug_name: "screen_size_changed",
+            port: None,
+            mode: FfiCallMode::Sync,
+        },
+        move || {
+            let api_width = width.wire2api();
+            let api_height = height.wire2api();
+            Ok(screen_size_changed(api_width, api_height))
+        },
+    )
+}
 fn wire_update_impl(dt: impl Wire2Api<f64> + UnwindSafe) -> support::WireSyncReturn {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync(
         WrapInfo {

@@ -7,6 +7,11 @@ pub extern "C" fn wire_say_hello(port_: i64) {
 }
 
 #[no_mangle]
+pub extern "C" fn wire_screen_size_changed(width: f32, height: f32) -> support::WireSyncReturn {
+    wire_screen_size_changed_impl(width, height)
+}
+
+#[no_mangle]
 pub extern "C" fn wire_update(dt: f64) -> support::WireSyncReturn {
     wire_update_impl(dt)
 }

@@ -242,6 +242,22 @@ class NativeWire implements FlutterRustBridgeWireBase {
   late final _wire_say_hello =
       _wire_say_helloPtr.asFunction<void Function(int)>();
 
+  WireSyncReturn wire_screen_size_changed(
+    double width,
+    double height,
+  ) {
+    return _wire_screen_size_changed(
+      width,
+      height,
+    );
+  }
+
+  late final _wire_screen_size_changedPtr = _lookup<
+          ffi.NativeFunction<WireSyncReturn Function(ffi.Float, ffi.Float)>>(
+      'wire_screen_size_changed');
+  late final _wire_screen_size_changed = _wire_screen_size_changedPtr
+      .asFunction<WireSyncReturn Function(double, double)>();
+
   WireSyncReturn wire_update(
     double dt,
   ) {
