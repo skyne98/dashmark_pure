@@ -17,6 +17,7 @@ pub struct VerletSystem {
     gravity: Vector2<f32>,
     grid: AABBGrid<usize, BodyAabb>,
     grid_handles: HashMap<usize, AABBGridHandle>,
+    rng: fastrand::Rng,
 }
 
 impl VerletSystem {
@@ -29,6 +30,7 @@ impl VerletSystem {
             gravity: Vector2::new(0.0, 100.0),
             grid: AABBGrid::new(48),
             grid_handles: HashMap::new(),
+            rng: fastrand::Rng::with_seed(404),
         }
     }
 
@@ -71,36 +73,6 @@ impl VerletSystem {
         }
     }
 
-    pub fn update_bodies(&mut self, delta_time: f64) {
-        let length = self.bodies.len();
-        for body_i in 0..length {
-            let body = &mut self.bodies[body_i];
-            // Apply gravity
-            body.acceleration += self.gravity;
-            // Apply verlet integration
-            let velocity = body.position - body.old_position;
-            let new_position = body.position
-                + velocity
-                + (body.acceleration - velocity * body.friction) * (delta_time * delta_time) as f32;
-            body.old_position = body.position;
-            body.position = new_position;
-            body.acceleration = Vector2::new(0.0, 0.0);
-            // Apply map constraints
-            if body.position.y > self.screen_size.y - body.radius {
-                body.position.y = self.screen_size.y - body.radius;
-            }
-            if body.position.y < body.radius {
-                body.position.y = body.radius;
-            }
-            if body.position.x > self.screen_size.x - body.radius {
-                body.position.x = self.screen_size.x - body.radius;
-            }
-            if body.position.x < body.radius {
-                body.position.x = body.radius;
-            }
-        }
-    }
-
     pub fn solve_collisions(&mut self) {
         for index in 0..self.bodies.len() {
             // Query the grid for nearby bodies
@@ -127,11 +99,15 @@ impl VerletSystem {
 
                 if distance_squared < radius * radius && distance_squared > f32::EPSILON {
                     let distance = distance_squared.sqrt();
-                    let delta = 0.5 * (radius - distance);
-                    let collision_vector =
-                        (distance_vec / distance) * delta * self.collision_damping;
-                    body.position += collision_vector;
-                    other.position -= collision_vector;
+                    let delta = 0.5 * (radius - distance) * 0.8;
+                    let collision_vector = (distance_vec / distance) * delta;
+                    let mass_sum = body.mass + other.mass;
+                    body.position += (collision_vector * other.mass) / mass_sum;
+                    other.position -= (collision_vector * body.mass) / mass_sum;
+                    // Add a tiny random vector
+                    let random_vector =
+                        Vector2::new(self.rng.f32() * 0.0001, self.rng.f32() * 0.0001);
+                    body.position += random_vector;
                 } else if distance_squared == 0.0 {
                     // // Resolve bodies that are on top of each other
                     body.position += Vector2::new(0.0, 1.0);
@@ -147,6 +123,45 @@ impl VerletSystem {
             let handle = self.grid_handles[&index];
             self.grid.set_aabb(handle, body.into());
         }
+    }
+
+    pub fn update_bodies(&mut self, delta_time: f64) {
+        let length = self.bodies.len();
+        let mut overall_velocity = 0.0;
+        for body_i in 0..length {
+            let body = &mut self.bodies[body_i];
+            // Apply gravity
+            body.acceleration += self.gravity;
+            // Apply verlet integration
+            let velocity = body.position - body.old_position;
+            overall_velocity += velocity.magnitude();
+            let new_position = body.position
+                + velocity
+                + (body.acceleration - velocity * body.friction) * (delta_time * delta_time) as f32;
+            body.old_position = body.position;
+            body.position = new_position;
+            body.acceleration = Vector2::new(0.0, 0.0);
+
+            // Apply map constraints
+            if body.position.y > self.screen_size.y - body.radius {
+                let penetration = body.position.y - (self.screen_size.y - body.radius);
+                let penetration = penetration * self.collision_damping;
+                body.position.y -= penetration * 2.0;
+            } else if body.position.y < body.radius {
+                let penetration = body.radius - body.position.y;
+                let penetration = penetration * self.collision_damping;
+                body.position.y += penetration * 2.0;
+            } else if body.position.x > self.screen_size.x - body.radius {
+                let penetration = body.position.x - (self.screen_size.x - body.radius);
+                let penetration = penetration * self.collision_damping;
+                body.position.x -= penetration * 2.0;
+            } else if body.position.x < body.radius {
+                let penetration = body.radius - body.position.x;
+                let penetration = penetration * self.collision_damping;
+                body.position.x += penetration * 2.0;
+            }
+        }
+        println!("Overall velocity: {}", overall_velocity);
     }
 
     pub fn apply_to_transforms(&self, transforms: &mut TransformManager) {
