@@ -37,11 +37,8 @@ impl Body {
     }
 
     pub fn set_position(&mut self, position: Vector2<f32>) {
-        let from = self.position;
         self.position = position;
         self.old_position = position;
-
-        println!("set from old position: {:?} -> {:?}", from, self.position);
     }
 
     pub fn set_position_keep_movement(&mut self, position: Vector2<f32>) {

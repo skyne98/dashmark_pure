@@ -4,7 +4,10 @@ use flat_spatial::{aabbgrid::AABBGridHandle, AABBGrid};
 use generational_arena::Index;
 use rapier2d::na::Vector2;
 
-use crate::verlet::{Body, BodyAabb};
+use crate::{
+    grid::SpatialGrid,
+    verlet::{Body, BodyAabb},
+};
 
 use super::transform_manager::TransformManager;
 
@@ -59,6 +62,18 @@ impl VerletSystem {
             self.grid.set_aabb(*handle, body.into());
         }
 
+        // Build the custom spatial grid
+        let start = crate::time::Instant::now();
+        let aabbs = self
+            .bodies
+            .iter()
+            .enumerate()
+            .map(|(index, body)| body.aabb())
+            .collect::<Vec<_>>();
+        println!("AABBs built in {} ms", start.elapsed().as_millis());
+        let spatial_grid = SpatialGrid::from_aabbs(&aabbs);
+        println!("Spatial grid built in {} ms", start.elapsed().as_millis());
+
         let dt = dt * 2.0;
         let sub_dt = dt / self.sub_steps as f64;
         for _ in 0..self.sub_steps {
@@ -95,17 +110,14 @@ impl VerletSystem {
                     let distance = distance_squared.sqrt();
                     let delta = 0.5 * (radius - distance) * 0.8;
                     let collision_vector = (distance_vec / distance) * delta;
-                    let mass_sum = body.mass + other.mass;
-                    body.position += (collision_vector * other.mass) / mass_sum;
-                    other.position -= (collision_vector * body.mass) / mass_sum;
-                    // Add a tiny random vector
-                    let random_vector =
-                        Vector2::new(self.rng.f32() * 0.0001, self.rng.f32() * 0.0001);
-                    body.position += random_vector;
+                    body.position += collision_vector;
+                    other.position -= collision_vector;
                 } else if distance_squared == 0.0 {
-                    // // Resolve bodies that are on top of each other
-                    body.position += Vector2::new(0.0, 1.0);
-                    other.position -= Vector2::new(0.0, 1.0);
+                    // Resolve overlapping bodies
+                    let random_vector =
+                        Vector2::new(self.rng.f32() * 2.0 - 1.0, self.rng.f32() * 2.0 - 1.0);
+                    body.position += random_vector;
+                    other.position -= random_vector;
                 }
             }
         }
@@ -121,14 +133,12 @@ impl VerletSystem {
 
     pub fn update_bodies(&mut self, delta_time: f64) {
         let length = self.bodies.len();
-        let mut overall_velocity = 0.0;
         for body_i in 0..length {
             let body = &mut self.bodies[body_i];
             // Apply gravity
             body.acceleration += self.gravity;
             // Apply verlet integration
             let velocity = body.position - body.old_position;
-            overall_velocity += velocity.magnitude();
             let new_position = body.position
                 + velocity
                 + (body.acceleration - velocity * body.friction) * (delta_time * delta_time) as f32;
@@ -155,7 +165,6 @@ impl VerletSystem {
                 body.position.x += penetration * 2.0;
             }
         }
-        println!("Overall velocity: {}", overall_velocity);
     }
 
     pub fn apply_to_transforms(&self, transforms: &mut TransformManager) {
