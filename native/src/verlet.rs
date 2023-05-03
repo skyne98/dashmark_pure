@@ -1,7 +1,6 @@
 use rapier2d::{na::Vector2, prelude::Aabb};
 #[derive(Clone)]
 pub struct Body {
-    pub initialized: bool,
     pub position: Vector2<f32>,
     pub old_position: Vector2<f32>,
     pub acceleration: Vector2<f32>,
@@ -14,7 +13,6 @@ pub struct Body {
 impl Default for Body {
     fn default() -> Self {
         Self {
-            initialized: false,
             position: Vector2::new(0.0, 0.0),
             old_position: Vector2::new(0.0, 0.0),
             acceleration: Vector2::new(0.0, 0.0),
@@ -36,6 +34,24 @@ impl Body {
             Vector2::new(self.position.x - self.radius, self.position.y - self.radius).into(),
             Vector2::new(self.position.x + self.radius, self.position.y + self.radius).into(),
         )
+    }
+
+    pub fn set_position(&mut self, position: Vector2<f32>) {
+        let from = self.position;
+        self.position = position;
+        self.old_position = position;
+
+        println!("set from old position: {:?} -> {:?}", from, self.position);
+    }
+
+    pub fn set_position_keep_movement(&mut self, position: Vector2<f32>) {
+        let velocity = self.position - self.old_position;
+        self.position = position;
+        self.old_position = position - velocity;
+    }
+
+    pub fn set_velocity(&mut self, velocity: Vector2<f32>) {
+        self.old_position = self.position - velocity;
     }
 }
 

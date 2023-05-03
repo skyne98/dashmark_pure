@@ -8,6 +8,7 @@
 pub mod api;
 pub mod bvh;
 pub mod entity;
+pub mod grid;
 pub mod index;
 pub mod matrix;
 pub mod state;

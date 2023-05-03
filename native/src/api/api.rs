@@ -82,7 +82,9 @@ pub fn entities_set_transform_raw(
                 state
                     .verlet
                     .borrow_mut()
-                    .initialize_body(index.into_raw_parts().0, positions[i].into());
+                    .body_mut(index.into_raw_parts().0)
+                    .unwrap()
+                    .set_position(positions[i].into());
             }
         }
     });
@@ -97,11 +99,12 @@ pub fn entities_set_position_raw(indices: Vec<u32>, positions: Vec<f32>) -> Sync
             if let Some(transform) = state.transforms.borrow_mut().transform_mut(*index) {
                 transform.set_position(*position);
                 state.broadphase.borrow_mut().index_updated(*index);
-                state.verlet.borrow_mut().body_mut(*index).unwrap().position = (*position).into();
                 state
                     .verlet
                     .borrow_mut()
-                    .initialize_body(index.into_raw_parts().0, (*position).into());
+                    .body_mut(index.into_raw_parts().0)
+                    .unwrap()
+                    .set_position((*position).into());
             }
         }
     });

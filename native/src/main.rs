@@ -8,6 +8,7 @@ use rapier2d::parry::partitioning::Qbvh as ParryQbvh;
 mod api;
 mod bvh;
 mod entity;
+mod grid;
 mod index;
 mod matrix;
 mod state;

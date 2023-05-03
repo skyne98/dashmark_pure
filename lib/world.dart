@@ -200,7 +200,7 @@ class World {
       lastDt = t;
 
       // Send all data to the native world
-      setTransformsBulk(_entityIndices, _position, _origin, _rotation, _scale);
+      // setTransformsBulk(_entityIndices, _position, _origin, _rotation, _scale);
 
       // Update the screen size
       api.screenSizeChanged(width: size.x, height: size.y);

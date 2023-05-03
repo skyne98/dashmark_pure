@@ -40,31 +40,25 @@ impl VerletSystem {
         self.bodies.push(body);
     }
 
-    pub fn initialize_body(&mut self, index: usize, position: Vector2<f32>) {
-        let body = &mut self.bodies[index];
-        if body.initialized == false {
-            body.position = position;
-            let handle = self.grid_handles[&index];
-            self.grid.set_aabb(handle, body.into());
-            body.initialized = true;
-        }
-    }
-
     pub fn get_bodies(&self) -> &[Body] {
         &self.bodies
     }
 
-    pub fn body(&self, index: Index) -> Option<&Body> {
-        let index = index.into_raw_parts().0;
+    pub fn body(&self, index: usize) -> Option<&Body> {
         self.bodies.get(index)
     }
 
-    pub fn body_mut(&mut self, index: Index) -> Option<&mut Body> {
-        let index = index.into_raw_parts().0;
+    pub fn body_mut(&mut self, index: usize) -> Option<&mut Body> {
         self.bodies.get_mut(index)
     }
 
     pub fn simulate(&mut self, dt: f64) {
+        // Update AABBS based on the potentially new positions
+        for (index, body) in self.bodies.iter().enumerate() {
+            let handle = self.grid_handles.get(&index).unwrap();
+            self.grid.set_aabb(*handle, body.into());
+        }
+
         let dt = dt * 2.0;
         let sub_dt = dt / self.sub_steps as f64;
         for _ in 0..self.sub_steps {
@@ -166,9 +160,7 @@ impl VerletSystem {
 
     pub fn apply_to_transforms(&self, transforms: &mut TransformManager) {
         for (body, transform) in self.bodies.iter().zip(transforms.iter_mut()) {
-            if body.initialized {
-                transform.set_position(body.position.into());
-            }
+            transform.set_position(body.position.into());
         }
     }
 }
