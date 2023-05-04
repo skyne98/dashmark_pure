@@ -1,4 +1,21 @@
+use std::ops::Deref;
+
 use rapier2d::{na::Vector2, prelude::Aabb};
+
+pub trait IntoAabb {
+    fn into_aabb(&self) -> Aabb;
+}
+impl<T: IntoAabb> IntoAabb for &T {
+    fn into_aabb(&self) -> Aabb {
+        (*self).into_aabb()
+    }
+}
+impl<T: IntoAabb> IntoAabb for &mut T {
+    fn into_aabb(&self) -> Aabb {
+        (*self).into_aabb()
+    }
+}
+
 #[derive(Clone)]
 pub struct Body {
     pub position: Vector2<f32>,
@@ -49,6 +66,12 @@ impl Body {
 
     pub fn set_velocity(&mut self, velocity: Vector2<f32>) {
         self.old_position = self.position - velocity;
+    }
+}
+
+impl IntoAabb for Body {
+    fn into_aabb(&self) -> Aabb {
+        self.aabb()
     }
 }
 

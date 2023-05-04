@@ -64,63 +64,38 @@ impl VerletSystem {
 
         // Build the custom spatial grid
         let start = crate::time::Instant::now();
-        let aabbs = self
-            .bodies
-            .iter()
-            .enumerate()
-            .map(|(index, body)| body.aabb())
-            .collect::<Vec<_>>();
         println!("AABBs built in {} ms", start.elapsed().as_millis());
-        let spatial_grid = SpatialGrid::from_aabbs(&aabbs);
+        let mut spatial_grid = SpatialGrid::from_aabbs(&mut self.bodies);
         println!("Spatial grid built in {} ms", start.elapsed().as_millis());
 
         let dt = dt * 2.0;
         let sub_dt = dt / self.sub_steps as f64;
         for _ in 0..self.sub_steps {
-            self.solve_collisions();
+            self.solve_collisions(&mut spatial_grid);
             self.update_bodies(sub_dt);
         }
     }
 
-    pub fn solve_collisions(&mut self) {
-        for index in 0..self.bodies.len() {
-            // Query the grid for nearby bodies
-            let (before, including_after) = self.bodies.split_at_mut(index);
-            let (body, after) = including_after.split_first_mut().unwrap();
-            let collided_ids = self
-                .grid
-                .query(body.into())
-                .map(|(_, _, index)| *index)
-                .collect::<Vec<_>>();
-            for other_index in collided_ids {
-                if index == other_index {
-                    continue;
-                }
-                let other = if other_index < index {
-                    &mut before[other_index]
-                } else {
-                    &mut after[other_index - index - 1]
-                };
+    pub fn solve_collisions(&mut self, spatial_grid: &mut SpatialGrid) {
+        spatial_grid.process_collisions(&mut self.bodies, |a, b| {
+            let distance_vec = a.position - b.position;
+            let distance_squared = distance_vec.magnitude_squared();
+            let radius = a.radius + b.radius;
 
-                let distance_vec = body.position - other.position;
-                let distance_squared = distance_vec.magnitude_squared();
-                let radius = body.radius + other.radius;
-
-                if distance_squared < radius * radius && distance_squared > f32::EPSILON {
-                    let distance = distance_squared.sqrt();
-                    let delta = 0.5 * (radius - distance) * 0.8;
-                    let collision_vector = (distance_vec / distance) * delta;
-                    body.position += collision_vector;
-                    other.position -= collision_vector;
-                } else if distance_squared == 0.0 {
-                    // Resolve overlapping bodies
-                    let random_vector =
-                        Vector2::new(self.rng.f32() * 2.0 - 1.0, self.rng.f32() * 2.0 - 1.0);
-                    body.position += random_vector;
-                    other.position -= random_vector;
-                }
+            if distance_squared < radius * radius && distance_squared > f32::EPSILON {
+                let distance = distance_squared.sqrt();
+                let delta = 0.5 * (radius - distance) * 0.8;
+                let collision_vector = (distance_vec / distance) * delta;
+                a.position += collision_vector;
+                b.position -= collision_vector;
+            } else if distance_squared == 0.0 {
+                // Resolve overlapping bodies
+                let random_vector =
+                    Vector2::new(self.rng.f32() * 2.0 - 1.0, self.rng.f32() * 2.0 - 1.0);
+                a.position += random_vector;
+                b.position -= random_vector;
             }
-        }
+        });
 
         // Update the aabbs in the grid
         let len = self.bodies.len();
