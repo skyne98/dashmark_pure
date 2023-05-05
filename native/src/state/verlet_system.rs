@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
-use flat_spatial::{aabbgrid::AABBGridHandle, AABBGrid};
 use generational_arena::Index;
-use rapier2d::na::Vector2;
+use rapier2d::{na::Vector2, prelude::Aabb};
 
 use crate::{
-    grid::SpatialGrid,
+    grid::{world_to_grid, SpatialCell, SpatialGrid},
     verlet::{Body, BodyAabb},
 };
 
@@ -18,9 +17,10 @@ pub struct VerletSystem {
 
     bodies: Vec<Body>,
     gravity: Vector2<f32>,
-    grid: AABBGrid<usize, BodyAabb>,
-    grid_handles: HashMap<usize, AABBGridHandle>,
     rng: fastrand::Rng,
+
+    biggest_radius: f32,
+    grid: SpatialGrid,
 }
 
 impl VerletSystem {
@@ -30,21 +30,49 @@ impl VerletSystem {
             screen_size: Vector2::new(0.0, 0.0),
             collision_damping: 0.5,
             bodies: Vec::new(),
-            gravity: Vector2::new(0.0, 100.0),
-            grid: AABBGrid::new(48),
-            grid_handles: HashMap::new(),
+            gravity: Vector2::new(0.0, 32.0 * 20.0),
             rng: fastrand::Rng::with_seed(404),
+            biggest_radius: 0.0,
+            grid: SpatialGrid::new(0, 0, 0.0),
         }
     }
 
+    pub fn screen_size(&mut self, width: f32, height: f32) {
+        self.screen_size = Vector2::new(width, height);
+        self.grid = SpatialGrid::new(
+            (width / self.biggest_radius) as u32,
+            (height / self.biggest_radius) as u32,
+            self.biggest_radius * 2.0 * 1.5,
+        );
+    }
+
+    pub fn new_body(&mut self, position: Vector2<f32>, radius: f32) {
+        let id = self.bodies.len();
+        let mut body = Body::new(id);
+        body.position = position;
+        body.old_position = position;
+        body.radius = radius;
+        if radius > self.biggest_radius {
+            self.biggest_radius = radius;
+            self.grid = SpatialGrid::new(
+                (self.screen_size.x / self.biggest_radius) as u32,
+                (self.screen_size.y / self.biggest_radius) as u32,
+                self.biggest_radius * 2.0 * 1.5,
+            );
+        }
+        self.bodies.push(body);
+    }
+
     pub fn add_body(&mut self, body: Body) {
-        let handle = self.grid.insert((&body).into(), self.bodies.len());
-        self.grid_handles.insert(self.bodies.len(), handle);
         self.bodies.push(body);
     }
 
     pub fn get_bodies(&self) -> &[Body] {
         &self.bodies
+    }
+
+    pub fn get_aabbs(&self) -> Vec<Aabb> {
+        self.bodies.iter().map(|b| b.aabb()).collect()
     }
 
     pub fn body(&self, index: usize) -> Option<&Body> {
@@ -56,53 +84,78 @@ impl VerletSystem {
     }
 
     pub fn simulate(&mut self, dt: f64) {
-        // Update AABBS based on the potentially new positions
-        for (index, body) in self.bodies.iter().enumerate() {
-            let handle = self.grid_handles.get(&index).unwrap();
-            self.grid.set_aabb(*handle, body.into());
-        }
-
-        // Build the custom spatial grid
-        let start = crate::time::Instant::now();
-        println!("AABBs built in {} ms", start.elapsed().as_millis());
-        let mut spatial_grid = SpatialGrid::from_aabbs(&mut self.bodies);
-        println!("Spatial grid built in {} ms", start.elapsed().as_millis());
-
-        let dt = dt * 2.0;
         let sub_dt = dt / self.sub_steps as f64;
         for _ in 0..self.sub_steps {
-            self.solve_collisions(&mut spatial_grid);
+            self.grid.clear();
+            for body in &mut self.bodies {
+                self.grid
+                    .add_atom_world(body.id, body.position.x, body.position.y);
+            }
+            self.solve_collisions();
             self.update_bodies(sub_dt);
         }
     }
 
-    pub fn solve_collisions(&mut self, spatial_grid: &mut SpatialGrid) {
-        spatial_grid.process_collisions(&mut self.bodies, |a, b| {
-            let distance_vec = a.position - b.position;
-            let distance_squared = distance_vec.magnitude_squared();
-            let radius = a.radius + b.radius;
-
-            if distance_squared < radius * radius && distance_squared > f32::EPSILON {
-                let distance = distance_squared.sqrt();
-                let delta = 0.5 * (radius - distance) * 0.8;
-                let collision_vector = (distance_vec / distance) * delta;
-                a.position += collision_vector;
-                b.position -= collision_vector;
-            } else if distance_squared == 0.0 {
-                // Resolve overlapping bodies
-                let random_vector =
-                    Vector2::new(self.rng.f32() * 2.0 - 1.0, self.rng.f32() * 2.0 - 1.0);
-                a.position += random_vector;
-                b.position -= random_vector;
+    pub fn solve_collisions(&mut self) {
+        for index in 0..self.grid.len() {
+            let atoms = self.grid.get(index).unwrap().atoms.clone();
+            for atom in atoms {
+                let neightbours = self.grid.get_neighbours(index);
+                for neighbour in neightbours {
+                    self.solve_atom_cell(atom, neighbour);
+                }
             }
-        });
+        }
+    }
 
-        // Update the aabbs in the grid
-        let len = self.bodies.len();
-        for index in 0..len {
-            let body = &self.bodies[index];
-            let handle = self.grid_handles[&index];
-            self.grid.set_aabb(handle, body.into());
+    pub fn solve_atom_cell(&mut self, atom: usize, cell: usize) {
+        let atoms = self
+            .grid
+            .get(cell)
+            .expect(&format!(
+                "Cell {} does not exist in grid of len {}",
+                cell,
+                self.grid.len()
+            ))
+            .atoms
+            .clone();
+        for other_atom in atoms {
+            self.solve_contact(atom, other_atom);
+        }
+    }
+
+    pub fn solve_contact(&mut self, a: usize, b: usize) {
+        if a == b {
+            return;
+        }
+        let random_x = self.rng.f32() * 2.0 - 1.0;
+        let random_y = self.rng.f32() * 2.0 - 1.0;
+        let (body_a, body_b) = self.bodies_get_a_and_b_mut(a, b);
+        let distance_vec = body_a.position - body_b.position;
+        let distance_squared = distance_vec.magnitude_squared();
+        let radius = body_a.radius + body_b.radius;
+
+        if distance_squared < radius * radius && distance_squared > f32::EPSILON {
+            let distance = distance_squared.sqrt();
+            let delta = 0.5 * (radius - distance);
+            let collision_vector = (distance_vec / distance) * delta;
+            body_a.position += collision_vector;
+            body_b.position -= collision_vector;
+            body_a.just_collided = true;
+            body_b.just_collided = true;
+        } else if distance_squared == 0.0 {
+            let random_vec = Vector2::new(random_x, random_y);
+            let random_vec = random_vec.normalize() * 0.0001;
+            body_a.position += random_vec;
+        }
+    }
+
+    pub fn bodies_get_a_and_b_mut(&mut self, a: usize, b: usize) -> (&mut Body, &mut Body) {
+        unsafe {
+            let bodies = self.bodies.as_mut_ptr();
+            let body_a = bodies.add(a).as_mut().unwrap();
+            let body_b = bodies.add(b).as_mut().unwrap();
+            (body_a, body_b)
         }
     }
 
@@ -116,28 +169,30 @@ impl VerletSystem {
             let velocity = body.position - body.old_position;
             let new_position = body.position
                 + velocity
-                + (body.acceleration - velocity * body.friction) * (delta_time * delta_time) as f32;
+                + (body.acceleration - velocity * 20.0) * (delta_time * delta_time) as f32;
             body.old_position = body.position;
             body.position = new_position;
             body.acceleration = Vector2::new(0.0, 0.0);
+            body.just_collided = false;
 
             // Apply map constraints
             if body.position.y > self.screen_size.y - body.radius {
-                let penetration = body.position.y - (self.screen_size.y - body.radius);
-                let penetration = penetration * self.collision_damping;
-                body.position.y -= penetration * 2.0;
+                body.position.y = self.screen_size.y - body.radius;
+                // bounce off with losing some energy
+                body.old_position.y = body.position.y + velocity.y * body.ground_friction;
             } else if body.position.y < body.radius {
-                let penetration = body.radius - body.position.y;
-                let penetration = penetration * self.collision_damping;
-                body.position.y += penetration * 2.0;
-            } else if body.position.x > self.screen_size.x - body.radius {
-                let penetration = body.position.x - (self.screen_size.x - body.radius);
-                let penetration = penetration * self.collision_damping;
-                body.position.x -= penetration * 2.0;
+                body.position.y = body.radius;
+                // bounce off with losing some energy
+                body.old_position.y = body.position.y + velocity.y * body.ground_friction;
+            }
+            if body.position.x > self.screen_size.x - body.radius {
+                body.position.x = self.screen_size.x - body.radius;
+                // bounce off with losing some energy
+                body.old_position.x = body.position.x + velocity.x * body.ground_friction;
             } else if body.position.x < body.radius {
-                let penetration = body.radius - body.position.x;
-                let penetration = penetration * self.collision_damping;
-                body.position.x += penetration * 2.0;
+                body.position.x = body.radius;
+                // bounce off with losing some energy
+                body.old_position.x = body.position.x + velocity.x * body.ground_friction;
             }
         }
     }

@@ -22,7 +22,7 @@ pub fn say_hello() -> String {
 
 pub fn screen_size_changed(width: f32, height: f32) -> SyncReturn<()> {
     State::acquire_mut(|state| {
-        state.verlet.borrow_mut().screen_size = Vector2::new(width, height);
+        state.verlet.borrow_mut().screen_size(width, height);
     });
     SyncReturn(())
 }
@@ -40,7 +40,7 @@ pub fn create_entity() -> SyncReturn<GenerationalIndex> {
         state.broadphase.borrow_mut().index_added(index);
         state.rendering.borrow_mut().index_added(index);
         state.transforms.borrow_mut().index_added(index);
-        state.verlet.borrow_mut().add_body(Body::default());
+        state.verlet.borrow_mut().new_body(Vector2::zeros(), 8.0);
         index
     });
     SyncReturn(index.into())
