@@ -16,8 +16,10 @@ pub struct VerletSystem {
     pub collision_damping: f32, // how much of the velocity is lost on collision
 
     bodies: Vec<Body>,
-    gravity: Vector2<f32>,
     rng: fastrand::Rng,
+
+    gravity: Vector2<f32>,
+    sleep_threshold: f32,
 
     biggest_radius: f32,
     grid: SpatialGrid,
@@ -31,6 +33,7 @@ impl VerletSystem {
             collision_damping: 0.5,
             bodies: Vec::new(),
             gravity: Vector2::new(0.0, 32.0 * 20.0),
+            sleep_threshold: 0.001,
             rng: fastrand::Rng::with_seed(404),
             biggest_radius: 0.0,
             grid: SpatialGrid::new(0, 0, 0.0),
@@ -100,6 +103,11 @@ impl VerletSystem {
         for index in 0..self.grid.len() {
             let atoms = self.grid.get(index).unwrap().atoms.clone();
             for atom in atoms {
+                let body = self.body(atom).unwrap();
+                if body.sleeping {
+                    continue;
+                }
+
                 let neightbours = self.grid.get_neighbours(index);
                 for neighbour in neightbours {
                     self.solve_atom_cell(atom, neighbour);
@@ -141,8 +149,10 @@ impl VerletSystem {
             let collision_vector = (distance_vec / distance) * delta;
             body_a.position += collision_vector;
             body_b.position -= collision_vector;
-            body_a.just_collided = true;
-            body_b.just_collided = true;
+
+            body_a.falling_asleep = false;
+            body_b.sleeping = false;
+            body_b.falling_asleep = false;
         } else if distance_squared == 0.0 {
             let random_vec = Vector2::new(random_x, random_y);
             let random_vec = random_vec.normalize() * 0.0001;
@@ -167,13 +177,25 @@ impl VerletSystem {
             body.acceleration += self.gravity;
             // Apply verlet integration
             let velocity = body.position - body.old_position;
+            if velocity.magnitude_squared() <= self.sleep_threshold * self.sleep_threshold {
+                if body.falling_asleep == false {
+                    println!("Body {} is falling asleep", body.id);
+                    body.falling_asleep = true;
+                } else {
+                    println!("Body {} is sleeping", body.id);
+                    body.sleeping = true;
+                    body.falling_asleep = false;
+                }
+            } else {
+                body.falling_asleep = false;
+                body.sleeping = false;
+            }
             let new_position = body.position
                 + velocity
                 + (body.acceleration - velocity * 20.0) * (delta_time * delta_time) as f32;
             body.old_position = body.position;
             body.position = new_position;
             body.acceleration = Vector2::new(0.0, 0.0);
-            body.just_collided = false;
 
             // Apply map constraints
             if body.position.y > self.screen_size.y - body.radius {

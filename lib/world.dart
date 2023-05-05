@@ -14,7 +14,8 @@ import 'ffi_export.dart';
 import 'typed_buffer/mod.dart';
 
 class World {
-  static const double desiredSize = 16.0;
+  static const double spriteSize = 16.0;
+  static const double desiredSize = 8.0;
 
   Vector2 size = Vector2(0.0, 0.0);
   double lastDt = 0.0;
@@ -104,9 +105,9 @@ class World {
         rendering.setVertices(entity, vertices);
         final texCoords = Vector32Buffer();
         texCoords.add(Vector2(0.0, 0.0));
-        texCoords.add(Vector2(desiredSize, 0.0));
-        texCoords.add(Vector2(desiredSize, desiredSize));
-        texCoords.add(Vector2(0.0, desiredSize));
+        texCoords.add(Vector2(spriteSize, 0.0));
+        texCoords.add(Vector2(spriteSize, spriteSize));
+        texCoords.add(Vector2(0.0, spriteSize));
         rendering.setTexCoords(entity, texCoords);
         rendering.setIndices(
             entity, Uint16Buffer()..cloneFromIterable([0, 1, 2, 0, 2, 3]));

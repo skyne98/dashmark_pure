@@ -40,7 +40,7 @@ pub fn create_entity() -> SyncReturn<GenerationalIndex> {
         state.broadphase.borrow_mut().index_added(index);
         state.rendering.borrow_mut().index_added(index);
         state.transforms.borrow_mut().index_added(index);
-        state.verlet.borrow_mut().new_body(Vector2::zeros(), 8.0);
+        state.verlet.borrow_mut().new_body(Vector2::zeros(), 4.0);
         index
     });
     SyncReturn(index.into())

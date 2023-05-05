@@ -26,7 +26,8 @@ pub struct Body {
     pub ground_friction: f32, // 0.4
     pub radius: f32,
     pub mass: f32,
-    pub just_collided: bool,
+    pub falling_asleep: bool,
+    pub sleeping: bool,
 }
 
 impl Default for Body {
@@ -38,9 +39,10 @@ impl Default for Body {
             acceleration: Vector2::new(0.0, 0.0),
             friction: 0.97,
             ground_friction: 0.4,
-            radius: 8.0,
+            radius: 2.0,
             mass: 1.0,
-            just_collided: false,
+            falling_asleep: false,
+            sleeping: false,
         }
     }
 }
