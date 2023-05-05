@@ -1,13 +1,8 @@
-use rapier2d::na::Vector2;
-use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
-use std::cell::RefCell;
-use std::collections::hash_map::Entry;
-use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub struct SpatialCell {
-    pub atoms: SmallVec<[usize; 8]>,
+    pub atoms: SmallVec<[usize; 2]>,
 }
 
 impl SpatialCell {
@@ -64,11 +59,11 @@ impl SpatialGrid {
     }
 
     pub fn get_at(&self, x: u32, y: u32) -> Option<&SpatialCell> {
-        self.data.get((y * self.width + x) as usize)
+        self.data.get((x * self.height + y) as usize)
     }
 
     pub fn get_at_mut(&mut self, x: u32, y: u32) -> Option<&mut SpatialCell> {
-        self.data.get_mut((y * self.width + x) as usize)
+        self.data.get_mut((x * self.height + y) as usize)
     }
 
     pub fn get_at_wrap(&self, x: i32, y: i32) -> Option<&SpatialCell> {
@@ -88,12 +83,12 @@ impl SpatialGrid {
             (index as i32 - 1).clamp(0, len as i32) as usize,
             index,
             (index + 1).clamp(0, len) as usize,
-            (index + self.width as usize - 1).clamp(0, len) as usize,
-            (index + self.width as usize).clamp(0, len) as usize,
-            (index + self.width as usize + 1).clamp(0, len) as usize,
-            (index - self.width as usize - 1).clamp(0, len) as usize,
-            (index - self.width as usize).clamp(0, len) as usize,
-            (index - self.width as usize + 1).clamp(0, len) as usize,
+            (index + self.height as usize - 1).clamp(0, len) as usize,
+            (index + self.height as usize).clamp(0, len) as usize,
+            (index + self.height as usize + 1).clamp(0, len) as usize,
+            (index - self.height as usize - 1).clamp(0, len) as usize,
+            (index - self.height as usize).clamp(0, len) as usize,
+            (index - self.height as usize + 1).clamp(0, len) as usize,
         ]
     }
 

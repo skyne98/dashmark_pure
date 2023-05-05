@@ -26,8 +26,6 @@ pub struct Body {
     pub ground_friction: f32, // 0.4
     pub radius: f32,
     pub mass: f32,
-    pub falling_asleep: bool,
-    pub sleeping: bool,
 }
 
 impl Default for Body {
@@ -41,8 +39,6 @@ impl Default for Body {
             ground_friction: 0.4,
             radius: 2.0,
             mass: 1.0,
-            falling_asleep: false,
-            sleeping: false,
         }
     }
 }

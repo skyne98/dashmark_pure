@@ -25,7 +25,7 @@ class World {
   FragmentShader? fragmentShader;
   double scaleToSize = 0.0;
 
-  int _spawnedThisFrame = 0;
+  DateTime _lastSpawned = DateTime.now();
 
   final GenerationalIndexBuffer _entityIndices = GenerationalIndexBuffer();
   final Int32Buffer _priorities = Int32Buffer();
@@ -69,54 +69,53 @@ class World {
   }
 
   void input(double x, double y) {
-    if (dashImage != null && fragmentShader != null) {
-      const amountPerSecond = 1000;
-      var amount = (amountPerSecond * lastDt).toInt();
-      if (amount > amountPerSecond) {
-        amount = amountPerSecond;
-      }
-      if (_spawnedThisFrame > amountPerSecond / 60) {
-        return;
-      }
-      _spawnedThisFrame += amount;
+    if (DateTime.now().difference(_lastSpawned) >
+        const Duration(milliseconds: 1)) {
+      final mousePos = Vector2(x, y);
+      if (dashImage != null && fragmentShader != null) {
+        // Spawn 6 sprites in a circle around a non-existent sprite
+        // in the middle
+        for (var i = 0; i < 6; i++) {
+          final angle = i * pi / 3;
+          final offset =
+              Vector2(cos(angle), sin(angle)).normalized() * desiredSize;
+          final position = mousePos + offset;
 
-      for (var i = 0; i < amount; i++) {
-        final vx = 4 * cos(i * 2 * pi / amount);
-        final vy = 4 * sin(i * 2 * pi / amount);
-        _position.add(Vector2(x, y));
-        _velocity.add(Vector2(vx, vy));
-        _rotation.add(0.0);
-        _scale.add(Vector2(1.0, 1.0));
-        final origin = Vector2(desiredSize / 2, desiredSize / 2);
-        _origin.add(origin);
+          _position.add(position);
+          _rotation.add(0.0);
+          _scale.add(Vector2(1.0, 1.0));
+          final origin = Vector2(desiredSize / 2, desiredSize / 2);
+          _origin.add(origin);
 
-        // Create the entity
-        final entity = api.createEntity();
-        _entityIndices.add(entity);
-        setPosition(entity, x, y);
-        const shape = Shape.ball(radius: World.desiredSize / 2);
-        api.entitySetShape(index: entity, shape: shape);
-        setOrigin(entity, origin.x, origin.y);
-        final vertices = Vector32Buffer();
-        vertices.add(Vector2(0.0, 0.0));
-        vertices.add(Vector2(0.0, desiredSize));
-        vertices.add(Vector2(desiredSize, desiredSize));
-        vertices.add(Vector2(desiredSize, 0.0));
-        rendering.setVertices(entity, vertices);
-        final texCoords = Vector32Buffer();
-        texCoords.add(Vector2(0.0, 0.0));
-        texCoords.add(Vector2(spriteSize, 0.0));
-        texCoords.add(Vector2(spriteSize, spriteSize));
-        texCoords.add(Vector2(0.0, spriteSize));
-        rendering.setTexCoords(entity, texCoords);
-        rendering.setIndices(
-            entity, Uint16Buffer()..cloneFromIterable([0, 1, 2, 0, 2, 3]));
+          // Create the entity
+          final entity = api.createEntity();
+          _entityIndices.add(entity);
+          setPosition(entity, position.x, position.y);
+          const shape = Shape.ball(radius: World.desiredSize / 2);
+          api.entitySetShape(index: entity, shape: shape);
+          setOrigin(entity, origin.x, origin.y);
+          final vertices = Vector32Buffer();
+          vertices.add(Vector2(0.0, 0.0));
+          vertices.add(Vector2(0.0, desiredSize));
+          vertices.add(Vector2(desiredSize, desiredSize));
+          vertices.add(Vector2(desiredSize, 0.0));
+          rendering.setVertices(entity, vertices);
+          final texCoords = Vector32Buffer();
+          texCoords.add(Vector2(0.0, 0.0));
+          texCoords.add(Vector2(spriteSize, 0.0));
+          texCoords.add(Vector2(spriteSize, spriteSize));
+          texCoords.add(Vector2(0.0, spriteSize));
+          rendering.setTexCoords(entity, texCoords);
+          rendering.setIndices(
+              entity, Uint16Buffer()..cloneFromIterable([0, 1, 2, 0, 2, 3]));
 
-        // Create a rainbow color (RGB) over time
-        final time = DateTime.now().millisecondsSinceEpoch;
-        final color = generateRainbowColor(time, saturation: 0.8);
-        rendering.setColor(entity, color);
+          // Create a rainbow color (RGB) over time
+          final time = DateTime.now().millisecondsSinceEpoch;
+          final color = generateRainbowColor(time, saturation: 0.8);
+          rendering.setColor(entity, color);
+        }
       }
+      _lastSpawned = DateTime.now();
     }
   }
 
@@ -159,7 +158,6 @@ class World {
   }
 
   void update(double t) {
-    _spawnedThisFrame = 0;
     if (dashImage != null && fragmentShader != null) {
       // Jump around the dashes
       // final length = _velocity.length;
@@ -247,7 +245,7 @@ class World {
       final medianFps = 1 / medianFrameTime;
       final medianFpsRounded = medianFps.round();
       final title =
-          'Dashmark - $fpsRounded FPS - $percentileFpsRounded FPS (95%) - $medianFpsRounded FPS (50%) - ${_velocity.length} dashes';
+          'Dashmark - $fpsRounded FPS - $percentileFpsRounded FPS (95%) - $medianFpsRounded FPS (50%) - ${_position.length} dashes';
       status = title;
     }
   }

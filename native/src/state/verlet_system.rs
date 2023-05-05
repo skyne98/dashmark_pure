@@ -1,12 +1,6 @@
-use std::collections::HashMap;
-
-use generational_arena::Index;
 use rapier2d::{na::Vector2, prelude::Aabb};
 
-use crate::{
-    grid::{world_to_grid, SpatialCell, SpatialGrid},
-    verlet::{Body, BodyAabb},
-};
+use crate::{grid::SpatialGrid, verlet::Body};
 
 use super::transform_manager::TransformManager;
 
@@ -28,7 +22,7 @@ pub struct VerletSystem {
 impl VerletSystem {
     pub fn new() -> Self {
         Self {
-            sub_steps: 4,
+            sub_steps: 8,
             screen_size: Vector2::new(0.0, 0.0),
             collision_damping: 0.5,
             bodies: Vec::new(),
@@ -45,7 +39,7 @@ impl VerletSystem {
         self.grid = SpatialGrid::new(
             (width / self.biggest_radius) as u32,
             (height / self.biggest_radius) as u32,
-            self.biggest_radius * 2.0 * 1.5,
+            self.biggest_radius * 2.0,
         );
     }
 
@@ -60,7 +54,7 @@ impl VerletSystem {
             self.grid = SpatialGrid::new(
                 (self.screen_size.x / self.biggest_radius) as u32,
                 (self.screen_size.y / self.biggest_radius) as u32,
-                self.biggest_radius * 2.0 * 1.5,
+                self.biggest_radius * 2.0,
             );
         }
         self.bodies.push(body);
@@ -103,11 +97,6 @@ impl VerletSystem {
         for index in 0..self.grid.len() {
             let atoms = self.grid.get(index).unwrap().atoms.clone();
             for atom in atoms {
-                let body = self.body(atom).unwrap();
-                if body.sleeping {
-                    continue;
-                }
-
                 let neightbours = self.grid.get_neighbours(index);
                 for neighbour in neightbours {
                     self.solve_atom_cell(atom, neighbour);
@@ -120,11 +109,7 @@ impl VerletSystem {
         let atoms = self
             .grid
             .get(cell)
-            .expect(&format!(
-                "Cell {} does not exist in grid of len {}",
-                cell,
-                self.grid.len()
-            ))
+            .expect("Cell should exist")
             .atoms
             .clone();
         for other_atom in atoms {
@@ -136,8 +121,7 @@ impl VerletSystem {
         if a == b {
             return;
         }
-        let random_x = self.rng.f32() * 2.0 - 1.0;
-        let random_y = self.rng.f32() * 2.0 - 1.0;
+
         let (body_a, body_b) = self.bodies_get_a_and_b_mut(a, b);
         let distance_vec = body_a.position - body_b.position;
         let distance_squared = distance_vec.magnitude_squared();
@@ -149,14 +133,8 @@ impl VerletSystem {
             let collision_vector = (distance_vec / distance) * delta;
             body_a.position += collision_vector;
             body_b.position -= collision_vector;
-
-            body_a.falling_asleep = false;
-            body_b.sleeping = false;
-            body_b.falling_asleep = false;
         } else if distance_squared == 0.0 {
-            let random_vec = Vector2::new(random_x, random_y);
-            let random_vec = random_vec.normalize() * 0.0001;
-            body_a.position += random_vec;
+            body_a.position += Vector2::new(0.0, 0.1);
         }
     }
 
@@ -177,19 +155,6 @@ impl VerletSystem {
             body.acceleration += self.gravity;
             // Apply verlet integration
             let velocity = body.position - body.old_position;
-            if velocity.magnitude_squared() <= self.sleep_threshold * self.sleep_threshold {
-                if body.falling_asleep == false {
-                    println!("Body {} is falling asleep", body.id);
-                    body.falling_asleep = true;
-                } else {
-                    println!("Body {} is sleeping", body.id);
-                    body.sleeping = true;
-                    body.falling_asleep = false;
-                }
-            } else {
-                body.falling_asleep = false;
-                body.sleeping = false;
-            }
             let new_position = body.position
                 + velocity
                 + (body.acceleration - velocity * 20.0) * (delta_time * delta_time) as f32;
