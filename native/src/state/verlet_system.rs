@@ -35,6 +35,10 @@ impl VerletSystem {
     }
 
     pub fn screen_size(&mut self, width: f32, height: f32) {
+        if width == self.screen_size.x && height == self.screen_size.y {
+            return;
+        }
+
         self.screen_size = Vector2::new(width, height);
         self.grid = SpatialGrid::new(
             (width / self.biggest_radius) as u32,
@@ -95,7 +99,14 @@ impl VerletSystem {
 
     pub fn solve_collisions(&mut self) {
         for index in 0..self.grid.len() {
-            let atoms = self.grid.get(index).unwrap().atoms.clone();
+            let atoms = self
+                .grid
+                .get(index)
+                .unwrap()
+                .atoms()
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>();
             for atom in atoms {
                 let neightbours = self.grid.get_neighbours(index);
                 for neighbour in neightbours {
@@ -110,8 +121,10 @@ impl VerletSystem {
             .grid
             .get(cell)
             .expect("Cell should exist")
-            .atoms
-            .clone();
+            .atoms()
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>();
         for other_atom in atoms {
             self.solve_contact(atom, other_atom);
         }
@@ -125,11 +138,12 @@ impl VerletSystem {
         let (body_a, body_b) = self.bodies_get_a_and_b_mut(a, b);
         let distance_vec = body_a.position - body_b.position;
         let distance_squared = distance_vec.magnitude_squared();
-        let radius = body_a.radius + body_b.radius;
+        let radius_sum = body_a.radius + body_b.radius;
+        let radius_sum_squared = radius_sum * radius_sum;
 
-        if distance_squared < radius * radius && distance_squared > f32::EPSILON {
+        if distance_squared > f32::EPSILON && distance_squared < radius_sum_squared {
             let distance = distance_squared.sqrt();
-            let delta = 0.5 * (radius - distance);
+            let delta = 0.5 * (radius_sum - distance);
             let collision_vector = (distance_vec / distance) * delta;
             body_a.position += collision_vector;
             body_b.position -= collision_vector;
@@ -139,48 +153,59 @@ impl VerletSystem {
     }
 
     pub fn bodies_get_a_and_b_mut(&mut self, a: usize, b: usize) -> (&mut Body, &mut Body) {
-        unsafe {
-            let bodies = self.bodies.as_mut_ptr();
-            let body_a = bodies.add(a).as_mut().unwrap();
-            let body_b = bodies.add(b).as_mut().unwrap();
-            (body_a, body_b)
-        }
+        assert!(a != b, "Indices must be different");
+        let (min_idx, max_idx) = if a < b { (a, b) } else { (b, a) };
+        let (first, second) = self.bodies.split_at_mut(max_idx);
+        (&mut first[min_idx], &mut second[0])
     }
 
     pub fn update_bodies(&mut self, delta_time: f64) {
-        let length = self.bodies.len();
-        for body_i in 0..length {
-            let body = &mut self.bodies[body_i];
+        let delta_time_squared = (delta_time * delta_time) as f32;
+        let screen_size_x = self.screen_size.x;
+        let screen_size_y = self.screen_size.y;
+
+        for body in &mut self.bodies {
             // Apply gravity
             body.acceleration += self.gravity;
+
             // Apply verlet integration
             let velocity = body.position - body.old_position;
             let new_position = body.position
                 + velocity
-                + (body.acceleration - velocity * 20.0) * (delta_time * delta_time) as f32;
+                + (body.acceleration - velocity * 20.0) * delta_time_squared;
             body.old_position = body.position;
             body.position = new_position;
             body.acceleration = Vector2::new(0.0, 0.0);
 
             // Apply map constraints
-            if body.position.y > self.screen_size.y - body.radius {
-                body.position.y = self.screen_size.y - body.radius;
-                // bounce off with losing some energy
-                body.old_position.y = body.position.y + velocity.y * body.ground_friction;
-            } else if body.position.y < body.radius {
-                body.position.y = body.radius;
-                // bounce off with losing some energy
-                body.old_position.y = body.position.y + velocity.y * body.ground_friction;
-            }
-            if body.position.x > self.screen_size.x - body.radius {
-                body.position.x = self.screen_size.x - body.radius;
-                // bounce off with losing some energy
-                body.old_position.x = body.position.x + velocity.x * body.ground_friction;
-            } else if body.position.x < body.radius {
-                body.position.x = body.radius;
-                // bounce off with losing some energy
-                body.old_position.x = body.position.x + velocity.x * body.ground_friction;
-            }
+            let radius = body.radius;
+            let ground_friction = body.ground_friction;
+
+            let update_position_and_velocity =
+                |pos: &mut f32, old_pos: &mut f32, vel: f32, min: f32, max: f32| {
+                    if *pos > max {
+                        *pos = max;
+                        *old_pos = *pos + vel * ground_friction;
+                    } else if *pos < min {
+                        *pos = min;
+                        *old_pos = *pos + vel * ground_friction;
+                    }
+                };
+
+            update_position_and_velocity(
+                &mut body.position.y,
+                &mut body.old_position.y,
+                velocity.y,
+                radius,
+                screen_size_y - radius,
+            );
+            update_position_and_velocity(
+                &mut body.position.x,
+                &mut body.old_position.x,
+                velocity.x,
+                radius,
+                screen_size_x - radius,
+            );
         }
     }
 

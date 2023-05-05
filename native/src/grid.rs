@@ -1,14 +1,14 @@
-use smallvec::SmallVec;
+use crate::fast_list::FastList;
 
 #[derive(Clone, Debug)]
 pub struct SpatialCell {
-    pub atoms: SmallVec<[usize; 2]>,
+    pub atoms: FastList<usize, 2>,
 }
 
 impl SpatialCell {
     pub fn new() -> Self {
         Self {
-            atoms: SmallVec::new(),
+            atoms: FastList::new(),
         }
     }
 
@@ -16,12 +16,12 @@ impl SpatialCell {
         self.atoms.push(atom);
     }
 
-    pub fn remove_atom(&mut self, atom: usize) {
-        self.atoms.retain(|a| *a != atom);
+    pub fn atoms(&self) -> &[usize] {
+        &self.atoms.data()
     }
 
-    pub fn atoms(&self) -> &[usize] {
-        &self.atoms
+    pub fn clear(&mut self) {
+        self.atoms.clear();
     }
 }
 
@@ -34,28 +34,32 @@ pub struct SpatialGrid {
 
 impl SpatialGrid {
     pub fn new(width: u32, height: u32, cell_size: f32) -> Self {
+        let mut data = Vec::with_capacity((width * height) as usize);
+        for _ in 0..(width * height) {
+            data.push(SpatialCell::new());
+        }
+
         Self {
             width,
             height,
-            data: vec![SpatialCell::new(); (width * height) as usize],
+            data: data,
             cell_size,
         }
     }
 
     // Cells laytout
-    // 0 1 2 ->
-    // 3 4 5
+    // 0 2 4
+    // 1 3 5
     pub fn add_atom(&mut self, atom: usize, x: u32, y: u32) {
-        if let Some(cell) = self.get_at_mut(x, y) {
-            cell.add_atom(atom);
-        }
+        let x = x.min(self.width - 1);
+        let y = y.min(self.height - 1);
+        let index = x * self.height + y;
+        self.data[index as usize].add_atom(atom);
     }
 
     pub fn add_atom_world(&mut self, atom: usize, x: f32, y: f32) {
         let (x, y) = world_to_grid(x, y, self.cell_size);
-        let x = (x as u32).min(self.width - 1);
-        let y = (y as u32).min(self.height - 1);
-        self.add_atom(atom, x, y);
+        self.add_atom(atom, x as u32, y as u32);
     }
 
     pub fn get_at(&self, x: u32, y: u32) -> Option<&SpatialCell> {
@@ -78,17 +82,23 @@ impl SpatialGrid {
     }
 
     pub fn get_neighbours(&self, index: usize) -> [usize; 9] {
-        let len = self.data.len() as usize - 1;
+        let len = self.data.len() - 1;
+        let height = self.height as usize;
+        let idx_up = index.saturating_add(height);
+        let idx_down = index.saturating_sub(height);
+
+        let clamp = |value: usize| value.min(len);
+
         [
-            (index as i32 - 1).clamp(0, len as i32) as usize,
+            clamp(index.saturating_sub(1)),
             index,
-            (index + 1).clamp(0, len) as usize,
-            (index + self.height as usize - 1).clamp(0, len) as usize,
-            (index + self.height as usize).clamp(0, len) as usize,
-            (index + self.height as usize + 1).clamp(0, len) as usize,
-            (index - self.height as usize - 1).clamp(0, len) as usize,
-            (index - self.height as usize).clamp(0, len) as usize,
-            (index - self.height as usize + 1).clamp(0, len) as usize,
+            clamp(index + 1),
+            clamp(idx_up.saturating_sub(1)),
+            clamp(idx_up),
+            clamp(idx_up + 1),
+            clamp(idx_down.saturating_sub(1)),
+            clamp(idx_down),
+            clamp(idx_down + 1),
         ]
     }
 
@@ -104,15 +114,5 @@ impl SpatialGrid {
 }
 
 pub fn world_to_grid(x: f32, y: f32, cell: f32) -> (i32, i32) {
-    let x = x / cell;
-    let y = y / cell;
-
-    (x as i32, y as i32)
-}
-
-pub fn world_vector_to_grid(x: f32, y: f32, cell: f32) -> (i32, i32) {
-    let x = x / cell;
-    let y = y / cell;
-
-    (x as i32, y as i32)
+    ((x / cell) as i32, (y / cell) as i32)
 }
