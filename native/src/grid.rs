@@ -2,7 +2,7 @@ use crate::fast_list::FastList;
 
 #[derive(Clone, Debug)]
 pub struct SpatialCell {
-    pub atoms: FastList<usize, 2>,
+    pub atoms: FastList<usize, 16>,
 }
 
 impl SpatialCell {

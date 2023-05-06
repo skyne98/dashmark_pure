@@ -14,40 +14,6 @@ use crate::{
 
 // Initialization & environment
 pub fn say_hello() -> String {
-    // Set up the logging
-    if cfg!(target_arch = "wasm32") {
-        console_log::init_with_level(log::Level::Debug).unwrap();
-    } else {
-        env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
-    }
-    log::debug!("Logger is initialized!");
-
-    // Test the threadpool
-    use crate::thread::ThreadPool;
-    use std::sync::Arc;
-    let pool = ThreadPool::new(2);
-    // atomic counter
-    let counter = Arc::new(std::sync::atomic::AtomicI32::new(0));
-
-    for _ in 0..10 {
-        let counter = counter.clone();
-        pool.execute(move || {
-            log::debug!(
-                "Adding 1 to the counter {}",
-                counter.load(std::sync::atomic::Ordering::SeqCst)
-            );
-            counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            std::thread::sleep(std::time::Duration::from_millis(10));
-        });
-    }
-
-    // Sleep to ensure tasks are completed before checking the counter
-    std::thread::sleep(std::time::Duration::from_secs(1));
-    log::debug!(
-        "Counter is {}",
-        counter.load(std::sync::atomic::Ordering::SeqCst)
-    );
-
     "Hello, world!".to_string()
 }
 

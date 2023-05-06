@@ -43,6 +43,14 @@ impl State {
 
 impl State {
     pub fn new() -> Self {
+        // Set up the logging
+        if cfg!(target_arch = "wasm32") {
+            console_log::init_with_level(log::Level::Debug).unwrap();
+        } else {
+            env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
+        }
+        log::debug!("Logger is initialized!");
+
         let entities = RefCell::new(EntityManager::new());
         let broadphase = RefCell::new(BroadphaseStack::new());
         let transforms = RefCell::new(TransformManager::new());

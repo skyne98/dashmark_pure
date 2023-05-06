@@ -1,23 +1,24 @@
 use anyhow::Result;
 use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
-use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::cell::RefCell;
+
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
 use futures::stream::FuturesUnordered;
 #[cfg(not(target_arch = "wasm32"))]
-use std::thread;
+pub use std::thread;
 #[cfg(target_arch = "wasm32")]
-use wasm_thread as thread;
-
-use futures::future::{BoxFuture, FutureExt};
+pub use wasm_thread as thread;
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: Sender<Message>,
-    job_counter: Arc<AtomicU32>,
+    done_receiver: Receiver<()>,
+    job_counter: RefCell<u32>,
+    to_initialize: Arc<AtomicU32>,
 }
 
 impl ThreadPool {
@@ -26,8 +27,9 @@ impl ThreadPool {
 
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
-
-        let job_counter = Arc::new(AtomicU32::new(0));
+        let (done_sender, done_receiver) = mpsc::channel();
+        let done_sender = done_sender;
+        let to_initialize = Arc::new(AtomicU32::new(size as u32));
 
         let mut workers = Vec::with_capacity(size);
 
@@ -35,15 +37,22 @@ impl ThreadPool {
             workers.push(Worker::new(
                 id,
                 Arc::clone(&receiver),
-                Arc::clone(&job_counter),
+                done_sender.clone(),
+                to_initialize.clone(),
             ));
         }
 
         ThreadPool {
             workers,
             sender,
-            job_counter,
+            done_receiver,
+            job_counter: RefCell::new(0),
+            to_initialize: to_initialize,
         }
+    }
+
+    pub fn initialized(&self) -> bool {
+        self.to_initialize.load(Ordering::Relaxed) == 0
     }
 
     pub fn execute<F>(&self, f: F)
@@ -52,7 +61,7 @@ impl ThreadPool {
     {
         let job = Box::new(f);
 
-        self.job_counter.fetch_add(1, Ordering::Relaxed);
+        *self.job_counter.borrow_mut() += 1;
         self.sender.send(Message::NewJob(job)).unwrap();
     }
 
@@ -129,8 +138,13 @@ impl ThreadPool {
 
     pub fn wait_for_completion(&self) {
         loop {
-            if self.job_counter.load(Ordering::Relaxed) == 0 {
+            let mut job_counter = self.job_counter.borrow_mut();
+            if *job_counter == 0 {
                 break;
+            }
+
+            if let Ok(_) = self.done_receiver.try_recv() {
+                *job_counter = *job_counter - 1;
             }
         }
     }
@@ -157,29 +171,30 @@ impl Drop for ThreadPool {
 struct Worker {
     id: usize,
     thread: Option<thread::JoinHandle<()>>,
-    busy: Arc<AtomicBool>,
-    job_counter: Arc<AtomicU32>,
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<Receiver<Message>>>, counter: Arc<AtomicU32>) -> Worker {
-        let busy = Arc::new(AtomicBool::new(false));
-        let busy_flag = Arc::clone(&busy);
-        let counter = Arc::clone(&counter);
-        let counter_flag = Arc::clone(&counter);
+    fn new(
+        id: usize,
+        receiver: Arc<Mutex<Receiver<Message>>>,
+        done_sender: Sender<()>,
+        to_initialize: Arc<AtomicU32>,
+    ) -> Worker {
+        let thread = thread::spawn(move || {
+            log::debug!("Worker {} started", id);
+            to_initialize.fetch_sub(1, Ordering::Relaxed);
+            loop {
+                let message = receiver.lock().unwrap().recv().unwrap();
 
-        let thread = thread::spawn(move || loop {
-            let message = receiver.lock().unwrap().recv().unwrap();
-
-            match message {
-                Message::NewJob(job) => {
-                    busy_flag.store(true, Ordering::Relaxed);
-                    job();
-                    busy_flag.store(false, Ordering::Relaxed);
-                    counter_flag.fetch_sub(1, Ordering::Relaxed);
-                }
-                Message::Terminate => {
-                    break;
+                match message {
+                    Message::NewJob(job) => {
+                        job();
+                        done_sender.send(()).unwrap();
+                    }
+                    Message::Terminate => {
+                        log::debug!("Worker {} was told to terminate", id);
+                        break;
+                    }
                 }
             }
         });
@@ -187,8 +202,6 @@ impl Worker {
         Worker {
             id,
             thread: Some(thread),
-            busy,
-            job_counter: counter,
         }
     }
 }

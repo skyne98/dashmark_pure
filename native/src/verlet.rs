@@ -22,6 +22,7 @@ pub struct Body {
     pub position: Vector2<f32>,
     pub old_position: Vector2<f32>,
     pub acceleration: Vector2<f32>,
+    pub forces: Vector2<f32>,
     pub friction: f32,        // 0.97
     pub ground_friction: f32, // 0.4
     pub radius: f32,
@@ -35,6 +36,7 @@ impl Default for Body {
             position: Vector2::new(0.0, 0.0),
             old_position: Vector2::new(0.0, 0.0),
             acceleration: Vector2::new(0.0, 0.0),
+            forces: Vector2::new(0.0, 0.0),
             friction: 0.97,
             ground_friction: 0.4,
             radius: 2.0,

@@ -1,6 +1,7 @@
+use futures::Future;
 use rapier2d::{na::Vector2, prelude::Aabb};
 
-use crate::{grid::SpatialGrid, thread::ThreadPool, verlet::Body};
+use crate::{grid::SpatialGrid, thread::ThreadPool, time, verlet::Body};
 
 use super::transform_manager::TransformManager;
 
@@ -88,6 +89,11 @@ impl VerletSystem {
     }
 
     pub fn simulate(&mut self, dt: f64) {
+        // Skip until the threadpool is ready
+        if self.threadpool.initialized() == false {
+            return;
+        }
+
         let sub_dt = dt / self.sub_steps as f64;
         for _ in 0..self.sub_steps {
             self.grid.clear();
@@ -164,57 +170,36 @@ impl VerletSystem {
 
     pub fn update_bodies(&mut self, delta_time: f64) {
         let delta_time_squared = (delta_time * delta_time) as f32;
-        let screen_size_x = self.screen_size.x;
-        let screen_size_y = self.screen_size.y;
-        let threadpool = &self.threadpool;
         let gravity = self.gravity;
 
-        threadpool
-            .par_iter_mut(self.bodies.as_mut_slice(), move |body| {
-                // Apply gravity
-                body.acceleration += gravity;
+        for body in &mut self.bodies {
+            // Apply gravity
+            body.acceleration += gravity;
 
-                // Apply verlet integration
-                let velocity = body.position - body.old_position;
-                let new_position = body.position
-                    + velocity
-                    + (body.acceleration - velocity * 20.0) * delta_time_squared;
-                body.old_position = body.position;
-                body.position = new_position;
-                body.acceleration = Vector2::new(0.0, 0.0);
+            // Apply verlet integration
+            let velocity = body.position - body.old_position;
+            let new_position = body.position
+                + velocity
+                + (body.acceleration - velocity * 20.0) * delta_time_squared;
+            body.old_position = body.position;
+            body.position = new_position;
+            body.acceleration = Vector2::new(0.0, 0.0);
 
-                // Apply map constraints
-                let radius = body.radius;
-                let ground_friction = body.ground_friction;
-
-                let update_position_and_velocity =
-                    |pos: &mut f32, old_pos: &mut f32, vel: f32, min: f32, max: f32| {
-                        if *pos > max {
-                            *pos = max;
-                            *old_pos = *pos + vel * ground_friction;
-                        } else if *pos < min {
-                            *pos = min;
-                            *old_pos = *pos + vel * ground_friction;
-                        }
-                    };
-
-                update_position_and_velocity(
-                    &mut body.position.y,
-                    &mut body.old_position.y,
-                    velocity.y,
-                    radius,
-                    screen_size_y - radius,
-                );
-                update_position_and_velocity(
-                    &mut body.position.x,
-                    &mut body.old_position.x,
-                    velocity.x,
-                    radius,
-                    screen_size_x - radius,
-                );
-            })
-            .expect("Failed to update bodies");
-        threadpool.wait_for_completion();
+            // Apply map constraints
+            let radius = body.radius;
+            if body.position.x < radius {
+                body.position.x = radius;
+            }
+            if body.position.x > self.screen_size.x - radius {
+                body.position.x = self.screen_size.x - radius;
+            }
+            if body.position.y < radius {
+                body.position.y = radius;
+            }
+            if body.position.y > self.screen_size.y - radius {
+                body.position.y = self.screen_size.y - radius;
+            }
+        }
     }
 
     pub fn apply_to_transforms(&self, transforms: &mut TransformManager) {

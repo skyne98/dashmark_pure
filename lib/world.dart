@@ -244,8 +244,18 @@ class World {
           medianFrameTimes.fold(0.0, (a, b) => a + b) / medianFrameTimes.length;
       final medianFps = 1 / medianFrameTime;
       final medianFpsRounded = medianFps.round();
+      // Calculate the 99th percentile frame rate
+      const percentile99 = 0.99;
+      final sortedFrameTimes99 = _lastFrameTimes.toList()..sort();
+      final percentileFrameTimes99 = sortedFrameTimes99.sublist(
+          (sortedFrameTimes99.length.toDouble() * percentile99).round());
+      final percentileFrameTime99 =
+          percentileFrameTimes99.fold(0.0, (a, b) => a + b) /
+              percentileFrameTimes99.length;
+      final percentileFps99 = 1 / percentileFrameTime99;
+      final percentileFpsRounded99 = percentileFps99.round();
       final title =
-          'Dashmark - $fpsRounded FPS - $percentileFpsRounded FPS (95%) - $medianFpsRounded FPS (50%) - ${_position.length} dashes';
+          'Dashmark - $fpsRounded FPS - $medianFpsRounded/$percentileFpsRounded/$percentileFpsRounded99 (50/95/99%) - ${_position.length} dashes';
       status = title;
     }
   }
