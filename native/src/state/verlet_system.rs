@@ -40,10 +40,15 @@ impl VerletSystem {
         }
 
         self.screen_size = Vector2::new(width, height);
+        let biggest_radius = if self.biggest_radius == 0.0 {
+            100.0
+        } else {
+            self.biggest_radius
+        };
         self.grid = SpatialGrid::new(
-            (width / self.biggest_radius) as u32,
-            (height / self.biggest_radius) as u32,
-            self.biggest_radius * 2.0,
+            (width / biggest_radius) as u32,
+            (height / biggest_radius) as u32,
+            biggest_radius * 2.0,
         );
     }
 

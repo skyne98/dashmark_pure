@@ -17,6 +17,28 @@ use crate::{
 
 // Initialization & environment
 pub fn say_hello() -> String {
+    // Set up the logging
+    if cfg!(target_arch = "wasm32") {
+        console_log::init_with_level(log::Level::Debug).unwrap();
+    } else {
+        env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
+    }
+    log::debug!("Hello from the main thread!");
+
+    #[cfg(not(target_arch = "wasm32"))]
+    use std::thread;
+    #[cfg(target_arch = "wasm32")]
+    use wasm_thread as thread;
+    let handle = thread::spawn(|| {
+        log::debug!("Hello from the thread!");
+        thread::sleep(std::time::Duration::from_secs(1));
+    });
+    #[cfg(not(target_arch = "wasm32"))]
+    handle.join().unwrap();
+    #[cfg(target_arch = "wasm32")]
+    pollster::block_on(handle.join_async()).unwrap();
+    log::debug!("Hello from the main thread again!");
+
     "Hello, world!".to_string()
 }
 
