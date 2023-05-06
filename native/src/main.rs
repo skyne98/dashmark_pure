@@ -13,7 +13,7 @@ mod grid;
 mod index;
 mod matrix;
 mod state;
-mod threadpool;
+mod thread;
 mod time;
 mod transform;
 mod typed_data;

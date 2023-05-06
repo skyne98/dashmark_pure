@@ -23,21 +23,29 @@ pub fn say_hello() -> String {
     } else {
         env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
     }
-    log::debug!("Hello from the main thread!");
+    log::debug!("Logger is initialized!");
 
-    #[cfg(not(target_arch = "wasm32"))]
-    use std::thread;
-    #[cfg(target_arch = "wasm32")]
-    use wasm_thread as thread;
-    let handle = thread::spawn(|| {
-        log::debug!("Hello from the thread!");
-        thread::sleep(std::time::Duration::from_secs(1));
-    });
-    #[cfg(not(target_arch = "wasm32"))]
-    handle.join().unwrap();
-    #[cfg(target_arch = "wasm32")]
-    pollster::block_on(handle.join_async()).unwrap();
-    log::debug!("Hello from the main thread again!");
+    // Test the threadpool
+    use crate::thread::ThreadPool;
+    use std::sync::Arc;
+    let pool = ThreadPool::new(2);
+    // atomic counter
+    let counter = Arc::new(std::sync::atomic::AtomicI32::new(0));
+
+    for _ in 0..10 {
+        let counter = counter.clone();
+        pool.execute(move || {
+            log::debug!(
+                "Adding 1 to the counter {}",
+                counter.load(std::sync::atomic::Ordering::SeqCst)
+            );
+            counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        });
+    }
+
+    // Sleep to ensure tasks are completed before checking the counter
+    std::thread::sleep(std::time::Duration::from_secs(1));
 
     "Hello, world!".to_string()
 }
