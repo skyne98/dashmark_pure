@@ -1,7 +1,4 @@
-use crate::{
-    typed_data::{f32s_to_vec2_arrays, f32s_to_vec2s, indices_to_u32s, u32s_to_indices},
-    verlet::Body,
-};
+use crate::typed_data::{f32s_to_vec2_arrays, f32s_to_vec2s, indices_to_u32s, u32s_to_indices};
 use flutter_rust_bridge::SyncReturn;
 pub use generational_arena::Arena;
 use rapier2d::na::{Point2, Vector2};
@@ -46,6 +43,10 @@ pub fn say_hello() -> String {
 
     // Sleep to ensure tasks are completed before checking the counter
     std::thread::sleep(std::time::Duration::from_secs(1));
+    log::debug!(
+        "Counter is {}",
+        counter.load(std::sync::atomic::Ordering::SeqCst)
+    );
 
     "Hello, world!".to_string()
 }

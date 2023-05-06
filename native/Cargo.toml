@@ -24,6 +24,8 @@ env_logger = "0.10.0"
 console_log = { version = "1", features = ["color"] }
 pollster = "0.3.0"
 futures = "0.3.27"
+num_cpus = "1.0"
+itertools = "0.10.5"
 
 [lib]
 crate-type = ["staticlib", "cdylib"]

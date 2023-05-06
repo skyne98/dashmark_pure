@@ -1,6 +1,6 @@
 use rapier2d::{na::Vector2, prelude::Aabb};
 
-use crate::{grid::SpatialGrid, verlet::Body};
+use crate::{grid::SpatialGrid, thread::ThreadPool, verlet::Body};
 
 use super::transform_manager::TransformManager;
 
@@ -10,13 +10,12 @@ pub struct VerletSystem {
     pub collision_damping: f32, // how much of the velocity is lost on collision
 
     bodies: Vec<Body>,
-    rng: fastrand::Rng,
 
     gravity: Vector2<f32>,
-    sleep_threshold: f32,
 
     biggest_radius: f32,
     grid: SpatialGrid,
+    threadpool: ThreadPool,
 }
 
 impl VerletSystem {
@@ -27,10 +26,9 @@ impl VerletSystem {
             collision_damping: 0.5,
             bodies: Vec::new(),
             gravity: Vector2::new(0.0, 32.0 * 20.0),
-            sleep_threshold: 0.001,
-            rng: fastrand::Rng::with_seed(404),
             biggest_radius: 0.0,
             grid: SpatialGrid::new(0, 0, 0.0),
+            threadpool: ThreadPool::new(num_cpus::get()),
         }
     }
 
@@ -168,50 +166,55 @@ impl VerletSystem {
         let delta_time_squared = (delta_time * delta_time) as f32;
         let screen_size_x = self.screen_size.x;
         let screen_size_y = self.screen_size.y;
+        let threadpool = &self.threadpool;
+        let gravity = self.gravity;
 
-        for body in &mut self.bodies {
-            // Apply gravity
-            body.acceleration += self.gravity;
+        threadpool
+            .par_iter_mut(self.bodies.as_mut_slice(), move |body| {
+                // Apply gravity
+                body.acceleration += gravity;
 
-            // Apply verlet integration
-            let velocity = body.position - body.old_position;
-            let new_position = body.position
-                + velocity
-                + (body.acceleration - velocity * 20.0) * delta_time_squared;
-            body.old_position = body.position;
-            body.position = new_position;
-            body.acceleration = Vector2::new(0.0, 0.0);
+                // Apply verlet integration
+                let velocity = body.position - body.old_position;
+                let new_position = body.position
+                    + velocity
+                    + (body.acceleration - velocity * 20.0) * delta_time_squared;
+                body.old_position = body.position;
+                body.position = new_position;
+                body.acceleration = Vector2::new(0.0, 0.0);
 
-            // Apply map constraints
-            let radius = body.radius;
-            let ground_friction = body.ground_friction;
+                // Apply map constraints
+                let radius = body.radius;
+                let ground_friction = body.ground_friction;
 
-            let update_position_and_velocity =
-                |pos: &mut f32, old_pos: &mut f32, vel: f32, min: f32, max: f32| {
-                    if *pos > max {
-                        *pos = max;
-                        *old_pos = *pos + vel * ground_friction;
-                    } else if *pos < min {
-                        *pos = min;
-                        *old_pos = *pos + vel * ground_friction;
-                    }
-                };
+                let update_position_and_velocity =
+                    |pos: &mut f32, old_pos: &mut f32, vel: f32, min: f32, max: f32| {
+                        if *pos > max {
+                            *pos = max;
+                            *old_pos = *pos + vel * ground_friction;
+                        } else if *pos < min {
+                            *pos = min;
+                            *old_pos = *pos + vel * ground_friction;
+                        }
+                    };
 
-            update_position_and_velocity(
-                &mut body.position.y,
-                &mut body.old_position.y,
-                velocity.y,
-                radius,
-                screen_size_y - radius,
-            );
-            update_position_and_velocity(
-                &mut body.position.x,
-                &mut body.old_position.x,
-                velocity.x,
-                radius,
-                screen_size_x - radius,
-            );
-        }
+                update_position_and_velocity(
+                    &mut body.position.y,
+                    &mut body.old_position.y,
+                    velocity.y,
+                    radius,
+                    screen_size_y - radius,
+                );
+                update_position_and_velocity(
+                    &mut body.position.x,
+                    &mut body.old_position.x,
+                    velocity.x,
+                    radius,
+                    screen_size_x - radius,
+                );
+            })
+            .expect("Failed to update bodies");
+        threadpool.wait_for_completion();
     }
 
     pub fn apply_to_transforms(&self, transforms: &mut TransformManager) {
