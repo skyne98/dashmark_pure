@@ -1,5 +1,5 @@
+use ahash::AHashMap;
 use rapier2d::na::Vector2;
-use rustc_hash::FxHashMap;
 
 use crate::fast_list::FastList;
 
@@ -29,22 +29,22 @@ impl SpatialCell {
 }
 
 pub struct SpatialGrid {
-    pub data: FxHashMap<usize, SpatialCell>,
+    pub data: AHashMap<u32, SpatialCell>,
     pub cell_size: f32,
 }
 
 impl SpatialGrid {
     pub fn new(cell_size: f32) -> Self {
         Self {
-            data: FxHashMap::default(),
+            data: AHashMap::default(),
             cell_size,
         }
     }
 
-    pub fn djb2_hash(x: u32, y: u32) -> usize {
+    pub fn djb2_hash(x: u32, y: u32) -> u32 {
         let mut hash = 5381;
-        hash = hash * 33 + x as usize;
-        hash = hash * 33 + y as usize;
+        hash = hash * 33 + x;
+        hash = hash * 33 + y;
         hash
     }
 

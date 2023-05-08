@@ -25,7 +25,7 @@ pub struct VerletSystem {
 impl VerletSystem {
     pub fn new() -> Self {
         Self {
-            sub_steps: 8,
+            sub_steps: 6,
             screen_size: Vector2::new(0.0, 0.0),
             collision_damping: 0.5,
             bodies: Vec::new(),
@@ -114,6 +114,14 @@ impl VerletSystem {
         }
     }
 
+    fn fast_inv_sqrt(x: f32) -> f32 {
+        let xhalf = 0.5f32 * x;
+        let mut i = x.to_bits();
+        i = 0x5f3759df - (i >> 1);
+        let y = f32::from_bits(i);
+        y * (1.5f32 - xhalf * y * y)
+    }
+
     pub fn solve_contact(a: usize, b: usize, bodies: &mut [Body]) {
         if a == b {
             return;
@@ -125,14 +133,18 @@ impl VerletSystem {
         let radius_sum = body_a.radius + body_b.radius;
         let radius_sum_squared = radius_sum * radius_sum;
 
-        if distance_squared > f32::EPSILON && distance_squared < radius_sum_squared {
-            let distance = distance_squared.sqrt();
-            let delta = 0.5 * (radius_sum - distance);
-            let collision_vector = (distance_vec / distance) * delta;
+        if distance_squared == 0.0 {
+            body_a.position.y += 0.1;
+        } else if distance_squared > f32::EPSILON && distance_squared < radius_sum_squared {
+            let inv_distance = if distance_squared > 1.0 {
+                Self::fast_inv_sqrt(distance_squared)
+            } else {
+                1.0 / distance_squared.sqrt()
+            };
+            let delta = 0.5 * (radius_sum - distance_squared * inv_distance);
+            let collision_vector = distance_vec * (delta * inv_distance);
             body_a.position += collision_vector;
             body_b.position -= collision_vector;
-        } else if distance_squared == 0.0 {
-            body_a.position += Vector2::new(0.0, 0.1);
         }
     }
 
