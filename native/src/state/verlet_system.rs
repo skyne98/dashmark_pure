@@ -110,77 +110,21 @@ impl VerletSystem {
     }
 
     pub fn solve_collisions(&mut self) {
-        let thread_count = self.threadpool.workers_count();
-        let slice_count = thread_count * 2;
-        let slice_size = (self.grid.width / slice_count as u32) * self.grid.height;
-
-        // Solve in two passes to avoid data races
-        // ...first pass
-        for slice_index in 0..slice_count / 2 {
-            let slice_index = slice_index * 2;
-            let grid = &self.grid as *const SpatialGrid as usize;
-            let bodies = &mut self.bodies[..] as *mut [Body] as *mut Body as usize;
-            let bodies_len = self.bodies.len();
-            let start_index = slice_index as u32 * slice_size;
-            let end_index = (start_index + slice_size).min(self.grid.width * self.grid.height);
-            self.threadpool
-                .par_iter(
-                    (start_index..end_index).collect::<Vec<_>>().as_slice(),
-                    move |index| {
-                        let grid = unsafe { &*(grid as *const SpatialGrid) };
-                        let bodies = unsafe {
-                            std::slice::from_raw_parts_mut(bodies as *mut Body, bodies_len)
-                        };
-                        let atoms = grid
-                            .get(*index as usize)
-                            .expect("Cell should exist")
-                            .atoms()
-                            .iter()
-                            .cloned()
-                            .collect::<Vec<_>>();
-                        for atom in atoms {
-                            let neightbours = grid.get_neighbours(*index as usize);
-                            for neighbour in neightbours {
-                                Self::solve_atom_cell(atom, neighbour, grid, bodies);
-                            }
-                        }
-                    },
-                )
-                .expect("Failed to solve collisions");
-        }
-
-        // ...second pass
-        for slice_index in 0..slice_count / 2 {
-            let slice_index = slice_index * 2 + 1;
-            let grid = &self.grid as *const SpatialGrid as usize;
-            let bodies = &mut self.bodies[..] as *mut [Body] as *mut Body as usize;
-            let bodies_len = self.bodies.len();
-            let start_index = slice_index as u32 * slice_size;
-            let end_index = (start_index + slice_size).min(self.grid.width * self.grid.height);
-            self.threadpool
-                .par_iter(
-                    (start_index..end_index).collect::<Vec<_>>().as_slice(),
-                    move |index| {
-                        let grid = unsafe { &*(grid as *const SpatialGrid) };
-                        let bodies = unsafe {
-                            std::slice::from_raw_parts_mut(bodies as *mut Body, bodies_len)
-                        };
-                        let atoms = grid
-                            .get(*index as usize)
-                            .expect("Cell should exist")
-                            .atoms()
-                            .iter()
-                            .cloned()
-                            .collect::<Vec<_>>();
-                        for atom in atoms {
-                            let neightbours = grid.get_neighbours(*index as usize);
-                            for neighbour in neightbours {
-                                Self::solve_atom_cell(atom, neighbour, grid, bodies);
-                            }
-                        }
-                    },
-                )
-                .expect("Failed to solve collisions");
+        for index in 0..self.grid.len() {
+            let atoms = self
+                .grid
+                .get(index)
+                .expect("Cell should exist")
+                .atoms()
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>();
+            for atom in atoms {
+                let neightbours = self.grid.get_neighbours(index as usize);
+                for neighbour in neightbours {
+                    Self::solve_atom_cell(atom, neighbour, &self.grid, &mut self.bodies);
+                }
+            }
         }
     }
 
