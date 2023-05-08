@@ -1,35 +1,59 @@
 use anyhow::Result;
-use futures::{StreamExt, TryStreamExt};
-use itertools::Itertools;
-use std::cell::RefCell;
 
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::cell::RefCell;
+use std::sync::atomic::{AtomicU32, AtomicU8, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
-use futures::stream::FuturesUnordered;
 #[cfg(not(target_arch = "wasm32"))]
 pub use std::thread;
 #[cfg(target_arch = "wasm32")]
 pub use wasm_thread as thread;
 
+pub fn get_logical_core_count() -> usize {
+    if cfg!(not(target_arch = "wasm32")) {
+        num_cpus::get()
+    } else {
+        // use web-sys to get the number of logical cores
+        // via `navigator.hardwareConcurrency`
+        web_sys::window()
+            .expect("no global `window` exists")
+            .navigator()
+            .hardware_concurrency() as usize
+    }
+}
+
 pub struct ThreadPool {
     workers: Vec<Worker>,
+    to_initialize: RefCell<u8>,
     sender: Sender<Message>,
-    done_receiver: Receiver<()>,
-    job_counter: RefCell<u32>,
-    to_initialize: Arc<AtomicU32>,
+    to_be_done: RefCell<u32>,
+    got_done: Receiver<()>,
+    got_initialized: Receiver<()>,
+
+    web_workaround: RefCell<bool>,
 }
 
 impl ThreadPool {
     pub fn new(size: usize) -> ThreadPool {
         assert!(size > 0);
+        log::debug!(
+            "Creating thread pool with {} threads on thread {:?}",
+            size,
+            thread::current().id()
+        );
 
+        // Tasks
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
-        let (done_sender, done_receiver) = mpsc::channel();
-        let done_sender = done_sender;
-        let to_initialize = Arc::new(AtomicU32::new(size as u32));
+
+        // Initialization
+        let (to_initialize, got_initialized) = mpsc::channel();
+        let to_initialize = Arc::new(Mutex::new(to_initialize));
+
+        // Completion
+        let (to_do, got_done) = mpsc::channel();
+        let to_do = Arc::new(Mutex::new(to_do));
 
         let mut workers = Vec::with_capacity(size);
 
@@ -37,22 +61,32 @@ impl ThreadPool {
             workers.push(Worker::new(
                 id,
                 Arc::clone(&receiver),
-                done_sender.clone(),
-                to_initialize.clone(),
+                Arc::clone(&to_initialize),
+                Arc::clone(&to_do),
             ));
         }
 
         ThreadPool {
             workers,
+            to_initialize: RefCell::new(size as u8),
             sender,
-            done_receiver,
-            job_counter: RefCell::new(0),
-            to_initialize: to_initialize,
+            to_be_done: RefCell::new(0),
+            got_done,
+            got_initialized,
+            web_workaround: false.into(),
         }
     }
 
     pub fn initialized(&self) -> bool {
-        self.to_initialize.load(Ordering::Relaxed) == 0
+        if let Ok(_) = self.got_initialized.try_recv() {
+            *self.to_initialize.borrow_mut() -= 1;
+        }
+
+        *self.to_initialize.borrow() == 0
+    }
+
+    pub fn workers_count(&self) -> usize {
+        self.workers.len()
     }
 
     pub fn execute<F>(&self, f: F)
@@ -61,7 +95,7 @@ impl ThreadPool {
     {
         let job = Box::new(f);
 
-        *self.job_counter.borrow_mut() += 1;
+        self.to_be_done.replace_with(|x| *x + 1);
         self.sender.send(Message::NewJob(job)).unwrap();
     }
 
@@ -137,14 +171,9 @@ impl ThreadPool {
     }
 
     pub fn wait_for_completion(&self) {
-        loop {
-            let mut job_counter = self.job_counter.borrow_mut();
-            if *job_counter == 0 {
-                break;
-            }
-
-            if let Ok(_) = self.done_receiver.try_recv() {
-                *job_counter = *job_counter - 1;
+        while *self.to_be_done.borrow() > 0 {
+            if let Ok(_) = self.got_done.try_recv() {
+                *self.to_be_done.borrow_mut() -= 1;
             }
         }
     }
@@ -177,19 +206,33 @@ impl Worker {
     fn new(
         id: usize,
         receiver: Arc<Mutex<Receiver<Message>>>,
-        done_sender: Sender<()>,
-        to_initialize: Arc<AtomicU32>,
+        initialized_sender: Arc<Mutex<Sender<()>>>,
+        done_sender: Arc<Mutex<Sender<()>>>,
     ) -> Worker {
         let thread = thread::spawn(move || {
-            log::debug!("Worker {} started", id);
-            to_initialize.fetch_sub(1, Ordering::Relaxed);
+            log::debug!(
+                "Worker {} started on thread {:?}",
+                id,
+                thread::current().id()
+            );
+
+            // Initializtion
+            {
+                let mut initialized_sender = initialized_sender.lock().unwrap();
+                initialized_sender.send(()).unwrap();
+            }
+
             loop {
                 let message = receiver.lock().unwrap().recv().unwrap();
 
                 match message {
                     Message::NewJob(job) => {
                         job();
-                        done_sender.send(()).unwrap();
+                        // Done
+                        {
+                            let mut done_sender = done_sender.lock().unwrap();
+                            done_sender.send(()).unwrap();
+                        }
                     }
                     Message::Terminate => {
                         log::debug!("Worker {} was told to terminate", id);

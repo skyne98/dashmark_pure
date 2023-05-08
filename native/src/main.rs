@@ -1,4 +1,7 @@
 #![feature(portable_simd)]
+#![feature(asm_experimental_arch)]
+#![feature(atomic_mut_ptr)]
+#![feature(atomic_from_ptr)]
 use crate::matrix::{bulk_transform_vectors_mut, bulk_transform_vectors_mut_n, TransformMatrix};
 use rapier2d::na::Vector2;
 use rapier2d::parry::bounding_volume::Aabb as ParryAabb;

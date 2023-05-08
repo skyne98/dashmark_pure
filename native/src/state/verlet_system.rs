@@ -1,7 +1,10 @@
-use futures::Future;
 use rapier2d::{na::Vector2, prelude::Aabb};
 
-use crate::{grid::SpatialGrid, thread::ThreadPool, time, verlet::Body};
+use crate::{
+    grid::SpatialGrid,
+    thread::{get_logical_core_count, ThreadPool},
+    verlet::Body,
+};
 
 use super::transform_manager::TransformManager;
 
@@ -29,7 +32,7 @@ impl VerletSystem {
             gravity: Vector2::new(0.0, 32.0 * 20.0),
             biggest_radius: 0.0,
             grid: SpatialGrid::new(0, 0, 0.0),
-            threadpool: ThreadPool::new(num_cpus::get()),
+            threadpool: ThreadPool::new(get_logical_core_count()),
         }
     }
 
@@ -107,27 +110,82 @@ impl VerletSystem {
     }
 
     pub fn solve_collisions(&mut self) {
-        for index in 0..self.grid.len() {
-            let atoms = self
-                .grid
-                .get(index)
-                .unwrap()
-                .atoms()
-                .iter()
-                .cloned()
-                .collect::<Vec<_>>();
-            for atom in atoms {
-                let neightbours = self.grid.get_neighbours(index);
-                for neighbour in neightbours {
-                    self.solve_atom_cell(atom, neighbour);
-                }
-            }
+        let thread_count = self.threadpool.workers_count();
+        let slice_count = thread_count * 2;
+        let slice_size = (self.grid.width / slice_count as u32) * self.grid.height;
+
+        // Solve in two passes to avoid data races
+        // ...first pass
+        for slice_index in 0..slice_count / 2 {
+            let slice_index = slice_index * 2;
+            let grid = &self.grid as *const SpatialGrid as usize;
+            let bodies = &mut self.bodies[..] as *mut [Body] as *mut Body as usize;
+            let bodies_len = self.bodies.len();
+            let start_index = slice_index as u32 * slice_size;
+            let end_index = (start_index + slice_size).min(self.grid.width * self.grid.height);
+            self.threadpool
+                .par_iter(
+                    (start_index..end_index).collect::<Vec<_>>().as_slice(),
+                    move |index| {
+                        let grid = unsafe { &*(grid as *const SpatialGrid) };
+                        let bodies = unsafe {
+                            std::slice::from_raw_parts_mut(bodies as *mut Body, bodies_len)
+                        };
+                        let atoms = grid
+                            .get(*index as usize)
+                            .expect("Cell should exist")
+                            .atoms()
+                            .iter()
+                            .cloned()
+                            .collect::<Vec<_>>();
+                        for atom in atoms {
+                            let neightbours = grid.get_neighbours(*index as usize);
+                            for neighbour in neightbours {
+                                Self::solve_atom_cell(atom, neighbour, grid, bodies);
+                            }
+                        }
+                    },
+                )
+                .expect("Failed to solve collisions");
+        }
+
+        // ...second pass
+        for slice_index in 0..slice_count / 2 {
+            let slice_index = slice_index * 2 + 1;
+            let grid = &self.grid as *const SpatialGrid as usize;
+            let bodies = &mut self.bodies[..] as *mut [Body] as *mut Body as usize;
+            let bodies_len = self.bodies.len();
+            let start_index = slice_index as u32 * slice_size;
+            let end_index = (start_index + slice_size).min(self.grid.width * self.grid.height);
+            self.threadpool
+                .par_iter(
+                    (start_index..end_index).collect::<Vec<_>>().as_slice(),
+                    move |index| {
+                        let grid = unsafe { &*(grid as *const SpatialGrid) };
+                        let bodies = unsafe {
+                            std::slice::from_raw_parts_mut(bodies as *mut Body, bodies_len)
+                        };
+                        let atoms = grid
+                            .get(*index as usize)
+                            .expect("Cell should exist")
+                            .atoms()
+                            .iter()
+                            .cloned()
+                            .collect::<Vec<_>>();
+                        for atom in atoms {
+                            let neightbours = grid.get_neighbours(*index as usize);
+                            for neighbour in neightbours {
+                                Self::solve_atom_cell(atom, neighbour, grid, bodies);
+                            }
+                        }
+                    },
+                )
+                .expect("Failed to solve collisions");
         }
     }
 
-    pub fn solve_atom_cell(&mut self, atom: usize, cell: usize) {
-        let atoms = self
-            .grid
+    pub fn solve_atom_cell(atom: usize, cell: usize, grid: &SpatialGrid, bodies: &mut [Body]) {
+        let atoms = grid
             .get(cell)
             .expect("Cell should exist")
             .atoms()
@@ -135,16 +193,16 @@ impl VerletSystem {
             .cloned()
             .collect::<Vec<_>>();
         for other_atom in atoms {
-            self.solve_contact(atom, other_atom);
+            Self::solve_contact(atom, other_atom, bodies);
         }
     }
 
-    pub fn solve_contact(&mut self, a: usize, b: usize) {
+    pub fn solve_contact(a: usize, b: usize, bodies: &mut [Body]) {
         if a == b {
             return;
         }
 
-        let (body_a, body_b) = self.bodies_get_a_and_b_mut(a, b);
+        let (body_a, body_b) = Self::bodies_get_a_and_b_mut(bodies, a, b);
         let distance_vec = body_a.position - body_b.position;
         let distance_squared = distance_vec.magnitude_squared();
         let radius_sum = body_a.radius + body_b.radius;
@@ -161,10 +219,14 @@ impl VerletSystem {
         }
     }
 
-    pub fn bodies_get_a_and_b_mut(&mut self, a: usize, b: usize) -> (&mut Body, &mut Body) {
+    pub fn bodies_get_a_and_b_mut(
+        bodies: &mut [Body],
+        a: usize,
+        b: usize,
+    ) -> (&mut Body, &mut Body) {
         assert!(a != b, "Indices must be different");
         let (min_idx, max_idx) = if a < b { (a, b) } else { (b, a) };
-        let (first, second) = self.bodies.split_at_mut(max_idx);
+        let (first, second) = bodies.split_at_mut(max_idx);
         (&mut first[min_idx], &mut second[0])
     }
 

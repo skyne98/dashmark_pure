@@ -46,6 +46,7 @@ impl State {
         // Set up the logging
         if cfg!(target_arch = "wasm32") {
             console_log::init_with_level(log::Level::Debug).unwrap();
+            console_error_panic_hook::set_once();
         } else {
             env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
         }

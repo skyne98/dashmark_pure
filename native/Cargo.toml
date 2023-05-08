@@ -22,10 +22,14 @@ wasm_thread = "0.2.0"
 log = "0.4.17"
 env_logger = "0.10.0"
 console_log = { version = "1", features = ["color"] }
+console_error_panic_hook = "0.1.7"
 pollster = "0.3.0"
 futures = "0.3.27"
 num_cpus = "1.0"
 itertools = "0.10.5"
+spin = "0.9.6"
+web-sys = { version = "0.3.61", features = ["Window", "Location", "Navigator"] }
+js-sys = { version = "0.3.61" }
 
 [lib]
 crate-type = ["staticlib", "cdylib"]

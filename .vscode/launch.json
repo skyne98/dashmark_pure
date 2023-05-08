@@ -28,7 +28,7 @@
             "type": "dart",
             "flutterMode": "profile",
             "env": {
-                "RUSTFLAGS": "-O -C target-feature=+neon"
+                "RUSTFLAGS": "-O -C target-feature=+neon,+fp-armv8,+sve"
             }
         },
         {
