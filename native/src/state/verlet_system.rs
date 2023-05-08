@@ -31,7 +31,7 @@ impl VerletSystem {
             bodies: Vec::new(),
             gravity: Vector2::new(0.0, 32.0 * 20.0),
             biggest_radius: 0.0,
-            grid: SpatialGrid::new(0, 0, 0.0),
+            grid: SpatialGrid::new(0.0),
             // threadpool: ThreadPool::new(get_logical_core_count()),
         }
     }
@@ -47,11 +47,7 @@ impl VerletSystem {
         } else {
             self.biggest_radius
         };
-        self.grid = SpatialGrid::new(
-            (width / biggest_radius) as u32,
-            (height / biggest_radius) as u32,
-            biggest_radius * 2.0,
-        );
+        self.grid = SpatialGrid::new(biggest_radius * 2.0);
     }
 
     pub fn new_body(&mut self, position: Vector2<f32>, radius: f32) {
@@ -62,11 +58,7 @@ impl VerletSystem {
         body.radius = radius;
         if radius > self.biggest_radius {
             self.biggest_radius = radius;
-            self.grid = SpatialGrid::new(
-                (self.screen_size.x / self.biggest_radius) as u32,
-                (self.screen_size.y / self.biggest_radius) as u32,
-                self.biggest_radius * 2.0,
-            );
+            self.grid = SpatialGrid::new(self.biggest_radius * 2.0);
         }
         self.bodies.push(body);
     }
@@ -102,7 +94,7 @@ impl VerletSystem {
             self.grid.clear();
             for body in &mut self.bodies {
                 self.grid
-                    .add_atom_world(body.id, body.position.x, body.position.y);
+                    .add_atom_aabb(body.id, body.position.x, body.position.y, body.radius);
             }
             self.solve_collisions();
             self.update_bodies(sub_dt);
@@ -110,34 +102,15 @@ impl VerletSystem {
     }
 
     pub fn solve_collisions(&mut self) {
-        for index in 0..self.grid.len() {
-            let atoms = self
-                .grid
-                .get(index)
-                .expect("Cell should exist")
-                .atoms()
-                .iter()
-                .cloned()
-                .collect::<Vec<_>>();
-            for atom in atoms {
-                let neightbours = self.grid.get_neighbours(index as usize);
-                for neighbour in neightbours {
-                    Self::solve_atom_cell(atom, neighbour, &self.grid, &mut self.bodies);
+        let grid = &self.grid;
+        for body_index in 0..self.bodies.len() {
+            let body = &self.bodies[body_index];
+            let potentials = grid.query(body.position.x, body.position.y, body.radius);
+            for other_bodies in potentials {
+                for other_body_index in other_bodies.data() {
+                    Self::solve_contact(body_index, *other_body_index, &mut self.bodies);
                 }
             }
-        }
-    }
-
-    pub fn solve_atom_cell(atom: usize, cell: usize, grid: &SpatialGrid, bodies: &mut [Body]) {
-        let atoms = grid
-            .get(cell)
-            .expect("Cell should exist")
-            .atoms()
-            .iter()
-            .cloned()
-            .collect::<Vec<_>>();
-        for other_atom in atoms {
-            Self::solve_contact(atom, other_atom, bodies);
         }
     }
 

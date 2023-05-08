@@ -1,8 +1,11 @@
+use rapier2d::na::Vector2;
+use rustc_hash::FxHashMap;
+
 use crate::fast_list::FastList;
 
 #[derive(Clone, Debug)]
 pub struct SpatialCell {
-    pub atoms: FastList<usize, 16>,
+    pub atoms: FastList<usize, 32>,
 }
 
 impl SpatialCell {
@@ -26,84 +29,85 @@ impl SpatialCell {
 }
 
 pub struct SpatialGrid {
-    pub width: u32,
-    pub height: u32,
-    pub data: Vec<SpatialCell>,
+    pub data: FxHashMap<usize, SpatialCell>,
     pub cell_size: f32,
 }
 
 impl SpatialGrid {
-    pub fn new(width: u32, height: u32, cell_size: f32) -> Self {
-        let mut data = Vec::with_capacity((width * height) as usize);
-        for _ in 0..(width * height) {
-            data.push(SpatialCell::new());
-        }
-
+    pub fn new(cell_size: f32) -> Self {
         Self {
-            width,
-            height,
-            data: data,
+            data: FxHashMap::default(),
             cell_size,
         }
+    }
+
+    pub fn djb2_hash(x: u32, y: u32) -> usize {
+        let mut hash = 5381;
+        hash = hash * 33 + x as usize;
+        hash = hash * 33 + y as usize;
+        hash
     }
 
     // Cells laytout
     // 0 2 4
     // 1 3 5
-    pub fn add_atom(&mut self, atom: usize, x: u32, y: u32) {
-        let x = x.min(self.width - 1);
-        let y = y.min(self.height - 1);
-        let index = x * self.height + y;
-        self.data[index as usize].add_atom(atom);
+    pub fn add_atom(&mut self, atom: usize, x: f32, y: f32) {
+        let grid_pos = world_to_grid(x, y, self.cell_size);
+        let hash = Self::djb2_hash(grid_pos.0, grid_pos.1);
+        let cell = self.data.entry(hash).or_insert_with(SpatialCell::new);
+        cell.add_atom(atom);
     }
 
-    pub fn add_atom_world(&mut self, atom: usize, x: f32, y: f32) {
-        let (x, y) = world_to_grid(x, y, self.cell_size);
-        self.add_atom(atom, x as u32, y as u32);
+    pub fn add_atom_aabb(&mut self, atom: usize, x: f32, y: f32, radius: f32) {
+        let min = Vector2::new(x - radius, y - radius);
+        let max = Vector2::new(x + radius, y + radius);
+
+        let min_grid = world_to_grid(min.x, min.y, self.cell_size);
+        let max_grid = world_to_grid(max.x, max.y, self.cell_size);
+
+        let width = max_grid.0 - min_grid.0;
+        let height = max_grid.1 - min_grid.1;
+
+        for x in 0..width + 1 {
+            for y in 0..height + 1 {
+                let hash = Self::djb2_hash(min_grid.0 + x, min_grid.1 + y);
+                let cell = self.data.entry(hash).or_insert_with(SpatialCell::new);
+                cell.add_atom(atom);
+            }
+        }
     }
 
-    pub fn get_at(&self, x: u32, y: u32) -> Option<&SpatialCell> {
-        self.data.get((x * self.height + y) as usize)
+    pub fn get_at(&self, x: f32, y: f32) -> Option<&SpatialCell> {
+        let grid_pos = world_to_grid(x, y, self.cell_size);
+        let hash = Self::djb2_hash(grid_pos.0, grid_pos.1);
+        self.data.get(&hash)
     }
 
-    pub fn get_at_mut(&mut self, x: u32, y: u32) -> Option<&mut SpatialCell> {
-        self.data.get_mut((x * self.height + y) as usize)
-    }
+    pub fn query(&self, x: f32, y: f32, radius: f32) -> Vec<&FastList<usize, 32>> {
+        let min = Vector2::new(x - radius, y - radius);
+        let max = Vector2::new(x + radius, y + radius);
 
-    pub fn get_at_wrap(&self, x: i32, y: i32) -> Option<&SpatialCell> {
-        let x = if x < 0 { 0 } else { x as u32 };
-        let y = if y < 0 { 0 } else { y as u32 };
+        let min_grid = world_to_grid(min.x, min.y, self.cell_size);
+        let max_grid = world_to_grid(max.x, max.y, self.cell_size);
 
-        self.get_at(x % self.width, y % self.height)
-    }
+        let width = max_grid.0 - min_grid.0;
+        let height = max_grid.1 - min_grid.1;
 
-    pub fn get(&self, index: usize) -> Option<&SpatialCell> {
-        self.data.get(index as usize)
-    }
+        let mut result = Vec::with_capacity(4);
+        for x in 0..width + 1 {
+            for y in 0..height + 1 {
+                let hash = Self::djb2_hash(min_grid.0 + x, min_grid.1 + y);
+                if let Some(cell) = self.data.get(&hash) {
+                    result.push(&cell.atoms);
+                }
+            }
+        }
 
-    pub fn get_neighbours(&self, index: usize) -> [usize; 9] {
-        let len = self.data.len() - 1;
-        let height = self.height as usize;
-        let idx_up = index.saturating_add(height);
-        let idx_down = index.saturating_sub(height);
-
-        let clamp = |value: usize| value.min(len);
-
-        [
-            clamp(index.saturating_sub(1)),
-            index,
-            clamp(index + 1),
-            clamp(idx_up.saturating_sub(1)),
-            clamp(idx_up),
-            clamp(idx_up + 1),
-            clamp(idx_down.saturating_sub(1)),
-            clamp(idx_down),
-            clamp(idx_down + 1),
-        ]
+        result
     }
 
     pub fn clear(&mut self) {
-        for cell in self.data.iter_mut() {
+        for (_, cell) in self.data.iter_mut() {
             cell.atoms.clear();
         }
     }
@@ -113,6 +117,9 @@ impl SpatialGrid {
     }
 }
 
-pub fn world_to_grid(x: f32, y: f32, cell: f32) -> (i32, i32) {
-    ((x / cell) as i32, (y / cell) as i32)
+pub fn world_to_grid(x: f32, y: f32, cell_size: f32) -> (u32, u32) {
+    let x = x / cell_size;
+    let y = y / cell_size;
+
+    (x as u32, y as u32)
 }
