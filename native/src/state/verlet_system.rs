@@ -19,7 +19,7 @@ pub struct VerletSystem {
 
     biggest_radius: f32,
     grid: SpatialGrid,
-    threadpool: ThreadPool,
+    // threadpool: ThreadPool,
 }
 
 impl VerletSystem {
@@ -32,7 +32,7 @@ impl VerletSystem {
             gravity: Vector2::new(0.0, 32.0 * 20.0),
             biggest_radius: 0.0,
             grid: SpatialGrid::new(0, 0, 0.0),
-            threadpool: ThreadPool::new(get_logical_core_count()),
+            // threadpool: ThreadPool::new(get_logical_core_count()),
         }
     }
 
@@ -93,9 +93,9 @@ impl VerletSystem {
 
     pub fn simulate(&mut self, dt: f64) {
         // Skip until the threadpool is ready
-        if self.threadpool.initialized() == false {
-            return;
-        }
+        // if self.threadpool.initialized() == false {
+        //     return;
+        // }
 
         let sub_dt = dt / self.sub_steps as f64;
         for _ in 0..self.sub_steps {

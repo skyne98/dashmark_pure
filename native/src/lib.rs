@@ -3,10 +3,12 @@
 #![feature(atomic_mut_ptr)]
 #![feature(atomic_from_ptr)]
 
-// use mimalloc::MiMalloc;
+#[cfg(not(target_arch = "wasm32"))]
+use mimalloc::MiMalloc;
 
-// #[global_allocator]
-// static GLOBAL: MiMalloc = MiMalloc;
+#[cfg(not(target_arch = "wasm32"))]
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 pub mod api;
 pub mod bvh;

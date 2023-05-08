@@ -44,10 +44,18 @@ impl State {
 impl State {
     pub fn new() -> Self {
         // Set up the logging
-        if cfg!(target_arch = "wasm32") {
+        #[cfg(target_arch = "wasm32")]
+        {
             console_log::init_with_level(log::Level::Debug).unwrap();
             console_error_panic_hook::set_once();
-        } else {
+        }
+        #[cfg(target_os = "android")]
+        {
+            use android_logger::{Config, FilterBuilder};
+            android_logger::init_once(Config::default().with_max_level(log::LevelFilter::Debug));
+        }
+        #[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
+        {
             env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
         }
         log::debug!("Logger is initialized!");
