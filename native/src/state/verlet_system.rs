@@ -10,6 +10,7 @@ use super::transform_manager::TransformManager;
 
 pub struct VerletSystem {
     pub sub_steps: u8,
+    pub prev_delta_time: f64,
     pub screen_size: Vector2<f32>,
     pub collision_damping: f32, // how much of the velocity is lost on collision
 
@@ -25,7 +26,8 @@ pub struct VerletSystem {
 impl VerletSystem {
     pub fn new() -> Self {
         Self {
-            sub_steps: 6,
+            sub_steps: 4,
+            prev_delta_time: 0.0,
             screen_size: Vector2::new(0.0, 0.0),
             collision_damping: 0.5,
             bodies: Vec::new(),
@@ -89,8 +91,16 @@ impl VerletSystem {
         //     return;
         // }
 
-        let sub_dt = dt / self.sub_steps as f64;
-        for _ in 0..self.sub_steps {
+        let target_fps = 60.0;
+        let target_frame_time = 1.0 / target_fps;
+        let min_sub_steps = 1;
+        let max_sub_steps = 32;
+
+        let sub_steps = (((dt / target_frame_time) * self.sub_steps as f64).round() as u8)
+            .clamp(min_sub_steps, max_sub_steps);
+
+        let sub_dt = dt / sub_steps as f64;
+        for _ in 0..sub_steps {
             self.grid.clear();
             for body in &mut self.bodies {
                 self.grid
@@ -160,18 +170,19 @@ impl VerletSystem {
     }
 
     pub fn update_bodies(&mut self, delta_time: f64) {
-        let delta_time_squared = (delta_time * delta_time) as f32;
         let gravity = self.gravity;
+        let current_to_prev_delta = delta_time / self.prev_delta_time;
+        let current_plus_prev_by_two_mul_by_current =
+            (delta_time + self.prev_delta_time) / 2.0 * delta_time;
 
         for body in &mut self.bodies {
             // Apply gravity
             body.acceleration += gravity;
 
-            // Apply verlet integration
             let velocity = body.position - body.old_position;
             let new_position = body.position
-                + velocity
-                + (body.acceleration - velocity * 20.0) * delta_time_squared;
+                + velocity * current_to_prev_delta as f32
+                + body.acceleration * current_plus_prev_by_two_mul_by_current as f32;
             body.old_position = body.position;
             body.position = new_position;
             body.acceleration = Vector2::new(0.0, 0.0);
@@ -191,6 +202,8 @@ impl VerletSystem {
                 body.position.y = self.screen_size.y - radius;
             }
         }
+
+        self.prev_delta_time = delta_time;
     }
 
     pub fn apply_to_transforms(&self, transforms: &mut TransformManager) {
