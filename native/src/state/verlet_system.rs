@@ -51,7 +51,7 @@ impl VerletSystem {
     pub fn new_body(&mut self, position: FastVector2, radius: f32) {
         if radius > self.biggest_radius {
             self.biggest_radius = radius;
-            self.grid.borrow_mut().set_cell_size(radius * 2.1);
+            self.grid.borrow_mut().set_cell_size(radius * 2.0);
         }
         self.bodies.add(position, radius, 0.0);
     }
@@ -109,6 +109,9 @@ impl VerletSystem {
         for body_index in 0..self.bodies.len() {
             let potentials = grid.query(&self.bodies.get_aabb(body_index));
             for other_body in potentials {
+                if body_index == other_body as usize {
+                    continue;
+                }
                 self.solve_contact(body_index, other_body as usize);
                 *checked_potentials += 1;
             }

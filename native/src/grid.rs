@@ -209,7 +209,15 @@ impl<const CN: usize> SpatialGrid<CN> {
             }
         }
 
-        result
+        // Deduplicate
+        let mut dedup_result = Vec::with_capacity(result.len());
+        for &atom in result.iter() {
+            if dedup_result.contains(&atom) == false {
+                dedup_result.push(atom);
+            }
+        }
+
+        dedup_result
     }
 
     pub fn clear(&mut self) {
