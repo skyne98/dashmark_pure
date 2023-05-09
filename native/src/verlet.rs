@@ -150,6 +150,9 @@ impl Bodies {
     }
 
     // Position
+    pub fn positions(&self) -> &[FastVector2] {
+        &self.positions
+    }
     pub fn get_position(&self, index: usize) -> FastVector2 {
         self.positions[index]
     }
@@ -178,6 +181,9 @@ impl Bodies {
     }
 
     // Radius
+    pub fn radii(&self) -> &[f32] {
+        &self.radii
+    }
     pub fn get_radius(&self, index: usize) -> f32 {
         self.radii[index]
     }

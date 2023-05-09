@@ -1,8 +1,12 @@
 use std::hash::{BuildHasher, Hasher};
 
 use rapier2d::na::Vector2;
+use rapier2d::parry::partitioning::Qbvh;
 
-use crate::fast_list::{Clearable, FastHashMap, FastList};
+use crate::{
+    fast_list::{Clearable, FastHashMap, FastList},
+    verlet::FastVector2,
+};
 
 // ==================================
 // HASHER
@@ -145,4 +149,45 @@ pub fn world_to_grid(x: f32, y: f32, cell_size: f32) -> [i32; 2] {
     let y = y / cell_size;
 
     [x as i32, y as i32]
+}
+
+// ==================================
+// CIRCLE QBVH
+// ==================================
+pub struct CircleQBVH {
+    pub data: Qbvh<usize>,
+}
+
+impl CircleQBVH {
+    pub fn new() -> Self {
+        Self { data: Qbvh::new() }
+    }
+
+    pub fn clear_and_rebuild(&mut self, positions: &[FastVector2], radii: &[f32]) {
+        self.data.clear_and_rebuild(
+            positions
+                .iter()
+                .enumerate()
+                .zip(radii.iter())
+                .map(|((i, p), r)| {
+                    let aabb = rapier2d::geometry::Aabb::new(
+                        Vector2::new(p.x - r, p.y - r).into(),
+                        Vector2::new(p.x + r, p.y + r).into(),
+                    );
+                    (i, aabb)
+                }),
+            0.0,
+        );
+    }
+
+    pub fn query(&self, x: f32, y: f32, radius: f32) -> Vec<usize> {
+        let min = Vector2::new(x - radius, y - radius);
+        let max = Vector2::new(x + radius, y + radius);
+
+        let aabb = rapier2d::geometry::Aabb::new(min.into(), max.into());
+
+        let mut result = Vec::with_capacity(8);
+        self.data.intersect_aabb(&aabb, &mut result);
+        result
+    }
 }
