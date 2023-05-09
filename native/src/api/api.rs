@@ -1,4 +1,7 @@
-use crate::typed_data::{f32s_to_vec2_arrays, f32s_to_vec2s, indices_to_u32s, u32s_to_indices};
+use crate::{
+    typed_data::{f32s_to_vec2_arrays, f32s_to_vec2s, indices_to_u32s, u32s_to_indices},
+    verlet::FastVector2,
+};
 use flutter_rust_bridge::SyncReturn;
 pub use generational_arena::Arena;
 use rapier2d::na::{Point2, Vector2};
@@ -37,7 +40,10 @@ pub fn create_entity() -> SyncReturn<GenerationalIndex> {
         state.broadphase.borrow_mut().index_added(index);
         state.rendering.borrow_mut().index_added(index);
         state.transforms.borrow_mut().index_added(index);
-        state.verlet.borrow_mut().new_body(Vector2::zeros(), 4.0);
+        state
+            .verlet
+            .borrow_mut()
+            .new_body(FastVector2::new(0.0, 0.0), 4.0);
         index
     });
     SyncReturn(index.into())
@@ -79,9 +85,8 @@ pub fn entities_set_transform_raw(
                 state
                     .verlet
                     .borrow_mut()
-                    .body_mut(index.into_raw_parts().0)
-                    .unwrap()
-                    .set_position(positions[i].into());
+                    .bodies_mut()
+                    .set_position(index.into_raw_parts().0, positions[i].into());
             }
         }
     });
@@ -99,9 +104,8 @@ pub fn entities_set_position_raw(indices: Vec<u32>, positions: Vec<f32>) -> Sync
                 state
                     .verlet
                     .borrow_mut()
-                    .body_mut(index.into_raw_parts().0)
-                    .unwrap()
-                    .set_position((*position).into());
+                    .bodies_mut()
+                    .set_position(index.into_raw_parts().0, (*position).into());
             }
         }
     });

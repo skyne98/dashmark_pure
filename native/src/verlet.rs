@@ -1,82 +1,195 @@
-use std::ops::Deref;
+use std::ops::{Add, AddAssign, Deref, Div, Mul, Sub, SubAssign};
 
 use rapier2d::{na::Vector2, prelude::Aabb};
 
-pub trait IntoAabb {
-    fn into_aabb(&self) -> Aabb;
+#[derive(Clone, Copy, Debug)]
+pub struct FastVector2 {
+    pub x: f32,
+    pub y: f32,
 }
-impl<T: IntoAabb> IntoAabb for &T {
-    fn into_aabb(&self) -> Aabb {
-        (*self).into_aabb()
+
+impl FastVector2 {
+    #[inline]
+    pub fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
     }
-}
-impl<T: IntoAabb> IntoAabb for &mut T {
-    fn into_aabb(&self) -> Aabb {
-        (*self).into_aabb()
+
+    #[inline]
+    pub fn len_squared(&self) -> f32 {
+        self.x * self.x + self.y * self.y
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Body {
-    pub id: usize,
-    pub position: Vector2<f32>,
-    pub old_position: Vector2<f32>,
-    pub acceleration: Vector2<f32>,
-    pub forces: Vector2<f32>,
-    pub friction: f32,        // 0.97
-    pub ground_friction: f32, // 0.4
-    pub radius: f32,
-    pub mass: f32,
+impl Deref for FastVector2 {
+    type Target = Vector2<f32>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        unsafe { std::mem::transmute(self) }
+    }
 }
 
-impl Default for Body {
-    fn default() -> Self {
+impl Add for FastVector2 {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl AddAssign for FastVector2 {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        *self = Self::new(self.x + rhs.x, self.y + rhs.y);
+    }
+}
+
+impl Sub for FastVector2 {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+
+impl SubAssign for FastVector2 {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = Self::new(self.x - rhs.x, self.y - rhs.y);
+    }
+}
+
+impl Mul<f32> for FastVector2 {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: f32) -> Self::Output {
+        Self::new(self.x * rhs, self.y * rhs)
+    }
+}
+
+impl Div<f32> for FastVector2 {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, rhs: f32) -> Self::Output {
+        Self::new(self.x / rhs, self.y / rhs)
+    }
+}
+
+impl From<[f32; 2]> for FastVector2 {
+    #[inline]
+    fn from(array: [f32; 2]) -> Self {
+        Self::new(array[0], array[1])
+    }
+}
+
+impl Into<[f32; 2]> for FastVector2 {
+    #[inline]
+    fn into(self) -> [f32; 2] {
+        [self.x, self.y]
+    }
+}
+
+#[derive(Debug)]
+// SoA (Structure of Arrays) layout
+pub struct Bodies {
+    pub ids: Vec<usize>,
+    pub positions: Vec<FastVector2>,
+    pub old_positions: Vec<FastVector2>,
+    pub accelerations: Vec<FastVector2>,
+    pub frictions: Vec<f32>,
+    pub ground_frictions: Vec<f32>,
+    pub radii: Vec<f32>,
+    pub masses: Vec<f32>,
+}
+
+impl Bodies {
+    pub fn new() -> Self {
         Self {
-            id: 0,
-            position: Vector2::new(0.0, 0.0),
-            old_position: Vector2::new(0.0, 0.0),
-            acceleration: Vector2::new(0.0, 0.0),
-            forces: Vector2::new(0.0, 0.0),
-            friction: 0.97,
-            ground_friction: 0.4,
-            radius: 2.0,
-            mass: 1.0,
+            ids: Vec::new(),
+            positions: Vec::new(),
+            old_positions: Vec::new(),
+            accelerations: Vec::new(),
+            frictions: Vec::new(),
+            ground_frictions: Vec::new(),
+            radii: Vec::new(),
+            masses: Vec::new(),
         }
     }
-}
 
-impl Body {
-    pub fn new(id: usize) -> Self {
-        let mut body = Self::default();
-        body.id = id;
-        body
+    pub fn add(&mut self, position: FastVector2, radius: f32, mass: f32) -> usize {
+        let id = self.positions.len();
+        self.ids.push(id);
+        self.positions.push(position);
+        self.old_positions.push(position);
+        self.accelerations.push(FastVector2::new(0.0, 0.0));
+        self.frictions.push(0.0);
+        self.ground_frictions.push(0.0);
+        self.radii.push(radius);
+        self.masses.push(mass);
+        id
     }
 
-    pub fn aabb(&self) -> Aabb {
-        Aabb::new(
-            Vector2::new(self.position.x - self.radius, self.position.y - self.radius).into(),
-            Vector2::new(self.position.x + self.radius, self.position.y + self.radius).into(),
-        )
+    pub fn remove(&mut self, id: usize) {
+        let index = self.ids.iter().position(|&x| x == id).unwrap();
+        self.ids.remove(index);
+        self.positions.remove(index);
+        self.old_positions.remove(index);
+        self.accelerations.remove(index);
+        self.frictions.remove(index);
+        self.ground_frictions.remove(index);
+        self.radii.remove(index);
+        self.masses.remove(index);
     }
 
-    pub fn set_position(&mut self, position: Vector2<f32>) {
-        self.position = position;
-        self.old_position = position;
+    pub fn len(&self) -> usize {
+        self.positions.len()
     }
 
-    pub fn set_position_keep_movement(&mut self, position: Vector2<f32>) {
-        let velocity = self.position - self.old_position;
-        self.position = position;
-        self.old_position = position - velocity;
+    // Position
+    pub fn get_position(&self, index: usize) -> FastVector2 {
+        self.positions[index]
+    }
+    pub fn set_position(&mut self, index: usize, position: FastVector2) {
+        self.positions[index] = position;
+        self.old_positions[index] = position;
+    }
+    pub fn set_position_keep_old(&mut self, index: usize, position: FastVector2) {
+        self.positions[index] = position;
+    }
+    pub fn set_position_keep_velocity(&mut self, index: usize, position: FastVector2) {
+        let velocity = self.positions[index] - self.old_positions[index];
+        self.positions[index] = position;
+        self.old_positions[index] = position - velocity;
+    }
+    pub fn set_velocity(&mut self, index: usize, velocity: FastVector2) {
+        self.old_positions[index] = self.positions[index] - velocity;
     }
 
-    pub fn set_velocity(&mut self, velocity: Vector2<f32>) {
-        self.old_position = self.position - velocity;
+    // Old position
+    pub fn get_old_position(&self, index: usize) -> FastVector2 {
+        self.old_positions[index]
     }
-}
+    pub fn set_old_position(&mut self, index: usize, old_position: FastVector2) {
+        self.old_positions[index] = old_position;
+    }
 
-impl IntoAabb for Body {
-    fn into_aabb(&self) -> Aabb {
-        self.aabb()
+    // Radius
+    pub fn get_radius(&self, index: usize) -> f32 {
+        self.radii[index]
+    }
+    pub fn set_radius(&mut self, index: usize, radius: f32) {
+        self.radii[index] = radius;
+    }
+
+    // Acceleration
+    pub fn get_acceleration(&self, index: usize) -> FastVector2 {
+        self.accelerations[index]
+    }
+    pub fn set_acceleration(&mut self, index: usize, acceleration: FastVector2) {
+        self.accelerations[index] = acceleration;
     }
 }

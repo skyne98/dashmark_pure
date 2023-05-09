@@ -38,6 +38,10 @@ impl TransformManager {
         self.transforms.iter_mut()
     }
 
+    pub fn len(&self) -> usize {
+        self.transforms.len()
+    }
+
     pub fn sweep(&mut self, entity_manager: &entity_manager::EntityManager) {
         // Sweep the dirty matrices
         for transform in self.transforms.iter_mut() {
