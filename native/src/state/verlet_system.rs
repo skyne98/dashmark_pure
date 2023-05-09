@@ -51,7 +51,7 @@ impl VerletSystem {
     pub fn new_body(&mut self, position: FastVector2, radius: f32) {
         if radius > self.biggest_radius {
             self.biggest_radius = radius;
-            self.grid.borrow_mut().set_cell_size(radius * 2.5);
+            self.grid.borrow_mut().set_cell_size(radius * 2.1);
         }
         self.bodies.add(position, radius, 0.0);
     }

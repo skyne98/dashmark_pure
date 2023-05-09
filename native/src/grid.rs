@@ -33,8 +33,8 @@ pub fn djb2_hash(x: i32, y: i32) -> i32 {
 // ==================================
 #[derive(Clone, Debug)]
 pub struct SpatialCell<const N: usize> {
-    pub atoms: FastList<u16, N>,
     pub aabb: FastAabb,
+    pub atoms: FastList<u16, N>,
 }
 
 impl<const N: usize> SpatialCell<N> {
@@ -42,10 +42,10 @@ impl<const N: usize> SpatialCell<N> {
         N
     }
 
-    pub fn new() -> Self {
+    pub fn new(aabb: FastAabb) -> Self {
         Self {
+            aabb: aabb,
             atoms: FastList::new(),
-            aabb: FastAabb::new_invalid(),
         }
     }
 
@@ -55,7 +55,6 @@ impl<const N: usize> SpatialCell<N> {
 
     pub fn add_atom(&mut self, atom: u16, aabb: FastAabb) {
         self.atoms.push(atom);
-        self.aabb.merge(&aabb);
     }
 
     pub fn atoms(&self) -> &[u16] {
@@ -128,6 +127,15 @@ impl<const CN: usize> SpatialGrid<CN> {
     }
 
     pub fn clear_and_rebuild(&mut self, aabb: &[FastAabb]) {
+        if aabb.is_empty() {
+            self.data.clear();
+            self.width = 0;
+            self.height = 0;
+            self.min_grid_x = 0;
+            self.min_grid_y = 0;
+            return;
+        }
+
         // Find world bounds
         let mut world_min_x = f32::MAX;
         let mut world_min_y = f32::MAX;
@@ -147,11 +155,25 @@ impl<const CN: usize> SpatialGrid<CN> {
         let max_grid_y = (world_max_y / self.cell_size).floor() as i32;
         let grid_width = (max_grid_x - self.min_grid_x + 1) as usize;
         let grid_height = (max_grid_y - self.min_grid_y + 1) as usize;
-
-        // Allocate and put the aabbs
-        self.data = vec![SpatialCell::<CN>::new(); grid_width * grid_height];
         self.width = grid_width;
         self.height = grid_height;
+
+        // Allocate and put the aabbs
+        self.data = Vec::with_capacity(grid_width * grid_height);
+        for x in 0..grid_width {
+            for y in 0..grid_height {
+                let mins = FastVector2::new(
+                    (x as i32 + self.min_grid_x) as f32 * self.cell_size,
+                    (y as i32 + self.min_grid_y) as f32 * self.cell_size,
+                );
+                let maxs = FastVector2::new(
+                    (x as i32 + self.min_grid_x + 1) as f32 * self.cell_size,
+                    (y as i32 + self.min_grid_y + 1) as f32 * self.cell_size,
+                );
+                let aabb = FastAabb::new(mins, maxs);
+                self.data.push(SpatialCell::new(aabb));
+            }
+        }
 
         // Add the aabbs
         for (obj_index, aabb) in aabb.iter().enumerate() {
