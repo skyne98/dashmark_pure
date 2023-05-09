@@ -93,6 +93,43 @@ impl Into<[f32; 2]> for FastVector2 {
     }
 }
 
+// Fast Aabb
+#[derive(Clone, Copy, Debug)]
+pub struct FastAabb {
+    pub mins: FastVector2,
+    pub maxs: FastVector2,
+}
+
+impl FastAabb {
+    pub fn new_invalid() -> Self {
+        Self {
+            mins: FastVector2::new(f32::MAX, f32::MAX),
+            maxs: FastVector2::new(f32::MIN, f32::MIN),
+        }
+    }
+
+    pub fn new(min: FastVector2, max: FastVector2) -> Self {
+        Self {
+            mins: min,
+            maxs: max,
+        }
+    }
+
+    pub fn merge(&mut self, other: &Self) {
+        self.mins.x = self.mins.x.min(other.mins.x);
+        self.mins.y = self.mins.y.min(other.mins.y);
+        self.maxs.x = self.maxs.x.max(other.maxs.x);
+        self.maxs.y = self.maxs.y.max(other.maxs.y);
+    }
+
+    pub fn intersects_aabb(&self, other: &Self) -> bool {
+        self.mins.x <= other.maxs.x
+            && self.maxs.x >= other.mins.x
+            && self.mins.y <= other.maxs.y
+            && self.maxs.y >= other.mins.y
+    }
+}
+
 #[derive(Debug)]
 // SoA (Structure of Arrays) layout
 pub struct Bodies {
@@ -197,5 +234,16 @@ impl Bodies {
     }
     pub fn set_acceleration(&mut self, index: usize, acceleration: FastVector2) {
         self.accelerations[index] = acceleration;
+    }
+
+    // Bounding box
+    pub fn aabbs(&self) -> Vec<FastAabb> {
+        self.ids.iter().map(|&id| self.get_aabb(id)).collect()
+    }
+    pub fn get_aabb(&self, index: usize) -> FastAabb {
+        FastAabb::new(
+            self.positions[index] - FastVector2::new(self.radii[index], self.radii[index]),
+            self.positions[index] + FastVector2::new(self.radii[index], self.radii[index]),
+        )
     }
 }

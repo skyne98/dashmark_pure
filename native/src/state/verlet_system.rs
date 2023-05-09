@@ -21,7 +21,7 @@ pub struct VerletSystem {
     gravity: FastVector2,
 
     biggest_radius: f32,
-    grid: Rc<RefCell<SpatialGrid>>,
+    grid: Rc<RefCell<SpatialGrid<16>>>,
     // threadpool: ThreadPool,
 }
 
@@ -46,18 +46,12 @@ impl VerletSystem {
         }
 
         self.screen_size = Vector2::new(width, height);
-        let biggest_radius = if self.biggest_radius == 0.0 {
-            100.0
-        } else {
-            self.biggest_radius
-        };
-        self.grid = Rc::new(RefCell::new(SpatialGrid::new(biggest_radius * 3.0)));
     }
 
     pub fn new_body(&mut self, position: FastVector2, radius: f32) {
         if radius > self.biggest_radius {
             self.biggest_radius = radius;
-            self.grid = Rc::new(RefCell::new(SpatialGrid::new(radius * 3.0)));
+            self.grid.borrow_mut().set_cell_size(radius * 2.5);
         }
         self.bodies.add(position, radius, 0.0);
     }
@@ -91,15 +85,8 @@ impl VerletSystem {
         for _ in 0..sub_steps {
             {
                 let mut grid = self.grid.borrow_mut();
-                grid.clear();
-                for body in 0..self.bodies.len() {
-                    grid.add_atom_aabb(
-                        body,
-                        self.bodies.get_position(body).x,
-                        self.bodies.get_position(body).y,
-                        self.bodies.get_radius(body),
-                    );
-                }
+                let aabbs = self.bodies.aabbs();
+                grid.clear_and_rebuild(aabbs.as_ref());
             }
             self.solve_collisions(&mut checked_potentials, &mut checked_cells);
             self.update_bodies(sub_dt);
@@ -120,17 +107,10 @@ impl VerletSystem {
         let grid = self.grid.clone();
         let grid = grid.borrow();
         for body_index in 0..self.bodies.len() {
-            let potentials = grid.query(
-                self.bodies.get_position(body_index).x,
-                self.bodies.get_position(body_index).y,
-                self.bodies.get_radius(body_index),
-            );
-            for other_bodies in potentials {
-                for other_body_index in other_bodies.data() {
-                    self.solve_contact(body_index, *other_body_index);
-                    *checked_potentials += 1;
-                }
-                *checked_cells += 1;
+            let potentials = grid.query(&self.bodies.get_aabb(body_index));
+            for other_body in potentials {
+                self.solve_contact(body_index, other_body as usize);
+                *checked_potentials += 1;
             }
         }
     }
@@ -153,10 +133,6 @@ impl VerletSystem {
     }
 
     pub fn solve_contact(&mut self, a: usize, b: usize) {
-        if a == b {
-            return;
-        }
-
         // Get values
         let mut a_pos = self.bodies.get_position(a);
         let mut b_pos = self.bodies.get_position(b);
