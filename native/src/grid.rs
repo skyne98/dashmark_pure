@@ -1,8 +1,6 @@
 use std::hash::{BuildHasher, Hasher};
 
-use rapier2d::parry::bounding_volume::BoundingVolume;
 use rapier2d::parry::partitioning::Qbvh;
-use voracious_radix_sort::RadixSort;
 
 use crate::{
     fast_list::{Clearable, FastHashMap, FastList},
@@ -64,6 +62,10 @@ impl<const N: usize> SpatialCell<N> {
     pub fn clear(&mut self) {
         self.atoms.clear();
     }
+
+    pub fn len(&self) -> usize {
+        self.atoms.len()
+    }
 }
 
 impl<const N: usize> Clearable for SpatialCell<N> {
@@ -72,6 +74,63 @@ impl<const N: usize> Clearable for SpatialCell<N> {
     }
 }
 
+// ==================================
+// COLLISION ITERATOR
+// ==================================
+/// Internally iterates over all potential collisions (combinations of atoms) in all the cells.
+pub struct CollisionIterator<'a, const N: usize> {
+    grid: &'a SpatialGrid<N>,
+    cell_index: usize,
+    atom_index: usize,
+    other_atom_index: usize,
+}
+
+impl<'a, const N: usize> CollisionIterator<'a, N> {
+    pub fn new(grid: &'a SpatialGrid<N>) -> Self {
+        Self {
+            grid,
+            cell_index: 0,
+            atom_index: 0,
+            other_atom_index: 0,
+        }
+    }
+}
+
+impl<'a, const N: usize> Iterator for CollisionIterator<'a, N> {
+    type Item = (u16, u16);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cell_index >= self.grid.data.len() {
+            return None;
+        }
+
+        let cell = &self.grid.data[self.cell_index];
+        let atoms = cell.atoms();
+
+        if self.atom_index >= atoms.len() {
+            self.cell_index += 1;
+            self.atom_index = 0;
+            self.other_atom_index = 0;
+            return self.next();
+        }
+
+        let atom = atoms[self.atom_index];
+
+        if self.other_atom_index >= atoms.len() {
+            self.atom_index += 1;
+            self.other_atom_index = 0;
+            return self.next();
+        }
+
+        let other_atom = atoms[self.other_atom_index];
+        self.other_atom_index += 1;
+
+        if atom == other_atom {
+            return self.next();
+        }
+        Some((atom, other_atom))
+    }
+}
 // ==================================
 // GRID
 // ==================================
@@ -98,6 +157,9 @@ impl<const CN: usize> SpatialGrid<CN> {
 
     pub fn set_cell_size(&mut self, cell_size: f32) {
         self.cell_size = cell_size;
+    }
+    pub fn cells(&self) -> &[SpatialCell<CN>] {
+        &self.data
     }
 
     #[inline]
@@ -196,11 +258,11 @@ impl<const CN: usize> SpatialGrid<CN> {
 
         let mins = world_to_grid(aabb.mins.x, aabb.mins.y, self.cell_size);
         let maxs = world_to_grid(aabb.maxs.x, aabb.maxs.y, self.cell_size);
-        let obj_width = maxs[0] - mins[0] + 1;
-        let obj_height = maxs[1] - mins[1] + 1;
+        let obj_width = maxs[0] - mins[0];
+        let obj_height = maxs[1] - mins[1];
 
-        for y in 0..obj_height {
-            for x in 0..obj_width {
+        for y in 0..obj_height + 1 {
+            for x in 0..obj_width + 1 {
                 let index = self.grid_to_index(mins[0] + x, mins[1] + y);
                 let cell = &self.data[index];
                 if cell.atoms().len() > 0 && aabb.intersects_aabb(&cell.aabb) {
@@ -218,6 +280,10 @@ impl<const CN: usize> SpatialGrid<CN> {
         }
 
         dedup_result
+    }
+
+    pub fn iter_collisions(&self) -> CollisionIterator<CN> {
+        CollisionIterator::new(&self)
     }
 
     pub fn clear(&mut self) {

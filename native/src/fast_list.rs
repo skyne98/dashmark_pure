@@ -1,4 +1,4 @@
-use std::mem::MaybeUninit;
+use std::{mem::MaybeUninit, ops::Index};
 
 /// Very fast, simple and stupid "list" implementation based on a fixed size array.
 #[derive(Clone, Debug)]
@@ -23,6 +23,8 @@ impl<T, const N: usize> FastList<T, N> {
         if self.len < N {
             self.data[self.len] = item;
             self.len += 1;
+        } else {
+            log::warn!("FastList is full");
         }
     }
 
@@ -40,6 +42,64 @@ impl<T, const N: usize> FastList<T, N> {
 
     pub fn len(&self) -> usize {
         self.len
+    }
+}
+
+impl<T, const N: usize> Default for FastList<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// Index
+impl<T, const N: usize> Index<usize> for FastList<T, N> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
+    }
+}
+impl<T, const N: usize> Index<core::ops::Range<usize>> for FastList<T, N> {
+    type Output = [T];
+
+    fn index(&self, index: core::ops::Range<usize>) -> &Self::Output {
+        &self.data[index]
+    }
+}
+impl<T, const N: usize> Index<core::ops::RangeFrom<usize>> for FastList<T, N> {
+    type Output = [T];
+
+    fn index(&self, index: core::ops::RangeFrom<usize>) -> &Self::Output {
+        &self.data[index]
+    }
+}
+impl<T, const N: usize> Index<core::ops::RangeFull> for FastList<T, N> {
+    type Output = [T];
+
+    fn index(&self, index: core::ops::RangeFull) -> &Self::Output {
+        &self.data[index]
+    }
+}
+
+// IndexMut
+impl<T, const N: usize> core::ops::IndexMut<usize> for FastList<T, N> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.data[index]
+    }
+}
+impl<T, const N: usize> core::ops::IndexMut<core::ops::Range<usize>> for FastList<T, N> {
+    fn index_mut(&mut self, index: core::ops::Range<usize>) -> &mut Self::Output {
+        &mut self.data[index]
+    }
+}
+impl<T, const N: usize> core::ops::IndexMut<core::ops::RangeFrom<usize>> for FastList<T, N> {
+    fn index_mut(&mut self, index: core::ops::RangeFrom<usize>) -> &mut Self::Output {
+        &mut self.data[index]
+    }
+}
+impl<T, const N: usize> core::ops::IndexMut<core::ops::RangeFull> for FastList<T, N> {
+    fn index_mut(&mut self, index: core::ops::RangeFull) -> &mut Self::Output {
+        &mut self.data[index]
     }
 }
 

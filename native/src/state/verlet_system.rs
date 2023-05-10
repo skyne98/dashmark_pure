@@ -21,7 +21,7 @@ pub struct VerletSystem {
     gravity: FastVector2,
 
     biggest_radius: f32,
-    grid: Rc<RefCell<SpatialGrid<16>>>,
+    grid: Rc<RefCell<SpatialGrid<8>>>,
     // threadpool: ThreadPool,
 }
 
@@ -51,7 +51,7 @@ impl VerletSystem {
     pub fn new_body(&mut self, position: FastVector2, radius: f32) {
         if radius > self.biggest_radius {
             self.biggest_radius = radius;
-            self.grid.borrow_mut().set_cell_size(radius * 2.0);
+            self.grid.borrow_mut().set_cell_size(radius * 2.1);
         }
         self.bodies.add(position, radius, 0.0);
     }
@@ -101,20 +101,31 @@ impl VerletSystem {
             potentials_per_body_per_step,
             cells_per_body_per_step
         );
+
+        // Calculate average atoms per cell
+        let grid = self.grid.borrow();
+        let cells = grid.cells();
+        let mut total_atoms = 0;
+        let mut total_cells = 0;
+        for cell in cells {
+            let atoms = cell.len();
+            if atoms > 0 {
+                total_atoms += atoms;
+                total_cells += 1;
+            }
+        }
+        let average_atoms_per_cell = total_atoms as f64 / total_cells as f64;
+        log::debug!("Average atoms per cell: {}", average_atoms_per_cell);
     }
 
     pub fn solve_collisions(&mut self, checked_potentials: &mut u32, checked_cells: &mut u32) {
         let grid = self.grid.clone();
         let grid = grid.borrow();
-        for body_index in 0..self.bodies.len() {
-            let potentials = grid.query(&self.bodies.get_aabb(body_index));
-            for other_body in potentials {
-                if body_index == other_body as usize {
-                    continue;
-                }
-                self.solve_contact(body_index, other_body as usize);
-                *checked_potentials += 1;
-            }
+        for (a, b) in grid.iter_collisions() {
+            let a = a as usize;
+            let b = b as usize;
+            self.solve_contact(a, b);
+            *checked_potentials += 1;
         }
     }
 
@@ -150,8 +161,8 @@ impl VerletSystem {
         if distance_squared > f32::EPSILON && distance_squared < radius_sum_squared {
             let inv_distance = Self::fast_inv_sqrt(distance_squared);
             let delta = 0.5 * (radius_sum - distance_squared * inv_distance);
-            let collision_vector = distance_vec * (delta * inv_distance);
 
+            let collision_vector = distance_vec * (delta * inv_distance) * self.collision_damping;
             a_pos += collision_vector;
             b_pos -= collision_vector;
         };
