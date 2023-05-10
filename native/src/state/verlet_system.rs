@@ -131,7 +131,7 @@ impl VerletSystem {
 
     #[inline]
     fn fast_inv_sqrt(x: f32) -> f32 {
-        #[cfg(not(target_arch = "x86_64"))]
+        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
         {
             x.sqrt().recip()
         }
@@ -143,6 +143,12 @@ impl VerletSystem {
                 let x = _mm_rsqrt_ss(_mm_set_ss(x));
                 _mm_cvtss_f32(x)
             }
+        }
+        #[cfg(target_arch = "aarch64")]
+        {
+            use core::arch::aarch64::{vrecpes_f32, vrsqrtes_f32};
+
+            unsafe { vrsqrtes_f32(x) }
         }
     }
 
