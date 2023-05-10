@@ -1,8 +1,14 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    borrow::Borrow,
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    rc::Rc,
+};
 
 use rapier2d::{na::Vector2, prelude::Aabb};
 
 use crate::{
+    fast_list::FastList,
     grid::SpatialGrid,
     thread::{get_logical_core_count, ThreadPool},
     verlet::{Bodies, FastVector2},
@@ -36,7 +42,6 @@ impl VerletSystem {
             gravity: FastVector2::new(0.0, 32.0 * 20.0),
             biggest_radius: 0.0,
             grid: Rc::new(RefCell::new(SpatialGrid::new(0.0))),
-            // threadpool: ThreadPool::new(get_logical_core_count()),
         }
     }
 
@@ -65,11 +70,6 @@ impl VerletSystem {
     }
 
     pub fn simulate(&mut self, dt: f64) {
-        // Skip until the threadpool is ready
-        // if self.threadpool.initialized() == false {
-        //     return;
-        // }
-
         let target_fps = 60.0;
         let target_frame_time = 1.0 / target_fps;
         let min_sub_steps = 1;
@@ -103,7 +103,7 @@ impl VerletSystem {
         );
 
         // Calculate average atoms per cell
-        let grid = self.grid.borrow();
+        let grid = (*self.grid).borrow();
         let cells = grid.cells();
         let mut total_atoms = 0;
         let mut total_cells = 0;
@@ -120,7 +120,8 @@ impl VerletSystem {
 
     pub fn solve_collisions(&mut self, checked_potentials: &mut u32, checked_cells: &mut u32) {
         let grid = self.grid.clone();
-        let grid = grid.borrow();
+        let grid: Ref<_> = (*grid).borrow();
+
         for (a, b) in grid.iter_collisions() {
             let a = a as usize;
             let b = b as usize;
@@ -154,28 +155,30 @@ impl VerletSystem {
 
     pub fn solve_contact(&mut self, a: usize, b: usize) {
         // Get values
-        let mut a_pos = self.bodies.get_position(a);
-        let mut b_pos = self.bodies.get_position(b);
         let a_radius = self.bodies.get_radius(a);
         let b_radius = self.bodies.get_radius(b);
+        let radius_sum = a_radius + b_radius;
+        let radius_sum_squared = radius_sum * radius_sum;
+
+        let mut a_pos = self.bodies.get_position(a);
+        let mut b_pos = self.bodies.get_position(b);
 
         let distance_vec = a_pos - b_pos;
         let distance_squared = distance_vec.magnitude_squared();
-        let radius_sum = a_radius + b_radius;
-        let radius_sum_squared = radius_sum * radius_sum;
 
         if distance_squared > f32::EPSILON && distance_squared < radius_sum_squared {
             let inv_distance = Self::fast_inv_sqrt(distance_squared);
             let delta = 0.5 * (radius_sum - distance_squared * inv_distance);
-
             let collision_vector = distance_vec * (delta * inv_distance) * self.collision_damping;
+
+            // Update positions in-place to avoid unnecessary memory accesses
             a_pos += collision_vector;
             b_pos -= collision_vector;
-        };
 
-        // Write values
-        self.bodies.set_position_keep_old(a, a_pos);
-        self.bodies.set_position_keep_old(b, b_pos);
+            // Write values directly
+            self.bodies.set_position_keep_old(a, a_pos);
+            self.bodies.set_position_keep_old(b, b_pos);
+        }
     }
 
     pub fn update_bodies(&mut self, delta_time: f64) {

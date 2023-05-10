@@ -130,6 +130,30 @@ impl FastAabb {
     }
 }
 
+fn is_prime(n: u64) -> bool {
+    if n <= 1 {
+        return false;
+    }
+    for i in 2..(n as f64).sqrt() as u64 + 1 {
+        if n % i == 0 {
+            return false;
+        }
+    }
+    true
+}
+
+fn nth_prime(n: u64) -> u64 {
+    let mut count = 0;
+    let mut num = 2;
+    while count < n {
+        if is_prime(num) {
+            count += 1;
+        }
+        num += 1;
+    }
+    num - 1
+}
+
 #[derive(Debug)]
 // SoA (Structure of Arrays) layout
 pub struct Bodies {
@@ -140,7 +164,6 @@ pub struct Bodies {
     pub frictions: Vec<f32>,
     pub ground_frictions: Vec<f32>,
     pub radii: Vec<f32>,
-    pub masses: Vec<f32>,
 }
 
 impl Bodies {
@@ -153,7 +176,6 @@ impl Bodies {
             frictions: Vec::new(),
             ground_frictions: Vec::new(),
             radii: Vec::new(),
-            masses: Vec::new(),
         }
     }
 
@@ -166,7 +188,6 @@ impl Bodies {
         self.frictions.push(0.0);
         self.ground_frictions.push(0.0);
         self.radii.push(radius);
-        self.masses.push(mass);
         id
     }
 
@@ -179,7 +200,6 @@ impl Bodies {
         self.frictions.remove(index);
         self.ground_frictions.remove(index);
         self.radii.remove(index);
-        self.masses.remove(index);
     }
 
     pub fn len(&self) -> usize {
@@ -190,15 +210,19 @@ impl Bodies {
     pub fn positions(&self) -> &[FastVector2] {
         &self.positions
     }
+    #[inline]
     pub fn get_position(&self, index: usize) -> FastVector2 {
-        self.positions[index]
+        unsafe { *self.positions.get_unchecked(index) }
     }
     pub fn set_position(&mut self, index: usize, position: FastVector2) {
         self.positions[index] = position;
         self.old_positions[index] = position;
     }
+    #[inline]
     pub fn set_position_keep_old(&mut self, index: usize, position: FastVector2) {
-        self.positions[index] = position;
+        unsafe {
+            *self.positions.get_unchecked_mut(index) = position;
+        }
     }
     pub fn set_position_keep_velocity(&mut self, index: usize, position: FastVector2) {
         let velocity = self.positions[index] - self.old_positions[index];
@@ -210,11 +234,15 @@ impl Bodies {
     }
 
     // Old position
+    #[inline]
     pub fn get_old_position(&self, index: usize) -> FastVector2 {
-        self.old_positions[index]
+        unsafe { *self.old_positions.get_unchecked(index) }
     }
+    #[inline]
     pub fn set_old_position(&mut self, index: usize, old_position: FastVector2) {
-        self.old_positions[index] = old_position;
+        unsafe {
+            *self.old_positions.get_unchecked_mut(index) = old_position;
+        }
     }
 
     // Radius

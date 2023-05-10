@@ -100,37 +100,30 @@ impl<'a, const N: usize> Iterator for CollisionIterator<'a, N> {
     type Item = (u16, u16);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.cell_index >= self.grid.data.len() {
-            return None;
+        unsafe {
+            while self.cell_index < self.grid.data.len() {
+                let atoms = self.grid.data.get_unchecked(self.cell_index).atoms();
+                while self.atom_index < atoms.len() {
+                    let atom = *atoms.get_unchecked(self.atom_index);
+                    while self.other_atom_index < atoms.len() {
+                        let other_atom = *atoms.get_unchecked(self.other_atom_index);
+                        self.other_atom_index += 1;
+                        if atom != other_atom {
+                            return Some((atom, other_atom));
+                        }
+                    }
+                    self.atom_index += 1;
+                    self.other_atom_index = 0;
+                }
+                self.cell_index += 1;
+                self.atom_index = 0;
+                self.other_atom_index = 0;
+            }
         }
-
-        let cell = &self.grid.data[self.cell_index];
-        let atoms = cell.atoms();
-
-        if self.atom_index >= atoms.len() {
-            self.cell_index += 1;
-            self.atom_index = 0;
-            self.other_atom_index = 0;
-            return self.next();
-        }
-
-        let atom = atoms[self.atom_index];
-
-        if self.other_atom_index >= atoms.len() {
-            self.atom_index += 1;
-            self.other_atom_index = 0;
-            return self.next();
-        }
-
-        let other_atom = atoms[self.other_atom_index];
-        self.other_atom_index += 1;
-
-        if atom == other_atom {
-            return self.next();
-        }
-        Some((atom, other_atom))
+        None
     }
 }
+
 // ==================================
 // GRID
 // ==================================
