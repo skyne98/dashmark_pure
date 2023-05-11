@@ -27,17 +27,17 @@ pub struct VerletSystem {
     gravity: FastVector2,
 
     biggest_radius: f32,
-    grid: Rc<RefCell<SpatialGrid<8>>>,
+    grid: Rc<RefCell<SpatialGrid<16>>>,
     // threadpool: ThreadPool,
 }
 
 impl VerletSystem {
     pub fn new() -> Self {
         Self {
-            sub_steps: 5,
+            sub_steps: 4,
             prev_delta_time: 0.0,
             screen_size: Vector2::new(0.0, 0.0),
-            collision_damping: 0.5,
+            collision_damping: 0.8,
             bodies: Bodies::new(),
             gravity: FastVector2::new(0.0, 32.0 * 20.0),
             biggest_radius: 0.0,
@@ -73,7 +73,7 @@ impl VerletSystem {
         let target_fps = 60.0;
         let target_frame_time = 1.0 / target_fps;
         let min_sub_steps = 1;
-        let max_sub_steps = 48;
+        let max_sub_steps = 128;
 
         let sub_steps = (((dt / target_frame_time) * self.sub_steps as f64).round() as u8)
             .clamp(min_sub_steps, max_sub_steps);
@@ -169,7 +169,8 @@ impl VerletSystem {
         if distance_squared > f32::EPSILON && distance_squared < radius_sum_squared {
             let inv_distance = Self::fast_inv_sqrt(distance_squared);
             let delta = 0.5 * (radius_sum - distance_squared * inv_distance);
-            let collision_vector = distance_vec * (delta * inv_distance) * self.collision_damping;
+            let collision_vector = distance_vec * (delta * inv_distance);
+            let collision_vector = collision_vector * self.collision_damping;
 
             // Update positions in-place to avoid unnecessary memory accesses
             a_pos += collision_vector;

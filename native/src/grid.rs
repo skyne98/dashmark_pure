@@ -1,6 +1,7 @@
 use std::hash::{BuildHasher, Hasher};
 
 use rapier2d::parry::partitioning::Qbvh;
+use smallvec::{Array, SmallVec};
 
 use crate::{
     fast_list::{Clearable, FastHashMap, FastList},
@@ -27,65 +28,23 @@ pub fn djb2_hash(x: i32, y: i32) -> i32 {
 }
 
 // ==================================
-// CELL
-// ==================================
-#[derive(Clone, Debug)]
-pub struct SpatialCell<const N: usize> {
-    pub aabb: FastAabb,
-    pub atoms: FastList<u16, N>,
-}
-
-impl<const N: usize> SpatialCell<N> {
-    pub fn n() -> usize {
-        N
-    }
-
-    pub fn new(aabb: FastAabb) -> Self {
-        Self {
-            aabb: aabb,
-            atoms: FastList::new(),
-        }
-    }
-
-    pub fn aabb(&self) -> &FastAabb {
-        &self.aabb
-    }
-
-    pub fn add_atom(&mut self, atom: u16, aabb: FastAabb) {
-        self.atoms.push(atom);
-    }
-
-    pub fn atoms(&self) -> &[u16] {
-        &self.atoms.data()
-    }
-
-    pub fn clear(&mut self) {
-        self.atoms.clear();
-    }
-
-    pub fn len(&self) -> usize {
-        self.atoms.len()
-    }
-}
-
-impl<const N: usize> Clearable for SpatialCell<N> {
-    fn clear(&mut self) {
-        self.atoms.clear();
-    }
-}
-
-// ==================================
 // COLLISION ITERATOR
 // ==================================
 /// Internally iterates over all potential collisions (combinations of atoms) in all the cells.
-pub struct CollisionIterator<'a, const N: usize> {
+pub struct CollisionIterator<'a, const N: usize>
+where
+    [u16; N]: Array<Item = u16>,
+{
     grid: &'a SpatialGrid<N>,
     cell_index: usize,
     atom_index: usize,
     other_atom_index: usize,
 }
 
-impl<'a, const N: usize> CollisionIterator<'a, N> {
+impl<'a, const N: usize> CollisionIterator<'a, N>
+where
+    [u16; N]: Array<Item = u16>,
+{
     pub fn new(grid: &'a SpatialGrid<N>) -> Self {
         Self {
             grid,
@@ -96,7 +55,10 @@ impl<'a, const N: usize> CollisionIterator<'a, N> {
     }
 }
 
-impl<'a, const N: usize> Iterator for CollisionIterator<'a, N> {
+impl<'a, const N: usize> Iterator for CollisionIterator<'a, N>
+where
+    [u16; N]: Array<Item = u16>,
+{
     type Item = (u16, u16);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -125,9 +87,69 @@ impl<'a, const N: usize> Iterator for CollisionIterator<'a, N> {
 }
 
 // ==================================
+// CELL
+// ==================================
+#[derive(Clone, Debug)]
+pub struct SpatialCell<const N: usize>
+where
+    [u16; N]: Array<Item = u16>,
+{
+    pub aabb: FastAabb,
+    pub atoms: SmallVec<[u16; N]>,
+}
+
+impl<const N: usize> SpatialCell<N>
+where
+    [u16; N]: Array<Item = u16>,
+{
+    pub fn n() -> usize {
+        N
+    }
+
+    pub fn new(aabb: FastAabb) -> Self {
+        Self {
+            aabb: aabb,
+            atoms: SmallVec::new(),
+        }
+    }
+
+    pub fn aabb(&self) -> &FastAabb {
+        &self.aabb
+    }
+
+    pub fn add_atom(&mut self, atom: u16, aabb: FastAabb) {
+        self.atoms.push(atom);
+    }
+
+    pub fn atoms(&self) -> &[u16] {
+        &self.atoms
+    }
+
+    pub fn clear(&mut self) {
+        self.atoms.clear();
+    }
+
+    pub fn len(&self) -> usize {
+        self.atoms.len()
+    }
+}
+
+impl<const N: usize> Clearable for SpatialCell<N>
+where
+    [u16; N]: Array<Item = u16>,
+{
+    fn clear(&mut self) {
+        self.atoms.clear();
+    }
+}
+
+// ==================================
 // GRID
 // ==================================
-pub struct SpatialGrid<const CN: usize, C = SpatialCell<CN>> {
+pub struct SpatialGrid<const CN: usize, C = SpatialCell<CN>>
+where
+    [u16; CN]: Array<Item = u16>,
+{
     pub data: Vec<C>,
     pub width: usize,
     pub height: usize,
@@ -136,7 +158,10 @@ pub struct SpatialGrid<const CN: usize, C = SpatialCell<CN>> {
     pub cell_size: f32,
 }
 
-impl<const CN: usize> SpatialGrid<CN> {
+impl<const CN: usize> SpatialGrid<CN>
+where
+    [u16; CN]: Array<Item = u16>,
+{
     pub fn new(cell_size: f32) -> Self {
         Self {
             data: Vec::new(),
@@ -276,7 +301,7 @@ impl<const CN: usize> SpatialGrid<CN> {
     }
 
     pub fn iter_collisions(&self) -> CollisionIterator<CN> {
-        CollisionIterator::new(&self)
+        CollisionIterator::new(self)
     }
 
     pub fn clear(&mut self) {
