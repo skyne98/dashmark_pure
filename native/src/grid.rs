@@ -16,28 +16,27 @@ use crate::{
 // ==================================
 // HASHER
 // ==================================
-#[inline]
-pub fn hash(x: i32, y: i32, l: u8, len: usize) -> usize {
-    fnv1a_hash(x, y, l, len)
-}
-#[inline]
-pub fn djb2_hash(x: i32, y: i32, l: u8, len: usize) -> usize {
-    let mut hash = 1000003;
-    hash = hash * 33 + x;
-    hash = hash * 33 + y;
-    hash = hash * 33 + l as i32;
-    hash as usize % len
-}
-const FNV_PRIME: usize = 1099511628211;
-const FNV_OFFSET_BASIS: usize = 14695981039346656037;
-#[inline]
-fn fnv1a_hash(x: i32, y: i32, l: u8, len: usize) -> usize {
-    let coords = [x, y, l as i32];
-    let mut hash = FNV_OFFSET_BASIS;
-    for coord in &coords {
-        hash ^= *coord as usize;
-        hash = hash.wrapping_mul(FNV_PRIME);
-    }
+pub fn hash(x: i32, y: i32, l: u8, len: u64) -> u64 {
+    let x = x as u64;
+    let y = y as u64;
+    let l = l as u64;
+
+    // Encode x and y using the morton encoding
+    let x = (x | (x << 16)) & 0x0000ffff0000ffff;
+    let x = (x | (x << 8)) & 0x00ff00ff00ff00ff;
+    let x = (x | (x << 4)) & 0x0f0f0f0f0f0f0f0f;
+    let x = (x | (x << 2)) & 0x3333333333333333;
+    let x = (x | (x << 1)) & 0x5555555555555555;
+
+    let y = (y | (y << 16)) & 0x0000ffff0000ffff;
+    let y = (y | (y << 8)) & 0x00ff00ff00ff00ff;
+    let y = (y | (y << 4)) & 0x0f0f0f0f0f0f0f0f;
+    let y = (y | (y << 2)) & 0x3333333333333333;
+    let y = (y | (y << 1)) & 0x5555555555555555;
+
+    let l = l << 62;
+
+    let hash = x | (y << 1) | l;
     hash % len
 }
 
@@ -50,7 +49,7 @@ where
     [T; N]: Array<Item = T>,
     T: Clone + Copy + Debug + PartialEq + PartialOrd,
 {
-    pub atoms: SmallVec<[T; N]>,
+    pub atoms: Vec<T>,
 }
 
 impl<T, const N: usize> Bucket<T, N>
@@ -64,7 +63,7 @@ where
 
     pub fn new() -> Self {
         Self {
-            atoms: SmallVec::new(),
+            atoms: Vec::with_capacity(N),
         }
     }
 
@@ -125,7 +124,7 @@ where
     }
 
     // Utilities
-    #[inline]
+
     pub fn longest_side(&self, aabb: &FastAabb) -> f32 {
         let min = aabb.mins;
         let max = aabb.maxs;
@@ -133,20 +132,38 @@ where
         let y = max.y - min.y;
         x.max(y)
     }
-    #[inline]
+
     pub fn level_for_side(&self, side: u32) -> u8 {
         u32::ilog2(side) as u8
     }
-    #[inline]
+
     pub fn cell_size_for_level(&self, level: u8) -> u32 {
         2u32.pow(level as u32)
     }
-    #[inline]
+
     pub fn world_to_grid(&self, world: f32, level: u8) -> i32 {
         let world = world as i32;
         world / self.cell_size_for_level(level) as i32
     }
     pub fn clear(&mut self) {
+        // Give analysis of the current buckets
+        let bucket_count = self.data.len();
+        let mut max_bucket_len = 0;
+        let mut total_atoms = 0;
+        for bucket in &self.data {
+            let len = bucket.len();
+            total_atoms += len;
+            max_bucket_len = max_bucket_len.max(len);
+        }
+        let avg_bucket_len = total_atoms / bucket_count;
+        log::debug!(
+            "SpatialHash::clear() - bucket_count: {}, max_bucket_len: {}, avg_bucket_len: {}",
+            bucket_count,
+            max_bucket_len,
+            avg_bucket_len
+        );
+
+        self.levels.clear();
         for bucket in &mut self.data {
             bucket.clear();
         }
@@ -187,8 +204,13 @@ where
         let grid_height = maxs_grid_y - mins_grid_y + 1;
         for x in 0..grid_width {
             for y in 0..grid_height {
-                let hash = hash(mins_grid_x + x, mins_grid_y + y, level, self.data.len());
-                let bucket = &mut self.data[hash];
+                let hash = hash(
+                    mins_grid_x + x,
+                    mins_grid_y + y,
+                    level,
+                    self.data.len() as u64,
+                );
+                let bucket = &mut self.data[hash as usize];
                 bucket.atoms.retain(|a| *a != atom);
             }
         }
@@ -210,8 +232,13 @@ where
         let grid_height = maxs_grid_y - mins_grid_y + 1;
         for x in 0..grid_width {
             for y in 0..grid_height {
-                let hash = hash(mins_grid_x + x, mins_grid_y + y, level, self.data.len());
-                let bucket = &mut self.data[hash];
+                let hash = hash(
+                    mins_grid_x + x,
+                    mins_grid_y + y,
+                    level,
+                    self.data.len() as u64,
+                );
+                let bucket = &mut self.data[hash as usize];
                 bucket.add_atom(atom.clone());
             }
         }
@@ -241,7 +268,10 @@ where
     aabb: FastAabb,
 
     // Current state
-    level_index: usize,
+    level_iterator: std::slice::Iter<'a, u8>,
+    current_level: Option<&'a u8>,
+    grid_width: i32,
+    grid_height: i32,
     mins_grid_x: i32,
     mins_grid_y: i32,
     maxs_grid_x: i32,
@@ -256,38 +286,36 @@ where
     T: Clone + Copy + Debug + PartialEq + PartialOrd,
 {
     pub fn new(grid: &'a SpatialHash<T, CN>, aabb: FastAabb) -> Self {
-        let mut level_iter = grid.levels.iter().peekable();
-        if grid.levels.len() > 0 {
-            let level = grid.levels[0];
-            // Get the grid coordinates for the current level
-            let mins_grid_x = grid.world_to_grid(aabb.mins.x, level);
-            let mins_grid_y = grid.world_to_grid(aabb.mins.y, level);
-            let maxs_grid_x = grid.world_to_grid(aabb.maxs.x, level);
-            let maxs_grid_y = grid.world_to_grid(aabb.maxs.y, level);
+        let mut iterator = Self {
+            hash_grid: grid,
+            aabb,
+            level_iterator: grid.levels.iter(),
+            current_level: None,
+            grid_width: 0,
+            grid_height: 0,
+            mins_grid_x: 0,
+            mins_grid_y: 0,
+            maxs_grid_x: 0,
+            maxs_grid_y: 0,
+            x: 0,
+            y: 0,
+        };
+        iterator.advance_level();
+        iterator
+    }
 
-            Self {
-                hash_grid: grid,
-                aabb,
-                level_index: 0,
-                mins_grid_x,
-                mins_grid_y,
-                maxs_grid_x,
-                maxs_grid_y,
-                x: 0,
-                y: 0,
-            }
-        } else {
-            Self {
-                hash_grid: grid,
-                aabb,
-                level_index: 0,
-                mins_grid_x: 0,
-                mins_grid_y: 0,
-                maxs_grid_x: 0,
-                maxs_grid_y: 0,
-                x: 0,
-                y: 0,
-            }
+    fn advance_level(&mut self) {
+        self.current_level = self.level_iterator.next();
+        if let Some(level) = self.current_level {
+            // Get the grid coordinates for the current level
+            self.mins_grid_x = self.hash_grid.world_to_grid(self.aabb.mins.x, *level);
+            self.mins_grid_y = self.hash_grid.world_to_grid(self.aabb.mins.y, *level);
+            self.maxs_grid_x = self.hash_grid.world_to_grid(self.aabb.maxs.x, *level);
+            self.maxs_grid_y = self.hash_grid.world_to_grid(self.aabb.maxs.y, *level);
+            self.grid_width = self.maxs_grid_x - self.mins_grid_x + 1;
+            self.grid_height = self.maxs_grid_y - self.mins_grid_y + 1;
+            self.x = 0;
+            self.y = 0;
         }
     }
 }
@@ -300,49 +328,38 @@ where
     type Item = &'a [T];
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.level_index >= self.hash_grid.levels.len() {
-            return None;
-        }
-        let level = self.hash_grid.levels[self.level_index];
+        loop {
+            match self.current_level {
+                None => return None,
+                Some(level) => {
+                    // If we're out of bounds, move to the next level
+                    if self.x >= self.grid_width || self.y >= self.grid_height {
+                        self.advance_level();
+                        continue;
+                    }
 
-        // Get the grid width and height
-        let grid_width = self.maxs_grid_x - self.mins_grid_x + 1;
-        let grid_height = self.maxs_grid_y - self.mins_grid_y + 1;
+                    // Get the hash for the current grid cell
+                    let hash = hash(
+                        self.mins_grid_x + self.x,
+                        self.mins_grid_y + self.y,
+                        *level,
+                        self.hash_grid.data.len() as u64,
+                    );
 
-        // If we're out of bounds, move to the next level
-        if self.x >= grid_width || self.y >= grid_height {
-            self.level_index += 1;
-            if self.level_index < self.hash_grid.levels.len() {
-                // Get the grid coordinates for the current level
-                self.mins_grid_x = self.hash_grid.world_to_grid(self.aabb.mins.x, level);
-                self.mins_grid_y = self.hash_grid.world_to_grid(self.aabb.mins.y, level);
-                self.maxs_grid_x = self.hash_grid.world_to_grid(self.aabb.maxs.x, level);
-                self.maxs_grid_y = self.hash_grid.world_to_grid(self.aabb.maxs.y, level);
+                    // Get the bucket for the current grid cell
+                    let bucket = &self.hash_grid.data[hash as usize];
+
+                    // Move to the next grid cell
+                    self.x += 1;
+                    if self.x >= self.grid_width {
+                        self.x = 0;
+                        self.y += 1;
+                    }
+
+                    // Return the bucket
+                    return Some(&bucket.atoms[..]);
+                }
             }
-            self.x = 0;
-            self.y = 0;
-            return self.next();
         }
-
-        // Get the hash for the current grid cell
-        let hash = hash(
-            self.mins_grid_x + self.x,
-            self.mins_grid_y + self.y,
-            level,
-            self.hash_grid.data.len(),
-        );
-
-        // Get the bucket for the current grid cell
-        let bucket = &self.hash_grid.data[hash];
-
-        // Move to the next grid cell
-        self.x += 1;
-        if self.x >= grid_width {
-            self.x = 0;
-            self.y += 1;
-        }
-
-        // Return the bucket
-        Some(&bucket.atoms[..])
     }
 }

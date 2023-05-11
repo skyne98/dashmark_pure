@@ -23,7 +23,7 @@ pub struct VerletSystem {
     pub collision_damping: f32, // how much of the velocity is lost on collision
     bodies: Bodies,
     gravity: FastVector2,
-    grid: Rc<RefCell<SpatialHash<u16, 256>>>,
+    grid: Rc<RefCell<SpatialHash<u16, 16>>>,
     // threadpool: ThreadPool,
 }
 
@@ -36,7 +36,7 @@ impl VerletSystem {
             collision_damping: 0.8,
             bodies: Bodies::new(),
             gravity: FastVector2::new(0.0, 32.0 * 20.0),
-            grid: Rc::new(RefCell::new(SpatialHash::new(256 * 1024))),
+            grid: Rc::new(RefCell::new(SpatialHash::new(8 * 1024))),
         }
     }
 

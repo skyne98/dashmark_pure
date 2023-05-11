@@ -15,12 +15,10 @@ impl<T, const N: usize> FastList<T, N> {
         }
     }
 
-    #[inline]
     pub fn data(&self) -> &[T] {
         &self.data[0..self.len]
     }
 
-    #[inline]
     pub fn push(&mut self, item: T) {
         if self.len < N {
             unsafe {
@@ -30,27 +28,22 @@ impl<T, const N: usize> FastList<T, N> {
         }
     }
 
-    #[inline]
     pub fn clear(&mut self) {
         self.len = 0;
     }
 
-    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.data[0..self.len].iter()
     }
 
-    #[inline]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.data[0..self.len].iter_mut()
     }
 
-    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
 
-    #[inline]
     pub fn contains(&self, item: &T) -> bool
     where
         T: PartialEq,

@@ -9,12 +9,10 @@ pub struct FastVector2 {
 }
 
 impl FastVector2 {
-    #[inline]
     pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
 
-    #[inline]
     pub fn len_squared(&self) -> f32 {
         self.x * self.x + self.y * self.y
     }
@@ -23,7 +21,6 @@ impl FastVector2 {
 impl Deref for FastVector2 {
     type Target = Vector2<f32>;
 
-    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { std::mem::transmute(self) }
     }
@@ -32,14 +29,12 @@ impl Deref for FastVector2 {
 impl Add for FastVector2 {
     type Output = Self;
 
-    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self::new(self.x + rhs.x, self.y + rhs.y)
     }
 }
 
 impl AddAssign for FastVector2 {
-    #[inline]
     fn add_assign(&mut self, rhs: Self) {
         *self = Self::new(self.x + rhs.x, self.y + rhs.y);
     }
@@ -48,14 +43,12 @@ impl AddAssign for FastVector2 {
 impl Sub for FastVector2 {
     type Output = Self;
 
-    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self::new(self.x - rhs.x, self.y - rhs.y)
     }
 }
 
 impl SubAssign for FastVector2 {
-    #[inline]
     fn sub_assign(&mut self, rhs: Self) {
         *self = Self::new(self.x - rhs.x, self.y - rhs.y);
     }
@@ -64,7 +57,6 @@ impl SubAssign for FastVector2 {
 impl Mul<f32> for FastVector2 {
     type Output = Self;
 
-    #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self::new(self.x * rhs, self.y * rhs)
     }
@@ -73,21 +65,18 @@ impl Mul<f32> for FastVector2 {
 impl Div<f32> for FastVector2 {
     type Output = Self;
 
-    #[inline]
     fn div(self, rhs: f32) -> Self::Output {
         Self::new(self.x / rhs, self.y / rhs)
     }
 }
 
 impl From<[f32; 2]> for FastVector2 {
-    #[inline]
     fn from(array: [f32; 2]) -> Self {
         Self::new(array[0], array[1])
     }
 }
 
 impl Into<[f32; 2]> for FastVector2 {
-    #[inline]
     fn into(self) -> [f32; 2] {
         [self.x, self.y]
     }
@@ -210,7 +199,7 @@ impl Bodies {
     pub fn positions(&self) -> &[FastVector2] {
         &self.positions
     }
-    #[inline]
+
     pub fn get_position(&self, index: usize) -> FastVector2 {
         unsafe { *self.positions.get_unchecked(index) }
     }
@@ -218,7 +207,7 @@ impl Bodies {
         self.positions[index] = position;
         self.old_positions[index] = position;
     }
-    #[inline]
+
     pub fn set_position_keep_old(&mut self, index: usize, position: FastVector2) {
         unsafe {
             *self.positions.get_unchecked_mut(index) = position;
@@ -234,11 +223,11 @@ impl Bodies {
     }
 
     // Old position
-    #[inline]
+
     pub fn get_old_position(&self, index: usize) -> FastVector2 {
         unsafe { *self.old_positions.get_unchecked(index) }
     }
-    #[inline]
+
     pub fn set_old_position(&mut self, index: usize, old_position: FastVector2) {
         unsafe {
             *self.old_positions.get_unchecked_mut(index) = old_position;
