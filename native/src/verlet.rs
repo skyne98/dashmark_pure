@@ -448,9 +448,9 @@ impl Bodies {
         self.ids.iter().map(|&id| self.get_aabb(id)).collect()
     }
     pub fn get_aabb(&self, index: usize) -> FastAabb {
-        FastAabb::new(
-            self.positions[index] - FastVector2::new(self.radii[index], self.radii[index]),
-            self.positions[index] + FastVector2::new(self.radii[index], self.radii[index]),
-        )
+        let radius = self.radii[index];
+        let radius_vec = FastVector2::new(radius, radius);
+        let position = self.positions[index];
+        FastAabb::new(position - radius_vec, position + radius_vec)
     }
 }

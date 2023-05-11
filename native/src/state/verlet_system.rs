@@ -1,4 +1,4 @@
-use std::simd::{Simd, StdFloat};
+use std::simd::{Mask, Simd, SimdInt, StdFloat};
 use std::{
     borrow::Borrow,
     cell::{Ref, RefCell},
@@ -47,7 +47,7 @@ impl<const CN: usize> VerletSystem<CN> {
             sub_steps: 4,
             prev_delta_time: 0.0,
             screen_size: Vector2::new(0.0, 0.0),
-            collision_damping: 0.7,
+            collision_damping: 1.0,
             bodies: Bodies::new(),
             gravity: FastVector2::new(0.0, 32.0 * 20.0),
             biggest_radius: 0.0,
@@ -66,7 +66,7 @@ impl<const CN: usize> VerletSystem<CN> {
     pub fn new_body(&mut self, position: FastVector2, radius: f32) {
         if radius > self.biggest_radius {
             self.biggest_radius = radius;
-            self.grid.borrow_mut().set_cell_size(radius * 2.1);
+            self.grid.borrow_mut().set_cell_size(radius * 3.0);
         }
         self.bodies.add(position, radius, 0.0);
     }
@@ -166,7 +166,7 @@ impl<const CN: usize> VerletSystem<CN> {
         }
         #[cfg(target_arch = "x86_64")]
         {
-            // 256-bit SIMD
+            // // 256-bit SIMD
             use core::arch::x86_64::_mm256_rsqrt_ps;
 
             unsafe {
@@ -217,14 +217,20 @@ impl<const CN: usize> VerletSystem<CN> {
         let collision_epsilon = distance_squared.simd_gt(epsilon);
         let collision_radius = distance_squared.simd_lt(radius_sum_squared);
         let collision = collision_epsilon & collision_radius;
+        let collision_count = collision.to_int().reduce_sum() * -1;
 
         let inv_distance = Self::fast_inv_sqrt_simd(distance_squared);
         let delta = Simd::<f32, VERLET_SIMD_LENGTH>::splat(0.5)
             * (radius_sum - distance_squared * inv_distance);
         let collision_vectors = distance_vec * (delta * inv_distance) * self.collision_damping;
-
         let masked_collision_vectors = collision_vectors.mask_select_splat(collision, 0.0);
-        let masked_collision_vectors_avg = masked_collision_vectors.sum() / len as f32;
+
+        let masked_collision_vectors_avg = if collision_count == 0 {
+            FastVector2::new(0.0, 0.0)
+        } else {
+            masked_collision_vectors.sum() / collision_count as f32
+        };
+
         a_pos += masked_collision_vectors_avg;
         self.bodies.set_position_keep_old(a, a_pos);
 

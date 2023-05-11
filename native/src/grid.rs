@@ -32,7 +32,6 @@ pub fn djb2_hash(x: i32, y: i32) -> i32 {
 // ==================================
 #[derive(Clone, Debug)]
 pub struct SpatialCell<const N: usize> {
-    pub aabb: FastAabb,
     pub atoms: FastList<u16, N>,
 }
 
@@ -43,13 +42,8 @@ impl<const N: usize> SpatialCell<N> {
 
     pub fn new(aabb: FastAabb) -> Self {
         Self {
-            aabb: aabb,
             atoms: FastList::new(),
         }
-    }
-
-    pub fn aabb(&self) -> &FastAabb {
-        &self.aabb
     }
 
     pub fn add_atom(&mut self, atom: u16, aabb: FastAabb) {
@@ -147,29 +141,24 @@ impl<const CN: usize> SpatialGrid<CN> {
     }
 
     #[inline]
-    pub fn vec_to_index(&self, vec: FastVector2) -> usize {
-        let x = (vec.x / self.cell_size).floor() as usize;
-        let y = (vec.y / self.cell_size).floor() as usize;
-        let x = x - self.min_grid_x as usize;
-        let y = y - self.min_grid_y as usize;
-        x * self.height + y
-    }
-    #[inline]
-    pub fn grid_to_index(&self, x: i32, y: i32) -> usize {
-        let x = x - self.min_grid_x;
-        let y = y - self.min_grid_y;
+    pub fn local_grid_coords_to_index(&self, x: u32, y: u32) -> usize {
         let x = x as usize;
         let y = y as usize;
         x * self.height + y
     }
     #[inline]
-    pub fn index_to_vec(&self, index: usize) -> FastVector2 {
+    pub fn index_to_local_grid_coords(&self, index: usize) -> (i32, i32) {
         let x = index / self.height;
         let y = index % self.height;
-        FastVector2::new(
-            x as f32 * self.cell_size + self.min_grid_x as f32 * self.cell_size,
-            y as f32 * self.cell_size + self.min_grid_y as f32 * self.cell_size,
-        )
+        (x as i32, y as i32)
+    }
+    #[inline]
+    pub fn grid_to_index(&self, x: i32, y: i32) -> usize {
+        let x = x - self.min_grid_x;
+        let y = y - self.min_grid_y;
+        let x = x as u32;
+        let y = y as u32;
+        self.local_grid_coords_to_index(x, y)
     }
 
     pub fn clear_and_rebuild(&mut self, aabb: &[FastAabb]) {
@@ -225,11 +214,11 @@ impl<const CN: usize> SpatialGrid<CN> {
         for (obj_index, aabb) in aabb.iter().enumerate() {
             let mins_grid = world_to_grid(aabb.mins.x, aabb.mins.y, self.cell_size);
             let maxs_grid = world_to_grid(aabb.maxs.x, aabb.maxs.y, self.cell_size);
-            let obj_width = maxs_grid[0] - mins_grid[0] + 1;
-            let obj_height = maxs_grid[1] - mins_grid[1] + 1;
+            let obj_width = maxs_grid[0] - mins_grid[0];
+            let obj_height = maxs_grid[1] - mins_grid[1];
 
-            for y in 0..obj_height {
-                for x in 0..obj_width {
+            for y in 0..obj_height + 1 {
+                for x in 0..obj_width + 1 {
                     let index = self.grid_to_index(mins_grid[0] + x, mins_grid[1] + y);
                     self.data[index].add_atom(obj_index as u16, *aabb);
                 }
