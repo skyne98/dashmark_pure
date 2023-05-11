@@ -1,127 +1,62 @@
-use std::hash::{BuildHasher, Hasher};
+use std::{
+    collections::{hash_set::Iter, HashSet},
+    fmt::Debug,
+    hash::{BuildHasher, Hasher},
+    iter::Peekable,
+};
 
 use rapier2d::parry::partitioning::Qbvh;
 use smallvec::{Array, SmallVec};
 
 use crate::{
-    fast_list::{Clearable, FastHashMap, FastList},
+    fast_list::Clearable,
     verlet::{FastAabb, FastVector2},
 };
 
 // ==================================
 // HASHER
 // ==================================
-pub fn morton_code(x: i32, y: i32) -> i64 {
-    let mut code = 0;
-    for i in 0..32 {
-        code |= ((x >> i) & 1) << (i * 2);
-        code |= ((y >> i) & 1) << (i * 2 + 1);
-    }
-    code as i64
-}
-
-pub fn djb2_hash(x: i32, y: i32) -> i32 {
+#[inline]
+pub fn djb2_hash(x: i32, y: i32, l: u8, len: usize) -> usize {
     let mut hash = 5381;
     hash = hash * 33 + x;
     hash = hash * 33 + y;
-    hash
-}
-
-// ==================================
-// COLLISION ITERATOR
-// ==================================
-/// Internally iterates over all potential collisions (combinations of atoms) in all the cells.
-pub struct CollisionIterator<'a, const N: usize>
-where
-    [u16; N]: Array<Item = u16>,
-{
-    grid: &'a SpatialGrid<N>,
-    cell_index: usize,
-    atom_index: usize,
-    other_atom_index: usize,
-}
-
-impl<'a, const N: usize> CollisionIterator<'a, N>
-where
-    [u16; N]: Array<Item = u16>,
-{
-    pub fn new(grid: &'a SpatialGrid<N>) -> Self {
-        Self {
-            grid,
-            cell_index: 0,
-            atom_index: 0,
-            other_atom_index: 0,
-        }
-    }
-}
-
-impl<'a, const N: usize> Iterator for CollisionIterator<'a, N>
-where
-    [u16; N]: Array<Item = u16>,
-{
-    type Item = (u16, u16);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        unsafe {
-            while self.cell_index < self.grid.data.len() {
-                let atoms = self.grid.data.get_unchecked(self.cell_index).atoms();
-                while self.atom_index < atoms.len() {
-                    let atom = *atoms.get_unchecked(self.atom_index);
-                    while self.other_atom_index < atoms.len() {
-                        let other_atom = *atoms.get_unchecked(self.other_atom_index);
-                        self.other_atom_index += 1;
-                        if atom != other_atom {
-                            return Some((atom, other_atom));
-                        }
-                    }
-                    self.atom_index += 1;
-                    self.other_atom_index = 0;
-                }
-                self.cell_index += 1;
-                self.atom_index = 0;
-                self.other_atom_index = 0;
-            }
-        }
-        None
-    }
+    hash = hash * 33 + l as i32;
+    hash as usize % len
 }
 
 // ==================================
 // CELL
 // ==================================
 #[derive(Clone, Debug)]
-pub struct SpatialCell<const N: usize>
+pub struct Bucket<T, const N: usize>
 where
-    [u16; N]: Array<Item = u16>,
+    [T; N]: Array<Item = T>,
+    T: Clone + Copy + Debug + PartialEq + PartialOrd,
 {
-    pub aabb: FastAabb,
-    pub atoms: SmallVec<[u16; N]>,
+    pub atoms: SmallVec<[T; N]>,
 }
 
-impl<const N: usize> SpatialCell<N>
+impl<T, const N: usize> Bucket<T, N>
 where
-    [u16; N]: Array<Item = u16>,
+    [T; N]: Array<Item = T>,
+    T: Clone + Copy + Debug + PartialEq + PartialOrd,
 {
     pub fn n() -> usize {
         N
     }
 
-    pub fn new(aabb: FastAabb) -> Self {
+    pub fn new() -> Self {
         Self {
-            aabb: aabb,
             atoms: SmallVec::new(),
         }
     }
 
-    pub fn aabb(&self) -> &FastAabb {
-        &self.aabb
-    }
-
-    pub fn add_atom(&mut self, atom: u16, aabb: FastAabb) {
+    pub fn add_atom(&mut self, atom: T) {
         self.atoms.push(atom);
     }
 
-    pub fn atoms(&self) -> &[u16] {
+    pub fn atoms(&self) -> &[T] {
         &self.atoms
     }
 
@@ -134,262 +69,227 @@ where
     }
 }
 
-impl<const N: usize> Clearable for SpatialCell<N>
-where
-    [u16; N]: Array<Item = u16>,
-{
-    fn clear(&mut self) {
-        self.atoms.clear();
-    }
-}
-
 // ==================================
 // GRID
 // ==================================
-pub struct SpatialGrid<const CN: usize, C = SpatialCell<CN>>
+pub struct SpatialHash<T, const CN: usize, C = Bucket<T, CN>>
 where
-    [u16; CN]: Array<Item = u16>,
+    [T; CN]: Array<Item = T>,
+    T: Clone + Copy + Debug + PartialEq + PartialOrd,
 {
     pub data: Vec<C>,
-    pub width: usize,
-    pub height: usize,
-    pub min_grid_x: i32,
-    pub min_grid_y: i32,
-    pub cell_size: f32,
+    pub levels: HashSet<u8>,
+    type_phantom: std::marker::PhantomData<T>,
 }
 
-impl<const CN: usize> SpatialGrid<CN>
+impl<T, const CN: usize> SpatialHash<T, CN>
 where
-    [u16; CN]: Array<Item = u16>,
+    [T; CN]: Array<Item = T>,
+    T: Clone + Copy + Debug + PartialEq + PartialOrd,
 {
-    pub fn new(cell_size: f32) -> Self {
+    pub fn new(capacity: usize) -> Self {
         Self {
-            data: Vec::new(),
-            width: 0,
-            height: 0,
-            min_grid_x: 0,
-            min_grid_y: 0,
-            cell_size,
+            data: vec![Bucket::new(); capacity],
+            levels: HashSet::new(),
+            type_phantom: std::marker::PhantomData,
         }
     }
-
-    pub fn set_cell_size(&mut self, cell_size: f32) {
-        self.cell_size = cell_size;
+    pub fn clear_and_rebuild<E>(&mut self, atoms: &[FastAabb])
+    where
+        E: std::error::Error,
+        T: TryFrom<usize, Error = E>,
+    {
+        self.clear();
+        self.rebuild(atoms);
     }
-    pub fn cells(&self) -> &[SpatialCell<CN>] {
+
+    pub fn buckets(&self) -> &[Bucket<T, CN>] {
         &self.data
     }
 
+    // Utilities
     #[inline]
-    pub fn vec_to_index(&self, vec: FastVector2) -> usize {
-        let x = (vec.x / self.cell_size).floor() as usize;
-        let y = (vec.y / self.cell_size).floor() as usize;
-        let x = x - self.min_grid_x as usize;
-        let y = y - self.min_grid_y as usize;
-        x * self.height + y
-    }
-    #[inline]
-    pub fn grid_to_index(&self, x: i32, y: i32) -> usize {
-        let x = x - self.min_grid_x;
-        let y = y - self.min_grid_y;
-        let x = x as usize;
-        let y = y as usize;
-        x * self.height + y
+    pub fn longest_side(&self, aabb: &FastAabb) -> f32 {
+        let min = aabb.mins;
+        let max = aabb.maxs;
+        let x = max.x - min.x;
+        let y = max.y - min.y;
+        x.max(y)
     }
     #[inline]
-    pub fn index_to_vec(&self, index: usize) -> FastVector2 {
-        let x = index / self.height;
-        let y = index % self.height;
-        FastVector2::new(
-            x as f32 * self.cell_size + self.min_grid_x as f32 * self.cell_size,
-            y as f32 * self.cell_size + self.min_grid_y as f32 * self.cell_size,
-        )
+    pub fn level_for_side(&self, side: f32) -> u8 {
+        f32::log2(side).floor() as u8
     }
-
-    pub fn clear_and_rebuild(&mut self, aabb: &[FastAabb]) {
-        if aabb.is_empty() {
-            self.data.clear();
-            self.width = 0;
-            self.height = 0;
-            self.min_grid_x = 0;
-            self.min_grid_y = 0;
-            return;
-        }
-
-        // Find world bounds
-        let mut world_min_x = f32::MAX;
-        let mut world_min_y = f32::MAX;
-        let mut world_max_x = f32::MIN;
-        let mut world_max_y = f32::MIN;
-        for aabb in aabb {
-            world_min_x = world_min_x.min(aabb.mins.x);
-            world_min_y = world_min_y.min(aabb.mins.y);
-            world_max_x = world_max_x.max(aabb.maxs.x);
-            world_max_y = world_max_y.max(aabb.maxs.y);
-        }
-
-        // Find grid bounds
-        self.min_grid_x = (world_min_x / self.cell_size).floor() as i32;
-        self.min_grid_y = (world_min_y / self.cell_size).floor() as i32;
-        let max_grid_x = (world_max_x / self.cell_size).floor() as i32;
-        let max_grid_y = (world_max_y / self.cell_size).floor() as i32;
-        let grid_width = (max_grid_x - self.min_grid_x + 1) as usize;
-        let grid_height = (max_grid_y - self.min_grid_y + 1) as usize;
-        self.width = grid_width;
-        self.height = grid_height;
-
-        // Allocate and put the aabbs
-        self.data = Vec::with_capacity(grid_width * grid_height);
-        for x in 0..grid_width {
-            for y in 0..grid_height {
-                let mins = FastVector2::new(
-                    (x as i32 + self.min_grid_x) as f32 * self.cell_size,
-                    (y as i32 + self.min_grid_y) as f32 * self.cell_size,
-                );
-                let maxs = FastVector2::new(
-                    (x as i32 + self.min_grid_x + 1) as f32 * self.cell_size,
-                    (y as i32 + self.min_grid_y + 1) as f32 * self.cell_size,
-                );
-                let aabb = FastAabb::new(mins, maxs);
-                self.data.push(SpatialCell::new(aabb));
-            }
-        }
-
-        // Add the aabbs
-        for (obj_index, aabb) in aabb.iter().enumerate() {
-            let mins_grid = world_to_grid(aabb.mins.x, aabb.mins.y, self.cell_size);
-            let maxs_grid = world_to_grid(aabb.maxs.x, aabb.maxs.y, self.cell_size);
-            let obj_width = maxs_grid[0] - mins_grid[0] + 1;
-            let obj_height = maxs_grid[1] - mins_grid[1] + 1;
-
-            for y in 0..obj_height {
-                for x in 0..obj_width {
-                    let index = self.grid_to_index(mins_grid[0] + x, mins_grid[1] + y);
-                    self.data[index].add_atom(obj_index as u16, *aabb);
-                }
-            }
-        }
+    #[inline]
+    pub fn cell_size_for_level(&self, level: u8) -> u32 {
+        2u32.pow(level as u32)
     }
-
-    pub fn query(&self, aabb: &FastAabb) -> Vec<u16> {
-        let mut result = Vec::with_capacity(24);
-
-        let mins = world_to_grid(aabb.mins.x, aabb.mins.y, self.cell_size);
-        let maxs = world_to_grid(aabb.maxs.x, aabb.maxs.y, self.cell_size);
-        let obj_width = maxs[0] - mins[0];
-        let obj_height = maxs[1] - mins[1];
-
-        for y in 0..obj_height + 1 {
-            for x in 0..obj_width + 1 {
-                let index = self.grid_to_index(mins[0] + x, mins[1] + y);
-                let cell = &self.data[index];
-                if cell.atoms().len() > 0 && aabb.intersects_aabb(&cell.aabb) {
-                    result.extend_from_slice(cell.atoms());
-                }
-            }
-        }
-
-        // Deduplicate
-        let mut dedup_result = Vec::with_capacity(result.len());
-        for &atom in result.iter() {
-            if dedup_result.contains(&atom) == false {
-                dedup_result.push(atom);
-            }
-        }
-
-        dedup_result
+    #[inline]
+    pub fn world_to_grid(&self, world: f32, level: u8) -> i32 {
+        let world = world as i32;
+        world / self.cell_size_for_level(level) as i32
     }
-
-    pub fn iter_collisions(&self) -> CollisionIterator<CN> {
-        CollisionIterator::new(self)
-    }
-
     pub fn clear(&mut self) {
-        self.data.clear();
+        for bucket in &mut self.data {
+            bucket.clear();
+        }
     }
-
+    pub fn rebuild<E>(&mut self, atoms: &[FastAabb])
+    where
+        E: std::error::Error,
+        T: TryFrom<usize, Error = E>,
+    {
+        for (atom, aabb) in atoms.iter().enumerate() {
+            let atom = atom.try_into().unwrap();
+            self.add(atom, *aabb);
+        }
+    }
     pub fn len(&self) -> usize {
         self.data.len()
     }
-}
 
-pub fn world_to_grid(x: f32, y: f32, cell_size: f32) -> [i32; 2] {
-    let x = x / cell_size;
-    let y = y / cell_size;
+    // ==================================
+    // Management functions
+    // ==================================
+    pub fn remove(&mut self, atom: T) {
+        for bucket in &mut self.data {
+            bucket.atoms.retain(|a| *a != atom);
+        }
+    }
+    pub fn remove_with_aabb(&mut self, atom: T, aabb: FastAabb) {
+        let longest_side = self.longest_side(&aabb);
+        let level = self.level_for_side(longest_side);
 
-    [x as i32, y as i32]
-}
+        let mins = aabb.mins;
+        let mins_grid_x = self.world_to_grid(mins.x, level);
+        let mins_grid_y = self.world_to_grid(mins.y, level);
+        let maxs_grid_x = self.world_to_grid(aabb.maxs.x, level);
+        let maxs_grid_y = self.world_to_grid(aabb.maxs.y, level);
 
-pub fn world_to_morton(x: f32, y: f32, cell_size: f32) -> i64 {
-    let x = x / cell_size;
-    let y = y / cell_size;
+        let grid_width = maxs_grid_x - mins_grid_x + 1;
+        let grid_height = maxs_grid_y - mins_grid_y + 1;
+        for x in 0..grid_width {
+            for y in 0..grid_height {
+                let hash = djb2_hash(mins_grid_x + x, mins_grid_y + y, level, self.data.len());
+                let bucket = &mut self.data[hash];
+                bucket.atoms.retain(|a| *a != atom);
+            }
+        }
+    }
+    pub fn add(&mut self, atom: T, aabb: FastAabb) {
+        let longest_side = self.longest_side(&aabb);
+        let level = self.level_for_side(longest_side);
+        self.levels.insert(level);
 
-    morton_code(x as i32, y as i32)
-}
+        let mins = aabb.mins;
+        let mins_grid_x = self.world_to_grid(mins.x, level);
+        let mins_grid_y = self.world_to_grid(mins.y, level);
+        let maxs_grid_x = self.world_to_grid(aabb.maxs.x, level);
+        let maxs_grid_y = self.world_to_grid(aabb.maxs.y, level);
 
-pub fn normalize_morton(range: u16, min_morton: i64, max_morton: i64, code: i64) -> u16 {
-    let range = range as i64;
-    let min_morton = min_morton as i64;
-    let max_morton = max_morton as i64;
-    let code = code as i64;
-
-    let normalized = (code - min_morton) as f64 / (max_morton - min_morton) as f64;
-    (normalized * range as f64) as u16
-}
-
-pub fn world_to_morton_normalized(
-    x: f32,
-    y: f32,
-    cell_size: f32,
-    range: u16,
-    min_morton: i64,
-    max_morton: i64,
-) -> u16 {
-    let x = x / cell_size;
-    let y = y / cell_size;
-
-    let morton = morton_code(x as i32, y as i32);
-    normalize_morton(range, min_morton, max_morton, morton)
-}
-
-// ==================================
-// CIRCLE QBVH
-// ==================================
-pub struct CircleQBVH {
-    pub data: Qbvh<usize>,
-}
-
-impl CircleQBVH {
-    pub fn new() -> Self {
-        Self { data: Qbvh::new() }
+        let grid_width = maxs_grid_x - mins_grid_x + 1;
+        let grid_height = maxs_grid_y - mins_grid_y + 1;
+        for x in 0..grid_width {
+            for y in 0..grid_height {
+                let hash = djb2_hash(mins_grid_x + x, mins_grid_y + y, level, self.data.len());
+                let bucket = &mut self.data[hash];
+                bucket.add_atom(atom.clone());
+            }
+        }
+    }
+    pub fn update(&mut self, atom: T, aabb: FastAabb) {
+        self.remove(atom.clone());
+        self.add(atom, aabb);
     }
 
-    pub fn clear_and_rebuild(&mut self, positions: &[FastVector2], radii: &[f32]) {
-        self.data.clear_and_rebuild(
-            positions
-                .iter()
-                .enumerate()
-                .zip(radii.iter())
-                .map(|((i, p), r)| {
-                    let aabb: rapier2d::parry::bounding_volume::Aabb =
-                        rapier2d::geometry::Aabb::new(
-                            rapier2d::na::Vector2::new(p.x - r, p.y - r).into(),
-                            rapier2d::na::Vector2::new(p.x + r, p.y + r).into(),
-                        );
-                    (i, aabb)
-                }),
-            0.0,
+    // ==================================
+    // Query functions
+    // ==================================
+    pub fn query(&self, aabb: FastAabb) -> QueryIterator<T, CN> {
+        QueryIterator::new(self, aabb)
+    }
+}
+
+// ==================================
+// Query Iterator
+// ==================================
+pub struct QueryIterator<'a, T, const CN: usize>
+where
+    [T; CN]: Array<Item = T>,
+    T: Clone + Copy + Debug + PartialEq + PartialOrd,
+{
+    hash_grid: &'a SpatialHash<T, CN>,
+    aabb: FastAabb,
+
+    // Current state
+    level_iter: Peekable<Iter<'a, u8>>,
+    x: i32,
+    y: i32,
+}
+
+impl<'a, T, const CN: usize> QueryIterator<'a, T, CN>
+where
+    [T; CN]: Array<Item = T>,
+    T: Clone + Copy + Debug + PartialEq + PartialOrd,
+{
+    pub fn new(hash_grid: &'a SpatialHash<T, CN>, aabb: FastAabb) -> Self {
+        Self {
+            hash_grid,
+            aabb,
+            level_iter: hash_grid.levels.iter().peekable(),
+            x: 0,
+            y: 0,
+        }
+    }
+}
+
+impl<'a, T, const CN: usize> Iterator for QueryIterator<'a, T, CN>
+where
+    [T; CN]: Array<Item = T>,
+    T: Clone + Copy + Debug + PartialEq + PartialOrd,
+{
+    type Item = &'a [T];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let level = **self.level_iter.peek()?;
+
+        // Get the grid coordinates for the current level
+        let mins_grid_x = self.hash_grid.world_to_grid(self.aabb.mins.x, level);
+        let mins_grid_y = self.hash_grid.world_to_grid(self.aabb.mins.y, level);
+        let maxs_grid_x = self.hash_grid.world_to_grid(self.aabb.maxs.x, level);
+        let maxs_grid_y = self.hash_grid.world_to_grid(self.aabb.maxs.y, level);
+
+        // Get the grid width and height
+        let grid_width = maxs_grid_x - mins_grid_x + 1;
+        let grid_height = maxs_grid_y - mins_grid_y + 1;
+
+        // If we're out of bounds, move to the next level
+        if self.x >= grid_width || self.y >= grid_height {
+            self.level_iter.next();
+            self.x = 0;
+            self.y = 0;
+            return self.next();
+        }
+
+        // Get the hash for the current grid cell
+        let hash = djb2_hash(
+            mins_grid_x + self.x,
+            mins_grid_y + self.y,
+            level,
+            self.hash_grid.data.len(),
         );
-    }
 
-    pub fn query(&self, x: f32, y: f32, radius: f32) -> Vec<usize> {
-        let min = rapier2d::na::Vector2::new(x - radius, y - radius);
-        let max = rapier2d::na::Vector2::new(x + radius, y + radius);
+        // Get the bucket for the current grid cell
+        let bucket = &self.hash_grid.data[hash];
 
-        let aabb = rapier2d::geometry::Aabb::new(min.into(), max.into());
+        // Move to the next grid cell
+        self.x += 1;
+        if self.x >= grid_width {
+            self.x = 0;
+            self.y += 1;
+        }
 
-        let mut result = Vec::with_capacity(8);
-        self.data.intersect_aabb(&aabb, &mut result);
-        result
+        // Return the bucket
+        Some(&bucket.atoms[..])
     }
 }

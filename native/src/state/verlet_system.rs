@@ -9,7 +9,7 @@ use rapier2d::{na::Vector2, prelude::Aabb};
 
 use crate::{
     fast_list::FastList,
-    grid::SpatialGrid,
+    grid::SpatialHash,
     thread::{get_logical_core_count, ThreadPool},
     verlet::{Bodies, FastVector2},
 };
@@ -21,13 +21,9 @@ pub struct VerletSystem {
     pub prev_delta_time: f64,
     pub screen_size: Vector2<f32>,
     pub collision_damping: f32, // how much of the velocity is lost on collision
-
     bodies: Bodies,
-
     gravity: FastVector2,
-
-    biggest_radius: f32,
-    grid: Rc<RefCell<SpatialGrid<16>>>,
+    grid: Rc<RefCell<SpatialHash<u16, 256>>>,
     // threadpool: ThreadPool,
 }
 
@@ -40,8 +36,7 @@ impl VerletSystem {
             collision_damping: 0.8,
             bodies: Bodies::new(),
             gravity: FastVector2::new(0.0, 32.0 * 20.0),
-            biggest_radius: 0.0,
-            grid: Rc::new(RefCell::new(SpatialGrid::new(0.0))),
+            grid: Rc::new(RefCell::new(SpatialHash::new(64 * 1024))),
         }
     }
 
@@ -54,10 +49,6 @@ impl VerletSystem {
     }
 
     pub fn new_body(&mut self, position: FastVector2, radius: f32) {
-        if radius > self.biggest_radius {
-            self.biggest_radius = radius;
-            self.grid.borrow_mut().set_cell_size(radius * 2.1);
-        }
         self.bodies.add(position, radius, 0.0);
     }
 
@@ -70,6 +61,7 @@ impl VerletSystem {
     }
 
     pub fn simulate(&mut self, dt: f64) {
+        // Variable timestep
         let target_fps = 60.0;
         let target_frame_time = 1.0 / target_fps;
         let min_sub_steps = 1;
@@ -80,53 +72,43 @@ impl VerletSystem {
 
         let sub_dt = dt / sub_steps as f64;
 
+        // Business logic
         let mut checked_potentials = 0;
-        let mut checked_cells = 0;
         for _ in 0..sub_steps {
-            {
-                let mut grid = self.grid.borrow_mut();
-                let aabbs = self.bodies.aabbs();
-                grid.clear_and_rebuild(aabbs.as_ref());
-            }
-            self.solve_collisions(&mut checked_potentials, &mut checked_cells);
+            self.grid
+                .borrow_mut()
+                .clear_and_rebuild(&self.bodies.aabbs());
+            self.solve_collisions(&mut checked_potentials);
             self.update_bodies(sub_dt);
         }
 
+        // Reporting
         let potentials_per_body_per_step =
             checked_potentials as f64 / self.bodies.len() as f64 / sub_steps as f64;
-        let cells_per_body_per_step =
-            checked_cells as f64 / self.bodies.len() as f64 / sub_steps as f64;
         log::debug!(
-            "Checked {} potentials and {} cells per body per step",
+            "Checked {} potentials per body per step",
             potentials_per_body_per_step,
-            cells_per_body_per_step
         );
 
-        // Calculate average atoms per cell
-        let grid = (*self.grid).borrow();
-        let cells = grid.cells();
-        let mut total_atoms = 0;
-        let mut total_cells = 0;
-        for cell in cells {
-            let atoms = cell.len();
-            if atoms > 0 {
-                total_atoms += atoms;
-                total_cells += 1;
-            }
-        }
-        let average_atoms_per_cell = total_atoms as f64 / total_cells as f64;
-        log::debug!("Average atoms per cell: {}", average_atoms_per_cell);
+        // Spatial hash state
     }
 
-    pub fn solve_collisions(&mut self, checked_potentials: &mut u32, checked_cells: &mut u32) {
+    pub fn solve_collisions(&mut self, checked_potentials: &mut u32) {
         let grid = self.grid.clone();
         let grid: Ref<_> = (*grid).borrow();
 
-        for (a, b) in grid.iter_collisions() {
-            let a = a as usize;
-            let b = b as usize;
-            self.solve_contact(a, b);
-            *checked_potentials += 1;
+        for (body_index, body_aabb) in self.bodies.aabbs().iter().enumerate() {
+            for potential_chunk in grid.query(*body_aabb) {
+                for potential in potential_chunk {
+                    let other_index = *potential as usize;
+                    if body_index == other_index {
+                        continue;
+                    }
+
+                    self.solve_contact(body_index, other_index);
+                    *checked_potentials += 1;
+                }
+            }
         }
     }
 
