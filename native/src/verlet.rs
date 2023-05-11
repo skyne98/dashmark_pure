@@ -151,10 +151,10 @@ where
     }
 
     #[inline]
-    pub fn avg(&self) -> FastVector2 {
+    pub fn sum(&self) -> FastVector2 {
         let x = self.x.reduce_sum();
         let y = self.y.reduce_sum();
-        FastVector2::new(x / N as f32, y / N as f32)
+        FastVector2::new(x, y)
     }
 
     #[inline]

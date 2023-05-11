@@ -237,35 +237,6 @@ impl<const CN: usize> SpatialGrid<CN> {
         }
     }
 
-    pub fn query(&self, aabb: &FastAabb) -> Vec<u16> {
-        let mut result = Vec::with_capacity(24);
-
-        let mins = world_to_grid(aabb.mins.x, aabb.mins.y, self.cell_size);
-        let maxs = world_to_grid(aabb.maxs.x, aabb.maxs.y, self.cell_size);
-        let obj_width = maxs[0] - mins[0];
-        let obj_height = maxs[1] - mins[1];
-
-        for y in 0..obj_height + 1 {
-            for x in 0..obj_width + 1 {
-                let index = self.grid_to_index(mins[0] + x, mins[1] + y);
-                let cell = &self.data[index];
-                if cell.atoms().len() > 0 && aabb.intersects_aabb(&cell.aabb) {
-                    result.extend_from_slice(cell.atoms());
-                }
-            }
-        }
-
-        // Deduplicate
-        let mut dedup_result = Vec::with_capacity(result.len());
-        for &atom in result.iter() {
-            if dedup_result.contains(&atom) == false {
-                dedup_result.push(atom);
-            }
-        }
-
-        dedup_result
-    }
-
     pub fn iter_collisions(&self) -> CollisionIterator<CN> {
         CollisionIterator::new(&self)
     }
@@ -284,38 +255,6 @@ pub fn world_to_grid(x: f32, y: f32, cell_size: f32) -> [i32; 2] {
     let y = y / cell_size;
 
     [x as i32, y as i32]
-}
-
-pub fn world_to_morton(x: f32, y: f32, cell_size: f32) -> i64 {
-    let x = x / cell_size;
-    let y = y / cell_size;
-
-    morton_code(x as i32, y as i32)
-}
-
-pub fn normalize_morton(range: u16, min_morton: i64, max_morton: i64, code: i64) -> u16 {
-    let range = range as i64;
-    let min_morton = min_morton as i64;
-    let max_morton = max_morton as i64;
-    let code = code as i64;
-
-    let normalized = (code - min_morton) as f64 / (max_morton - min_morton) as f64;
-    (normalized * range as f64) as u16
-}
-
-pub fn world_to_morton_normalized(
-    x: f32,
-    y: f32,
-    cell_size: f32,
-    range: u16,
-    min_morton: i64,
-    max_morton: i64,
-) -> u16 {
-    let x = x / cell_size;
-    let y = y / cell_size;
-
-    let morton = morton_code(x as i32, y as i32);
-    normalize_morton(range, min_morton, max_morton, morton)
 }
 
 // ==================================

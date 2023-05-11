@@ -1,4 +1,4 @@
-use std::simd::StdFloat;
+use std::simd::{Simd, StdFloat};
 use std::{
     borrow::Borrow,
     cell::{Ref, RefCell},
@@ -10,13 +10,22 @@ use std::{
 use rapier2d::na::Vector2;
 
 use crate::{
-    fast_list::FastList,
     grid::SpatialGrid,
     verlet::{Bodies, FastVector2, FastVector2Simd},
 };
-use std::simd::f32x4;
 
 use super::transform_manager::TransformManager;
+
+pub const VERLET_SIMD_LENGTH: usize = {
+    #[cfg(target_arch = "x86_64")]
+    {
+        8
+    }
+    #[cfg(any(target_arch = "arm", target_arch = "aarch64", target_arch = "wasm32"))]
+    {
+        4
+    }
+};
 
 pub struct VerletSystem<const CN: usize> {
     pub sub_steps: u8,
@@ -35,10 +44,10 @@ pub struct VerletSystem<const CN: usize> {
 impl<const CN: usize> VerletSystem<CN> {
     pub fn new() -> Self {
         Self {
-            sub_steps: 5,
+            sub_steps: 4,
             prev_delta_time: 0.0,
             screen_size: Vector2::new(0.0, 0.0),
-            collision_damping: 0.5,
+            collision_damping: 0.7,
             bodies: Bodies::new(),
             gravity: FastVector2::new(0.0, 32.0 * 20.0),
             biggest_radius: 0.0,
@@ -125,30 +134,31 @@ impl<const CN: usize> VerletSystem<CN> {
 
         for (a, bs) in grid.iter_collisions() {
             let bs_len = bs.len();
-            let simd_len = 4;
-            let simd_full_batches = bs_len / simd_len;
-            let simd_leftover = bs_len % simd_len;
+            let simd_full_batches = bs_len / VERLET_SIMD_LENGTH;
+            let simd_leftover = bs_len % VERLET_SIMD_LENGTH;
             let simd_batches = simd_full_batches + (simd_leftover > 0) as usize;
             *checked_potentials += bs.len() as u32;
             let a = a as usize;
             let a_radius = self.bodies.borrow().get_radius(a);
+
             for i in 0..simd_batches {
                 let len = if i == simd_full_batches {
                     simd_leftover
                 } else {
-                    simd_len
+                    VERLET_SIMD_LENGTH
                 };
-                let batch_bs = &bs[i * simd_len..i * simd_len + len];
+                let batch_bs = &bs[i * VERLET_SIMD_LENGTH..i * VERLET_SIMD_LENGTH + len];
                 self.solve_contact(a, a_radius, batch_bs, len);
             }
         }
     }
 
     #[inline]
-    fn fast_inv_sqrt_simd(x: std::simd::f32x4) -> std::simd::f32x4 {
+    fn fast_inv_sqrt_simd(x: Simd<f32, VERLET_SIMD_LENGTH>) -> Simd<f32, VERLET_SIMD_LENGTH> {
         #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
         {
-            let one_splat = std::simd::f32x4::splat(1.0);
+            // Arbitrary SIMD
+            let one_splat = Simd::<f32, VERLET_SIMD_LENGTH>::splat(1.0);
             // Calculate sqrt by hand
             let sqrt = x.sqrt();
             // Calculate reciprocal sqrt
@@ -156,15 +166,17 @@ impl<const CN: usize> VerletSystem<CN> {
         }
         #[cfg(target_arch = "x86_64")]
         {
-            use core::arch::x86_64::_mm_rsqrt_ps;
+            // 256-bit SIMD
+            use core::arch::x86_64::_mm256_rsqrt_ps;
 
             unsafe {
-                let r = _mm_rsqrt_ps(x.into());
+                let r = _mm256_rsqrt_ps(x.into());
                 r.into()
             }
         }
         #[cfg(target_arch = "aarch64")]
         {
+            // 128-bit SIMD
             use core::arch::aarch64::vrsqrteq_f32;
 
             unsafe {
@@ -176,9 +188,9 @@ impl<const CN: usize> VerletSystem<CN> {
 
     pub fn solve_contact(&mut self, a: usize, a_radius: f32, bs: &[u16], len: usize) {
         // Get values
-        let a_radius_simd = f32x4::splat(a_radius);
-        let mut bs_radius = f32x4::splat(0.0);
-        for i in 0..4 {
+        let a_radius_simd = Simd::<f32, VERLET_SIMD_LENGTH>::splat(a_radius);
+        let mut bs_radius = Simd::<f32, VERLET_SIMD_LENGTH>::splat(0.0);
+        for i in 0..VERLET_SIMD_LENGTH {
             if i < len {
                 let b = bs[i] as usize;
                 let b_radius = self.bodies.get_radius(b);
@@ -191,7 +203,7 @@ impl<const CN: usize> VerletSystem<CN> {
         let mut a_pos = self.bodies.get_position(a);
         let a_pos_simd = FastVector2Simd::splat(a_pos.x, a_pos.y);
         let mut bs_pos = FastVector2Simd::splat(0.0, 0.0);
-        for i in 0..4 {
+        for i in 0..VERLET_SIMD_LENGTH {
             if i < len {
                 let b = bs[i] as usize;
                 let b_pos = self.bodies.get_position(b);
@@ -201,17 +213,18 @@ impl<const CN: usize> VerletSystem<CN> {
 
         let distance_vec = a_pos_simd - bs_pos;
         let distance_squared = distance_vec.magnitude_squared();
-        let epsilon = f32x4::splat(f32::EPSILON);
+        let epsilon = Simd::<f32, VERLET_SIMD_LENGTH>::splat(f32::EPSILON);
         let collision_epsilon = distance_squared.simd_gt(epsilon);
         let collision_radius = distance_squared.simd_lt(radius_sum_squared);
         let collision = collision_epsilon & collision_radius;
 
         let inv_distance = Self::fast_inv_sqrt_simd(distance_squared);
-        let delta = f32x4::splat(0.5) * (radius_sum - distance_squared * inv_distance);
+        let delta = Simd::<f32, VERLET_SIMD_LENGTH>::splat(0.5)
+            * (radius_sum - distance_squared * inv_distance);
         let collision_vectors = distance_vec * (delta * inv_distance) * self.collision_damping;
 
         let masked_collision_vectors = collision_vectors.mask_select_splat(collision, 0.0);
-        let masked_collision_vectors_avg = masked_collision_vectors.avg();
+        let masked_collision_vectors_avg = masked_collision_vectors.sum() / len as f32;
         a_pos += masked_collision_vectors_avg;
         self.bodies.set_position_keep_old(a, a_pos);
 
