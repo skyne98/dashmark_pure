@@ -36,7 +36,7 @@ impl VerletSystem {
             collision_damping: 0.8,
             bodies: Bodies::new(),
             gravity: FastVector2::new(0.0, 32.0 * 20.0),
-            grid: Rc::new(RefCell::new(SpatialHash::new(64 * 1024))),
+            grid: Rc::new(RefCell::new(SpatialHash::new(256 * 1024))),
         }
     }
 
@@ -91,6 +91,9 @@ impl VerletSystem {
         );
 
         // Spatial hash state
+        let grid = self.grid.clone();
+        let levels = &(*grid).borrow().levels;
+        log::debug!("Grid levels: {:?}", levels);
     }
 
     pub fn solve_collisions(&mut self, checked_potentials: &mut u32) {

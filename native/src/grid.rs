@@ -17,12 +17,28 @@ use crate::{
 // HASHER
 // ==================================
 #[inline]
+pub fn hash(x: i32, y: i32, l: u8, len: usize) -> usize {
+    fnv1a_hash(x, y, l, len)
+}
+#[inline]
 pub fn djb2_hash(x: i32, y: i32, l: u8, len: usize) -> usize {
-    let mut hash = 5381;
+    let mut hash = 1000003;
     hash = hash * 33 + x;
     hash = hash * 33 + y;
     hash = hash * 33 + l as i32;
     hash as usize % len
+}
+const FNV_PRIME: usize = 1099511628211;
+const FNV_OFFSET_BASIS: usize = 14695981039346656037;
+#[inline]
+fn fnv1a_hash(x: i32, y: i32, l: u8, len: usize) -> usize {
+    let coords = [x, y, l as i32];
+    let mut hash = FNV_OFFSET_BASIS;
+    for coord in &coords {
+        hash ^= *coord as usize;
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    hash % len
 }
 
 // ==================================
@@ -72,13 +88,14 @@ where
 // ==================================
 // GRID
 // ==================================
+// Based on "Hierarchical Spatial Hashing for Real-time Collision Detection"
 pub struct SpatialHash<T, const CN: usize, C = Bucket<T, CN>>
 where
     [T; CN]: Array<Item = T>,
     T: Clone + Copy + Debug + PartialEq + PartialOrd,
 {
     pub data: Vec<C>,
-    pub levels: HashSet<u8>,
+    pub levels: Vec<u8>,
     type_phantom: std::marker::PhantomData<T>,
 }
 
@@ -90,7 +107,7 @@ where
     pub fn new(capacity: usize) -> Self {
         Self {
             data: vec![Bucket::new(); capacity],
-            levels: HashSet::new(),
+            levels: Vec::with_capacity(16),
             type_phantom: std::marker::PhantomData,
         }
     }
@@ -117,8 +134,8 @@ where
         x.max(y)
     }
     #[inline]
-    pub fn level_for_side(&self, side: f32) -> u8 {
-        f32::log2(side).floor() as u8
+    pub fn level_for_side(&self, side: u32) -> u8 {
+        u32::ilog2(side) as u8
     }
     #[inline]
     pub fn cell_size_for_level(&self, level: u8) -> u32 {
@@ -158,7 +175,7 @@ where
     }
     pub fn remove_with_aabb(&mut self, atom: T, aabb: FastAabb) {
         let longest_side = self.longest_side(&aabb);
-        let level = self.level_for_side(longest_side);
+        let level = self.level_for_side(longest_side as u32);
 
         let mins = aabb.mins;
         let mins_grid_x = self.world_to_grid(mins.x, level);
@@ -170,7 +187,7 @@ where
         let grid_height = maxs_grid_y - mins_grid_y + 1;
         for x in 0..grid_width {
             for y in 0..grid_height {
-                let hash = djb2_hash(mins_grid_x + x, mins_grid_y + y, level, self.data.len());
+                let hash = hash(mins_grid_x + x, mins_grid_y + y, level, self.data.len());
                 let bucket = &mut self.data[hash];
                 bucket.atoms.retain(|a| *a != atom);
             }
@@ -178,8 +195,10 @@ where
     }
     pub fn add(&mut self, atom: T, aabb: FastAabb) {
         let longest_side = self.longest_side(&aabb);
-        let level = self.level_for_side(longest_side);
-        self.levels.insert(level);
+        let level = self.level_for_side(longest_side as u32);
+        if self.levels.contains(&level) == false {
+            self.levels.push(level);
+        }
 
         let mins = aabb.mins;
         let mins_grid_x = self.world_to_grid(mins.x, level);
@@ -191,7 +210,7 @@ where
         let grid_height = maxs_grid_y - mins_grid_y + 1;
         for x in 0..grid_width {
             for y in 0..grid_height {
-                let hash = djb2_hash(mins_grid_x + x, mins_grid_y + y, level, self.data.len());
+                let hash = hash(mins_grid_x + x, mins_grid_y + y, level, self.data.len());
                 let bucket = &mut self.data[hash];
                 bucket.add_atom(atom.clone());
             }
@@ -222,7 +241,11 @@ where
     aabb: FastAabb,
 
     // Current state
-    level_iter: Peekable<Iter<'a, u8>>,
+    level_index: usize,
+    mins_grid_x: i32,
+    mins_grid_y: i32,
+    maxs_grid_x: i32,
+    maxs_grid_y: i32,
     x: i32,
     y: i32,
 }
@@ -232,13 +255,39 @@ where
     [T; CN]: Array<Item = T>,
     T: Clone + Copy + Debug + PartialEq + PartialOrd,
 {
-    pub fn new(hash_grid: &'a SpatialHash<T, CN>, aabb: FastAabb) -> Self {
-        Self {
-            hash_grid,
-            aabb,
-            level_iter: hash_grid.levels.iter().peekable(),
-            x: 0,
-            y: 0,
+    pub fn new(grid: &'a SpatialHash<T, CN>, aabb: FastAabb) -> Self {
+        let mut level_iter = grid.levels.iter().peekable();
+        if grid.levels.len() > 0 {
+            let level = grid.levels[0];
+            // Get the grid coordinates for the current level
+            let mins_grid_x = grid.world_to_grid(aabb.mins.x, level);
+            let mins_grid_y = grid.world_to_grid(aabb.mins.y, level);
+            let maxs_grid_x = grid.world_to_grid(aabb.maxs.x, level);
+            let maxs_grid_y = grid.world_to_grid(aabb.maxs.y, level);
+
+            Self {
+                hash_grid: grid,
+                aabb,
+                level_index: 0,
+                mins_grid_x,
+                mins_grid_y,
+                maxs_grid_x,
+                maxs_grid_y,
+                x: 0,
+                y: 0,
+            }
+        } else {
+            Self {
+                hash_grid: grid,
+                aabb,
+                level_index: 0,
+                mins_grid_x: 0,
+                mins_grid_y: 0,
+                maxs_grid_x: 0,
+                maxs_grid_y: 0,
+                x: 0,
+                y: 0,
+            }
         }
     }
 }
@@ -251,30 +300,34 @@ where
     type Item = &'a [T];
 
     fn next(&mut self) -> Option<Self::Item> {
-        let level = **self.level_iter.peek()?;
-
-        // Get the grid coordinates for the current level
-        let mins_grid_x = self.hash_grid.world_to_grid(self.aabb.mins.x, level);
-        let mins_grid_y = self.hash_grid.world_to_grid(self.aabb.mins.y, level);
-        let maxs_grid_x = self.hash_grid.world_to_grid(self.aabb.maxs.x, level);
-        let maxs_grid_y = self.hash_grid.world_to_grid(self.aabb.maxs.y, level);
+        if self.level_index >= self.hash_grid.levels.len() {
+            return None;
+        }
+        let level = self.hash_grid.levels[self.level_index];
 
         // Get the grid width and height
-        let grid_width = maxs_grid_x - mins_grid_x + 1;
-        let grid_height = maxs_grid_y - mins_grid_y + 1;
+        let grid_width = self.maxs_grid_x - self.mins_grid_x + 1;
+        let grid_height = self.maxs_grid_y - self.mins_grid_y + 1;
 
         // If we're out of bounds, move to the next level
         if self.x >= grid_width || self.y >= grid_height {
-            self.level_iter.next();
+            self.level_index += 1;
+            if self.level_index < self.hash_grid.levels.len() {
+                // Get the grid coordinates for the current level
+                self.mins_grid_x = self.hash_grid.world_to_grid(self.aabb.mins.x, level);
+                self.mins_grid_y = self.hash_grid.world_to_grid(self.aabb.mins.y, level);
+                self.maxs_grid_x = self.hash_grid.world_to_grid(self.aabb.maxs.x, level);
+                self.maxs_grid_y = self.hash_grid.world_to_grid(self.aabb.maxs.y, level);
+            }
             self.x = 0;
             self.y = 0;
             return self.next();
         }
 
         // Get the hash for the current grid cell
-        let hash = djb2_hash(
-            mins_grid_x + self.x,
-            mins_grid_y + self.y,
+        let hash = hash(
+            self.mins_grid_x + self.x,
+            self.mins_grid_y + self.y,
             level,
             self.hash_grid.data.len(),
         );
