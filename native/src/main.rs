@@ -1,4 +1,5 @@
 #![feature(portable_simd)]
+#![feature(stdsimd)]
 #![feature(asm_experimental_arch)]
 #![feature(atomic_mut_ptr)]
 #![feature(atomic_from_ptr)]

@@ -21,7 +21,7 @@ pub struct State {
     pub broadphase: RefCell<BroadphaseStack>,
     pub transforms: RefCell<TransformManager>,
     pub rendering: RefCell<RenderingResources>,
-    pub verlet: RefCell<VerletSystem>,
+    pub verlet: RefCell<VerletSystem<8>>,
 }
 
 // Static methods

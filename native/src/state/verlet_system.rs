@@ -1,22 +1,24 @@
+use std::simd::StdFloat;
 use std::{
     borrow::Borrow,
     cell::{Ref, RefCell},
     collections::HashMap,
     rc::Rc,
+    simd::SimdPartialOrd,
 };
 
-use rapier2d::{na::Vector2, prelude::Aabb};
+use rapier2d::na::Vector2;
 
 use crate::{
     fast_list::FastList,
     grid::SpatialGrid,
-    thread::{get_logical_core_count, ThreadPool},
-    verlet::{Bodies, FastVector2},
+    verlet::{Bodies, FastVector2, FastVector2Simd},
 };
+use std::simd::f32x4;
 
 use super::transform_manager::TransformManager;
 
-pub struct VerletSystem {
+pub struct VerletSystem<const CN: usize> {
     pub sub_steps: u8,
     pub prev_delta_time: f64,
     pub screen_size: Vector2<f32>,
@@ -27,11 +29,10 @@ pub struct VerletSystem {
     gravity: FastVector2,
 
     biggest_radius: f32,
-    grid: Rc<RefCell<SpatialGrid<8>>>,
-    // threadpool: ThreadPool,
+    grid: Rc<RefCell<SpatialGrid<CN>>>,
 }
 
-impl VerletSystem {
+impl<const CN: usize> VerletSystem<CN> {
     pub fn new() -> Self {
         Self {
             sub_steps: 5,
@@ -122,62 +123,103 @@ impl VerletSystem {
         let grid = self.grid.clone();
         let grid: Ref<_> = (*grid).borrow();
 
-        for (a, b) in grid.iter_collisions() {
+        for (a, bs) in grid.iter_collisions() {
+            let bs_len = bs.len();
+            let simd_len = 4;
+            let simd_full_batches = bs_len / simd_len;
+            let simd_leftover = bs_len % simd_len;
+            let simd_batches = simd_full_batches + (simd_leftover > 0) as usize;
+            *checked_potentials += bs.len() as u32;
             let a = a as usize;
-            let b = b as usize;
-            self.solve_contact(a, b);
-            *checked_potentials += 1;
+            let a_radius = self.bodies.borrow().get_radius(a);
+            for i in 0..simd_batches {
+                let len = if i == simd_full_batches {
+                    simd_leftover
+                } else {
+                    simd_len
+                };
+                let batch_bs = &bs[i * simd_len..i * simd_len + len];
+                self.solve_contact(a, a_radius, batch_bs, len);
+            }
         }
     }
 
     #[inline]
-    fn fast_inv_sqrt(x: f32) -> f32 {
+    fn fast_inv_sqrt_simd(x: std::simd::f32x4) -> std::simd::f32x4 {
         #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
         {
-            x.sqrt().recip()
+            let one_splat = std::simd::f32x4::splat(1.0);
+            // Calculate sqrt by hand
+            let sqrt = x.sqrt();
+            // Calculate reciprocal sqrt
+            one_splat / sqrt
         }
         #[cfg(target_arch = "x86_64")]
         {
-            use core::arch::x86_64::{_mm_cvtss_f32, _mm_rsqrt_ss, _mm_set_ss};
+            use core::arch::x86_64::_mm_rsqrt_ps;
 
             unsafe {
-                let x = _mm_rsqrt_ss(_mm_set_ss(x));
-                _mm_cvtss_f32(x)
+                let r = _mm_rsqrt_ps(x.into());
+                r.into()
             }
         }
         #[cfg(target_arch = "aarch64")]
         {
-            use core::arch::aarch64::{vrecpes_f32, vrsqrtes_f32};
+            use core::arch::aarch64::vrsqrteq_f32;
 
-            unsafe { vrsqrtes_f32(x) }
+            unsafe {
+                let r = vrsqrteq_f32(x.into());
+                r.into()
+            }
         }
     }
 
-    pub fn solve_contact(&mut self, a: usize, b: usize) {
+    pub fn solve_contact(&mut self, a: usize, a_radius: f32, bs: &[u16], len: usize) {
         // Get values
-        let a_radius = self.bodies.get_radius(a);
-        let b_radius = self.bodies.get_radius(b);
-        let radius_sum = a_radius + b_radius;
+        let a_radius_simd = f32x4::splat(a_radius);
+        let mut bs_radius = f32x4::splat(0.0);
+        for i in 0..4 {
+            if i < len {
+                let b = bs[i] as usize;
+                let b_radius = self.bodies.get_radius(b);
+                bs_radius[i] = b_radius;
+            }
+        }
+        let radius_sum = a_radius_simd + bs_radius;
         let radius_sum_squared = radius_sum * radius_sum;
 
         let mut a_pos = self.bodies.get_position(a);
-        let mut b_pos = self.bodies.get_position(b);
+        let a_pos_simd = FastVector2Simd::splat(a_pos.x, a_pos.y);
+        let mut bs_pos = FastVector2Simd::splat(0.0, 0.0);
+        for i in 0..4 {
+            if i < len {
+                let b = bs[i] as usize;
+                let b_pos = self.bodies.get_position(b);
+                bs_pos.set(i, b_pos);
+            }
+        }
 
-        let distance_vec = a_pos - b_pos;
+        let distance_vec = a_pos_simd - bs_pos;
         let distance_squared = distance_vec.magnitude_squared();
+        let epsilon = f32x4::splat(f32::EPSILON);
+        let collision_epsilon = distance_squared.simd_gt(epsilon);
+        let collision_radius = distance_squared.simd_lt(radius_sum_squared);
+        let collision = collision_epsilon & collision_radius;
 
-        if distance_squared > f32::EPSILON && distance_squared < radius_sum_squared {
-            let inv_distance = Self::fast_inv_sqrt(distance_squared);
-            let delta = 0.5 * (radius_sum - distance_squared * inv_distance);
-            let collision_vector = distance_vec * (delta * inv_distance) * self.collision_damping;
+        let inv_distance = Self::fast_inv_sqrt_simd(distance_squared);
+        let delta = f32x4::splat(0.5) * (radius_sum - distance_squared * inv_distance);
+        let collision_vectors = distance_vec * (delta * inv_distance) * self.collision_damping;
 
-            // Update positions in-place to avoid unnecessary memory accesses
-            a_pos += collision_vector;
-            b_pos -= collision_vector;
+        let masked_collision_vectors = collision_vectors.mask_select_splat(collision, 0.0);
+        let masked_collision_vectors_avg = masked_collision_vectors.avg();
+        a_pos += masked_collision_vectors_avg;
+        self.bodies.set_position_keep_old(a, a_pos);
 
-            // Write values directly
-            self.bodies.set_position_keep_old(a, a_pos);
-            self.bodies.set_position_keep_old(b, b_pos);
+        bs_pos -= masked_collision_vectors;
+        for i in 0..len {
+            let b = bs[i];
+            let b_pos = bs_pos.get(i);
+            self.bodies.set_position_keep_old(b as usize, b_pos);
         }
     }
 

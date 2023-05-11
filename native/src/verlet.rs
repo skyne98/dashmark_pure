@@ -1,6 +1,12 @@
-use std::ops::{Add, AddAssign, Deref, Div, Mul, Sub, SubAssign};
+use std::{
+    ops::{Add, AddAssign, Deref, Div, Index, IndexMut, Mul, Sub, SubAssign},
+    simd::{LaneCount, Mask, SimdFloat, SupportedLaneCount},
+};
 
 use rapier2d::{na::Vector2, prelude::Aabb};
+use smallvec::SmallVec;
+
+use crate::fast_list::FastList;
 
 #[derive(Clone, Copy, Debug)]
 pub struct FastVector2 {
@@ -15,7 +21,7 @@ impl FastVector2 {
     }
 
     #[inline]
-    pub fn len_squared(&self) -> f32 {
+    pub fn magnitude_squared(&self) -> f32 {
         self.x * self.x + self.y * self.y
     }
 }
@@ -92,6 +98,168 @@ impl Into<[f32; 2]> for FastVector2 {
         [self.x, self.y]
     }
 }
+impl<const N: usize> Into<FastVector2Simd<N>> for FastVector2
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    #[inline]
+    fn into(self) -> FastVector2Simd<N> {
+        FastVector2Simd::splat(self.x, self.y)
+    }
+}
+
+// Fast Vector SIMD
+#[derive(Clone, Copy, Debug)]
+pub struct FastVector2Simd<const N: usize>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    pub x: std::simd::Simd<f32, N>,
+    pub y: std::simd::Simd<f32, N>,
+}
+
+impl<const N: usize> FastVector2Simd<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    #[inline]
+    pub fn new(x: std::simd::Simd<f32, N>, y: std::simd::Simd<f32, N>) -> Self {
+        Self { x, y }
+    }
+    #[inline]
+    pub fn from_slice(slice: &[FastVector2]) -> Self {
+        let mut x = std::simd::Simd::<f32, N>::splat(0.0);
+        let mut y = std::simd::Simd::<f32, N>::splat(0.0);
+        for (i, v) in slice.iter().enumerate() {
+            x[i] = v.x;
+            y[i] = v.y;
+        }
+        Self { x, y }
+    }
+
+    #[inline]
+    pub fn splat(x: f32, y: f32) -> Self {
+        Self {
+            x: std::simd::Simd::<f32, N>::splat(x),
+            y: std::simd::Simd::<f32, N>::splat(y),
+        }
+    }
+
+    #[inline]
+    pub fn magnitude_squared(&self) -> std::simd::Simd<f32, N> {
+        self.x * self.x + self.y * self.y
+    }
+
+    #[inline]
+    pub fn avg(&self) -> FastVector2 {
+        let x = self.x.reduce_sum();
+        let y = self.y.reduce_sum();
+        FastVector2::new(x / N as f32, y / N as f32)
+    }
+
+    #[inline]
+    pub fn get(&self, index: usize) -> FastVector2 {
+        FastVector2::new(self.x[index], self.y[index])
+    }
+    #[inline]
+    pub fn set(&mut self, index: usize, value: FastVector2) {
+        self.x[index] = value.x;
+        self.y[index] = value.y;
+    }
+
+    #[inline]
+    pub fn mask_select(&self, mask: Mask<i32, N>, other: Self) -> Self {
+        Self {
+            x: mask.select(self.x, other.x),
+            y: mask.select(self.y, other.y),
+        }
+    }
+    #[inline]
+    pub fn mask_select_splat(&self, mask: Mask<i32, N>, value: f32) -> Self {
+        let other = std::simd::Simd::<f32, N>::splat(value);
+        Self {
+            x: mask.select(self.x, other),
+            y: mask.select(self.y, other),
+        }
+    }
+}
+
+impl<const N: usize> AddAssign for FastVector2Simd<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        *self = Self::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+impl<const N: usize> Add for FastVector2Simd<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl<const N: usize> Sub for FastVector2Simd<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+impl<const N: usize> Sub for &FastVector2Simd<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = FastVector2Simd<N>;
+
+    #[inline]
+    fn sub(self, rhs: Self) -> Self::Output {
+        FastVector2Simd::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+impl<const N: usize> SubAssign for FastVector2Simd<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = Self::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+
+impl<const N: usize> Mul<std::simd::Simd<f32, N>> for FastVector2Simd<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: std::simd::Simd<f32, N>) -> Self::Output {
+        Self::new(self.x * rhs, self.y * rhs)
+    }
+}
+impl<const N: usize> Mul<f32> for FastVector2Simd<N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: f32) -> Self::Output {
+        let rhs = std::simd::Simd::<f32, N>::splat(rhs);
+        Self::new(self.x * rhs, self.y * rhs)
+    }
+}
 
 // Fast Aabb
 #[derive(Clone, Copy, Debug)]
@@ -164,6 +332,7 @@ pub struct Bodies {
     pub frictions: Vec<f32>,
     pub ground_frictions: Vec<f32>,
     pub radii: Vec<f32>,
+    pub radii_squared: Vec<f32>,
 }
 
 impl Bodies {
@@ -176,6 +345,7 @@ impl Bodies {
             frictions: Vec::new(),
             ground_frictions: Vec::new(),
             radii: Vec::new(),
+            radii_squared: Vec::new(),
         }
     }
 
@@ -188,6 +358,7 @@ impl Bodies {
         self.frictions.push(0.0);
         self.ground_frictions.push(0.0);
         self.radii.push(radius);
+        self.radii_squared.push(radius * radius);
         id
     }
 
@@ -200,6 +371,7 @@ impl Bodies {
         self.frictions.remove(index);
         self.ground_frictions.remove(index);
         self.radii.remove(index);
+        self.radii_squared.remove(index);
     }
 
     pub fn len(&self) -> usize {
@@ -249,11 +421,18 @@ impl Bodies {
     pub fn radii(&self) -> &[f32] {
         &self.radii
     }
+    #[inline]
     pub fn get_radius(&self, index: usize) -> f32 {
         self.radii[index]
     }
+    #[inline]
+    pub fn get_radius_squared(&self, index: usize) -> f32 {
+        self.radii_squared[index]
+    }
+    #[inline]
     pub fn set_radius(&mut self, index: usize, radius: f32) {
         self.radii[index] = radius;
+        self.radii_squared[index] = radius * radius;
     }
 
     // Acceleration
