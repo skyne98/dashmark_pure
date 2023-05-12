@@ -41,7 +41,7 @@ pub fn hash(x: i32, y: i32, l: u8, len: u64) -> u64 {
 // which is based on https://www.youtube.com/watch?v=D2M8jTtKi44
 pub struct SpatialHash {
     pub capacity: usize,
-    pub cell_start: Vec<u16>,
+    pub cell_start: Vec<usize>,
     pub cell_entries: Vec<u16>,
     pub levels: Vec<u8>,
 
@@ -119,7 +119,7 @@ impl SpatialHash {
         }
 
         // Do a partial sum through the list to get the start of each cell
-        let mut start: u16 = 0;
+        let mut start: usize = 0;
         for i in 0..self.cell_start.len() {
             start += self.cell_start[i];
             self.cell_start[i] = start;
@@ -128,7 +128,7 @@ impl SpatialHash {
         self.cell_start[len - 1] = start; // guard
 
         // Fill the atom ids
-        self.cell_entries = vec![0; start as usize];
+        self.cell_entries = vec![0; start];
         for (i, aabb) in atoms.iter().enumerate() {
             let side = self.longest_side(aabb);
             let level = self.level_for_side(side as u32);
@@ -144,7 +144,7 @@ impl SpatialHash {
                 for y in 0..grid_height + 1 {
                     let hash = hash(min_x + x, min_y + y, level, self.capacity as u64);
                     self.cell_start[hash as usize] -= 1;
-                    self.cell_entries[self.cell_start[hash as usize] as usize] = i as u16;
+                    self.cell_entries[self.cell_start[hash as usize]] = i as u16;
                 }
             }
         }
