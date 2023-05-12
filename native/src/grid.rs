@@ -3,6 +3,7 @@ use std::{
     fmt::Debug,
     hash::{BuildHasher, Hasher},
     iter::Peekable,
+    ops::AddAssign,
 };
 
 use rapier2d::parry::partitioning::Qbvh;
@@ -16,115 +17,53 @@ use crate::{
 // ==================================
 // HASHER
 // ==================================
+// Based on
+/*
+  hashCoords(xi: number, yi: number, zi: number) {
+    const hash = (xi * 92837111) ^ (yi * 689287499) ^ (zi * 283923481);
+    return Math.abs(hash);
+  }
+*/
 pub fn hash(x: i32, y: i32, l: u8, len: u64) -> u64 {
-    let x = x as u64;
-    let y = y as u64;
-    let l = l as u64;
+    const X: u64 = 92837111;
+    const Y: u64 = 689287499;
+    const Z: u64 = 283923481;
 
-    // Encode x and y using the morton encoding
-    let x = (x | (x << 16)) & 0x0000ffff0000ffff;
-    let x = (x | (x << 8)) & 0x00ff00ff00ff00ff;
-    let x = (x | (x << 4)) & 0x0f0f0f0f0f0f0f0f;
-    let x = (x | (x << 2)) & 0x3333333333333333;
-    let x = (x | (x << 1)) & 0x5555555555555555;
-
-    let y = (y | (y << 16)) & 0x0000ffff0000ffff;
-    let y = (y | (y << 8)) & 0x00ff00ff00ff00ff;
-    let y = (y | (y << 4)) & 0x0f0f0f0f0f0f0f0f;
-    let y = (y | (y << 2)) & 0x3333333333333333;
-    let y = (y | (y << 1)) & 0x5555555555555555;
-
-    let l = l << 62;
-
-    let hash = x | (y << 1) | l;
+    let hash = (x as u64 * X) ^ (y as u64 * Y) ^ (l as u64 * Z);
     hash % len
-}
-
-// ==================================
-// CELL
-// ==================================
-#[derive(Clone, Debug)]
-pub struct Bucket<T, const N: usize>
-where
-    [T; N]: Array<Item = T>,
-    T: Clone + Copy + Debug + PartialEq + PartialOrd,
-{
-    pub atoms: Vec<T>,
-}
-
-impl<T, const N: usize> Bucket<T, N>
-where
-    [T; N]: Array<Item = T>,
-    T: Clone + Copy + Debug + PartialEq + PartialOrd,
-{
-    pub fn n() -> usize {
-        N
-    }
-
-    pub fn new() -> Self {
-        Self {
-            atoms: Vec::with_capacity(N),
-        }
-    }
-
-    pub fn add_atom(&mut self, atom: T) {
-        self.atoms.push(atom);
-    }
-
-    pub fn atoms(&self) -> &[T] {
-        &self.atoms
-    }
-
-    pub fn clear(&mut self) {
-        self.atoms.clear();
-    }
-
-    pub fn len(&self) -> usize {
-        self.atoms.len()
-    }
 }
 
 // ==================================
 // GRID
 // ==================================
 // Based on "Hierarchical Spatial Hashing for Real-time Collision Detection"
-pub struct SpatialHash<T, const CN: usize, C = Bucket<T, CN>>
-where
-    [T; CN]: Array<Item = T>,
-    T: Clone + Copy + Debug + PartialEq + PartialOrd,
-{
-    pub data: Vec<C>,
+// and https://carmencincotti.com/2022-10-31/spatial-hash-maps-part-one/
+// which is based on https://www.youtube.com/watch?v=D2M8jTtKi44
+pub struct SpatialHash {
+    pub capacity: usize,
+    pub cell_start: Vec<u16>,
+    pub cell_entries: Vec<u16>,
     pub levels: Vec<u8>,
-    type_phantom: std::marker::PhantomData<T>,
+
+    type_phantom: std::marker::PhantomData<u16>,
 }
 
-impl<T, const CN: usize> SpatialHash<T, CN>
-where
-    [T; CN]: Array<Item = T>,
-    T: Clone + Copy + Debug + PartialEq + PartialOrd,
-{
-    pub fn new(capacity: usize) -> Self {
+impl SpatialHash {
+    pub fn new() -> Self {
         Self {
-            data: vec![Bucket::new(); capacity],
+            capacity: 0,
+            cell_start: vec![],
+            cell_entries: vec![],
             levels: Vec::with_capacity(16),
             type_phantom: std::marker::PhantomData,
         }
     }
-    pub fn clear_and_rebuild<E>(&mut self, atoms: &[FastAabb])
-    where
-        E: std::error::Error,
-        T: TryFrom<usize, Error = E>,
-    {
+    pub fn clear_and_rebuild(&mut self, atoms: &[FastAabb]) {
         self.clear();
         self.rebuild(atoms);
     }
 
-    pub fn buckets(&self) -> &[Bucket<T, CN>] {
-        &self.data
-    }
-
     // Utilities
-
     pub fn longest_side(&self, aabb: &FastAabb) -> f32 {
         let min = aabb.mins;
         let max = aabb.maxs;
@@ -146,125 +85,102 @@ where
         world / self.cell_size_for_level(level) as i32
     }
     pub fn clear(&mut self) {
-        // Give analysis of the current buckets
-        let bucket_count = self.data.len();
-        let mut max_bucket_len = 0;
-        let mut total_atoms = 0;
-        for bucket in &self.data {
-            let len = bucket.len();
-            total_atoms += len;
-            max_bucket_len = max_bucket_len.max(len);
-        }
-        let avg_bucket_len = total_atoms / bucket_count;
-        log::debug!(
-            "SpatialHash::clear() - bucket_count: {}, max_bucket_len: {}, avg_bucket_len: {}",
-            bucket_count,
-            max_bucket_len,
-            avg_bucket_len
-        );
-
+        self.capacity = 0;
         self.levels.clear();
-        for bucket in &mut self.data {
-            bucket.clear();
-        }
+        self.cell_entries.clear();
+        self.cell_start.clear();
     }
-    pub fn rebuild<E>(&mut self, atoms: &[FastAabb])
-    where
-        E: std::error::Error,
-        T: TryFrom<usize, Error = E>,
-    {
-        for (atom, aabb) in atoms.iter().enumerate() {
-            let atom = atom.try_into().unwrap();
-            self.add(atom, *aabb);
+    pub fn rebuild(&mut self, atoms: &[FastAabb]) {
+        // Recreate the cell start list
+        self.capacity = atoms.len() * 3;
+        self.cell_start = vec![0; self.capacity + 1];
+
+        // Calculate the hashes for each body and store them in a list
+        for (_, aabb) in atoms.iter().enumerate() {
+            let side = self.longest_side(aabb);
+            let level = self.level_for_side(side as u32);
+            if self.levels.contains(&level) == false {
+                self.levels.push(level);
+            }
+
+            let min_x = self.world_to_grid(aabb.mins.x, level);
+            let min_y = self.world_to_grid(aabb.mins.y, level);
+            let max_x = self.world_to_grid(aabb.maxs.x, level);
+            let max_y = self.world_to_grid(aabb.maxs.y, level);
+
+            let grid_width = max_x - min_x;
+            let grid_height = max_y - min_y;
+            for x in 0..grid_width + 1 {
+                for y in 0..grid_height + 1 {
+                    let hash = hash(min_x + x, min_y + y, level, self.capacity as u64);
+                    self.cell_start[hash as usize] += 1;
+                }
+            }
         }
+
+        // Do a partial sum through the list to get the start of each cell
+        let mut start: u16 = 0;
+        for i in 0..self.cell_start.len() {
+            start += self.cell_start[i];
+            self.cell_start[i] = start;
+        }
+        let len = self.cell_start.len();
+        self.cell_start[len - 1] = start; // guard
+
+        // Fill the atom ids
+        self.cell_entries = vec![0; start as usize];
+        for (i, aabb) in atoms.iter().enumerate() {
+            let side = self.longest_side(aabb);
+            let level = self.level_for_side(side as u32);
+
+            let min_x = self.world_to_grid(aabb.mins.x, level);
+            let min_y = self.world_to_grid(aabb.mins.y, level);
+            let max_x = self.world_to_grid(aabb.maxs.x, level);
+            let max_y = self.world_to_grid(aabb.maxs.y, level);
+
+            let grid_width = max_x - min_x;
+            let grid_height = max_y - min_y;
+            for x in 0..grid_width + 1 {
+                for y in 0..grid_height + 1 {
+                    let hash = hash(min_x + x, min_y + y, level, self.capacity as u64);
+                    self.cell_start[hash as usize] -= 1;
+                    self.cell_entries[self.cell_start[hash as usize] as usize] = i as u16;
+                }
+            }
+        }
+
+        // Print the state of the "starts" and "entries" arrays
+        // log::debug!("Cell start:");
+        // for i in 0..self.cell_start.len() {
+        //     log::debug!("{}: {}", i, self.cell_start[i]);
+        // }
+        // log::debug!("Cell entries:");
+        // for i in 0..self.cell_entries.len() {
+        //     log::debug!("{}: {}", i, self.cell_entries[i]);
+        // }
     }
     pub fn len(&self) -> usize {
-        self.data.len()
+        self.cell_entries.len()
     }
 
     // ==================================
     // Management functions
     // ==================================
-    pub fn remove(&mut self, atom: T) {
-        for bucket in &mut self.data {
-            bucket.atoms.retain(|a| *a != atom);
-        }
-    }
-    pub fn remove_with_aabb(&mut self, atom: T, aabb: FastAabb) {
-        let longest_side = self.longest_side(&aabb);
-        let level = self.level_for_side(longest_side as u32);
-
-        let mins = aabb.mins;
-        let mins_grid_x = self.world_to_grid(mins.x, level);
-        let mins_grid_y = self.world_to_grid(mins.y, level);
-        let maxs_grid_x = self.world_to_grid(aabb.maxs.x, level);
-        let maxs_grid_y = self.world_to_grid(aabb.maxs.y, level);
-
-        let grid_width = maxs_grid_x - mins_grid_x + 1;
-        let grid_height = maxs_grid_y - mins_grid_y + 1;
-        for x in 0..grid_width {
-            for y in 0..grid_height {
-                let hash = hash(
-                    mins_grid_x + x,
-                    mins_grid_y + y,
-                    level,
-                    self.data.len() as u64,
-                );
-                let bucket = &mut self.data[hash as usize];
-                bucket.atoms.retain(|a| *a != atom);
-            }
-        }
-    }
-    pub fn add(&mut self, atom: T, aabb: FastAabb) {
-        let longest_side = self.longest_side(&aabb);
-        let level = self.level_for_side(longest_side as u32);
-        if self.levels.contains(&level) == false {
-            self.levels.push(level);
-        }
-
-        let mins = aabb.mins;
-        let mins_grid_x = self.world_to_grid(mins.x, level);
-        let mins_grid_y = self.world_to_grid(mins.y, level);
-        let maxs_grid_x = self.world_to_grid(aabb.maxs.x, level);
-        let maxs_grid_y = self.world_to_grid(aabb.maxs.y, level);
-
-        let grid_width = maxs_grid_x - mins_grid_x + 1;
-        let grid_height = maxs_grid_y - mins_grid_y + 1;
-        for x in 0..grid_width {
-            for y in 0..grid_height {
-                let hash = hash(
-                    mins_grid_x + x,
-                    mins_grid_y + y,
-                    level,
-                    self.data.len() as u64,
-                );
-                let bucket = &mut self.data[hash as usize];
-                bucket.add_atom(atom.clone());
-            }
-        }
-    }
-    pub fn update(&mut self, atom: T, aabb: FastAabb) {
-        self.remove(atom.clone());
-        self.add(atom, aabb);
-    }
+    // Nothing to see here for now
 
     // ==================================
     // Query functions
     // ==================================
-    pub fn query(&self, aabb: FastAabb) -> QueryIterator<T, CN> {
+    pub fn query(&self, aabb: FastAabb) -> QueryIterator {
         QueryIterator::new(self, aabb)
     }
 }
 
 // ==================================
-// Query Iterator
+// QueryIterator
 // ==================================
-pub struct QueryIterator<'a, T, const CN: usize>
-where
-    [T; CN]: Array<Item = T>,
-    T: Clone + Copy + Debug + PartialEq + PartialOrd,
-{
-    hash_grid: &'a SpatialHash<T, CN>,
+pub struct QueryIterator<'a> {
+    hash_grid: &'a SpatialHash,
     aabb: FastAabb,
 
     // Current state
@@ -280,12 +196,8 @@ where
     y: i32,
 }
 
-impl<'a, T, const CN: usize> QueryIterator<'a, T, CN>
-where
-    [T; CN]: Array<Item = T>,
-    T: Clone + Copy + Debug + PartialEq + PartialOrd,
-{
-    pub fn new(grid: &'a SpatialHash<T, CN>, aabb: FastAabb) -> Self {
+impl<'a> QueryIterator<'a> {
+    pub fn new(grid: &'a SpatialHash, aabb: FastAabb) -> Self {
         let mut iterator = Self {
             hash_grid: grid,
             aabb,
@@ -320,12 +232,8 @@ where
     }
 }
 
-impl<'a, T, const CN: usize> Iterator for QueryIterator<'a, T, CN>
-where
-    [T; CN]: Array<Item = T>,
-    T: Clone + Copy + Debug + PartialEq + PartialOrd,
-{
-    type Item = &'a [T];
+impl<'a> Iterator for QueryIterator<'a> {
+    type Item = &'a [u16];
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -343,11 +251,13 @@ where
                         self.mins_grid_x + self.x,
                         self.mins_grid_y + self.y,
                         *level,
-                        self.hash_grid.data.len() as u64,
+                        self.hash_grid.capacity as u64,
                     );
 
                     // Get the bucket for the current grid cell
-                    let bucket = &self.hash_grid.data[hash as usize];
+                    let start = self.hash_grid.cell_start[hash as usize];
+                    let end = self.hash_grid.cell_start[hash as usize + 1];
+                    let bucket = &self.hash_grid.cell_entries[start as usize..end as usize];
 
                     // Move to the next grid cell
                     self.x += 1;
@@ -357,7 +267,7 @@ where
                     }
 
                     // Return the bucket
-                    return Some(&bucket.atoms[..]);
+                    return Some(bucket);
                 }
             }
         }

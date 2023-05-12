@@ -23,7 +23,7 @@ pub struct VerletSystem {
     pub collision_damping: f32, // how much of the velocity is lost on collision
     bodies: Bodies,
     gravity: FastVector2,
-    grid: Rc<RefCell<SpatialHash<u16, 16>>>,
+    grid: Rc<RefCell<SpatialHash>>,
     // threadpool: ThreadPool,
 }
 
@@ -36,7 +36,7 @@ impl VerletSystem {
             collision_damping: 0.8,
             bodies: Bodies::new(),
             gravity: FastVector2::new(0.0, 32.0 * 20.0),
-            grid: Rc::new(RefCell::new(SpatialHash::new(8 * 1024))),
+            grid: Rc::new(RefCell::new(SpatialHash::new())),
         }
     }
 
@@ -100,15 +100,15 @@ impl VerletSystem {
         let grid = self.grid.clone();
         let grid: Ref<_> = (*grid).borrow();
 
-        for (body_index, body_aabb) in self.bodies.aabbs().iter().enumerate() {
-            for potential_chunk in grid.query(*body_aabb) {
-                for potential in potential_chunk {
-                    let other_index = *potential as usize;
-                    if body_index == other_index {
+        for (i, aabb) in self.bodies.aabbs().iter().enumerate() {
+            let potentials = grid.query(*aabb);
+            for potential_batch in potentials {
+                for potential in potential_batch {
+                    if i == *potential as usize {
                         continue;
                     }
 
-                    self.solve_contact(body_index, other_index);
+                    self.solve_contact(i, *potential as usize);
                     *checked_potentials += 1;
                 }
             }
